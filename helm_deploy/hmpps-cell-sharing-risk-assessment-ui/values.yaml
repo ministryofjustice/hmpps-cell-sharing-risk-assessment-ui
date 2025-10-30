@@ -15,7 +15,7 @@ generic-service:
   ingress:
     enabled: true
     host: app-hostname.local # override per environment
-    tlsSecretName: hmpps-cell-sharing-risk-assessment-ui-cert
+    tlsSecretName: cell-sharing-risk-assessment-cert
 
   livenessProbe:
     httpGet:
@@ -46,7 +46,7 @@ generic-service:
       CLIENT_CREDS_CLIENT_SECRET: 'CLIENT_CREDS_CLIENT_SECRET'
     hmpps-cell-sharing-risk-assessment-ui-auth-code:
       AUTH_CODE_CLIENT_ID: 'AUTH_CODE_CLIENT_ID'
-      AUTH_CODE_CLIENT_SECRET: 'AUTH_CODE_CLIENT_SECRET'    
+      AUTH_CODE_CLIENT_SECRET: 'AUTH_CODE_CLIENT_SECRET'
     hmpps-cell-sharing-risk-assessment-ui-session-secret:
       SESSION_SECRET: 'SESSION_SECRET'
     hmpps-cell-sharing-risk-assessment-ui-elasticache-redis:
