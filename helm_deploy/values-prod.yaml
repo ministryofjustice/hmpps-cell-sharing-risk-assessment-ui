@@ -3,7 +3,7 @@
 
 generic-service:
   ingress:
-    host: cell-sharing-risk-assessment-ui.hmpps.service.justice.gov.uk
+    host: cell-sharing-risk-assessment.hmpps.service.justice.gov.uk
 
   env:
     INGRESS_URL: "https://cell-sharing-risk-assessment-ui.hmpps.service.justice.gov.uk"
