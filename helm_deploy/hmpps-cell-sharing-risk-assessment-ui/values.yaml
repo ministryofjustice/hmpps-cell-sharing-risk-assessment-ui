@@ -47,7 +47,7 @@ generic-service:
     hmpps-cell-sharing-risk-assessment-ui-auth-code:
       AUTH_CODE_CLIENT_ID: 'AUTH_CODE_CLIENT_ID'
       AUTH_CODE_CLIENT_SECRET: 'AUTH_CODE_CLIENT_SECRET'
-    hmpps-cell-sharing-risk-assessment-ui-session-secret:
+    ui-session-secret:
       SESSION_SECRET: 'SESSION_SECRET'
     elasticache-redis:
       REDIS_HOST: 'primary_endpoint_address'
