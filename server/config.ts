@@ -49,9 +49,9 @@ export default {
   },
   apis: {
     hmppsAuth: {
-      url: get('HMPPS_AUTH_URL', 'http://localhost:9090/auth', requiredInProduction),
+      url: get('HMPPS_AUTH_URL', 'http://localhost:8080/auth', requiredInProduction),
       healthPath: '/health/ping',
-      externalUrl: get('HMPPS_AUTH_EXTERNAL_URL', get('HMPPS_AUTH_URL', 'http://localhost:9090/auth')),
+      externalUrl: get('HMPPS_AUTH_EXTERNAL_URL', get('HMPPS_AUTH_URL', 'http://localhost:8080/auth')),
       timeout: {
         response: Number(get('HMPPS_AUTH_TIMEOUT_RESPONSE', 10000)),
         deadline: Number(get('HMPPS_AUTH_TIMEOUT_DEADLINE', 10000)),
@@ -73,7 +73,7 @@ export default {
       enabled: get('TOKEN_VERIFICATION_ENABLED', 'false') === 'true',
     },
     csraApi: {
-      url: get('CSRA_API_URL', 'http://localhost:8080', requiredInProduction),
+      url: get('CSRA_API_URL', 'http://localhost:8090', requiredInProduction),
       healthPath: '/health/ping',
       timeout: {
         response: Number(get('CSRA_API_TIMEOUT_RESPONSE', 5000)),
