@@ -13,18 +13,18 @@ services:
       - SPRING_PROFILES_ACTIVE=dev
       - APPLICATION_AUTHENTICATION_UI_ALLOWLIST=0.0.0.0/0
 
-  hmpps-template-kotlin:
-    image: ghcr.io/ministryofjustice/hmpps-template-kotlin:latest
+  cell-sharing-risk-assessment-api:
+    image: ghcr.io/ministryofjustice/cell-sharing-risk-assessment-api:latest
     networks:
       - hmpps
-    container_name: hmpps-template-kotlin
+    container_name: cell-sharing-risk-assessment-api
     ports:
       - "8080:8080"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health/ping"]
     environment:
       - HMPPS_AUTH_URL=http://hmpps-auth:8080/auth
-      - EXAMPLE_API_URL=http://localhost:8080
+      - CSRA_API_URL=http://localhost:8080
 
   app:
     build:

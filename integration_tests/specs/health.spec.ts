@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import exampleApi from '../mockApis/exampleApi'
+import exampleApi from '../mockApis/csraApi'
 import hmppsAuth from '../mockApis/hmppsAuth'
 import tokenVerification from '../mockApis/tokenVerification'
 

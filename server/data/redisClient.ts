@@ -28,3 +28,5 @@ export const createRedisClient = (): RedisClient => {
 
   return client
 }
+
+export const redisClient = config.redis.enabled ? createRedisClient() : null
