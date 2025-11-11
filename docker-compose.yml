@@ -51,7 +51,7 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock"
 
   cell-sharing-risk-assessment-db:
-    image: postgres:17
+    image: postgres:18
     networks:
       - hmpps
     container_name: cell-sharing-risk-assessment-db
