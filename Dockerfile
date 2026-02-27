@@ -1,5 +1,5 @@
 # Stage: base image
-FROM node:24-alpine AS base
+FROM ghcr.io/ministryofjustice/hmpps-node:24-alpine AS base
 
 LABEL maintainer="HMPPS Digital Studio <info@digital.justice.gov.uk>"
 
