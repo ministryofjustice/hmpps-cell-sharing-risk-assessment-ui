@@ -102,8 +102,8 @@
     "@ministryofjustice/eslint-config-hmpps": {
       "@typescript-eslint/eslint-plugin": "8.59.3"
     },
-    "@opentelemetry/sdk-node": "^0.217.0",
-    "@opentelemetry/exporter-prometheus": "^0.217.0",
+    "@opentelemetry/sdk-node": "^0.218.0",
+    "@opentelemetry/exporter-prometheus": "^0.218.0",
     "protobufjs": "^8.2.1"
   }
 }
