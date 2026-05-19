@@ -30,11 +30,11 @@
     "npm": "^11"
   },
   "dependencies": {
-    "@aws-sdk/client-sqs": "3.1045.0",
+    "@aws-sdk/client-sqs": "3.1046.0",
     "@ministryofjustice/frontend": "^9.0.0",
     "@ministryofjustice/hmpps-auth-clients": "^2.0.0",
-    "@ministryofjustice/hmpps-monitoring": "^2.0.0",
-    "@ministryofjustice/hmpps-rest-client": "^2.0.0",
+    "@ministryofjustice/hmpps-monitoring": "^2.1.0",
+    "@ministryofjustice/hmpps-rest-client": "^2.1.0",
     "applicationinsights": "^3.14.0",
     "body-parser": "^2.2.2",
     "bunyan": "^1.8.15",
@@ -104,6 +104,6 @@
     },
     "@opentelemetry/sdk-node": "^0.218.0",
     "@opentelemetry/exporter-prometheus": "^0.218.0",
-    "protobufjs": "^8.2.1"
+    "protobufjs": "^8.3.0"
   }
 }
