@@ -30,7 +30,7 @@
     "npm": "^11"
   },
   "dependencies": {
-    "@aws-sdk/client-sqs": "3.1048.0",
+    "@aws-sdk/client-sqs": "3.1051.0",
     "@ministryofjustice/frontend": "^9.0.0",
     "@ministryofjustice/hmpps-auth-clients": "^2.0.0",
     "@ministryofjustice/hmpps-monitoring": "^2.1.0",
@@ -60,7 +60,7 @@
     "@jgoz/esbuild-plugin-typecheck": "^4.0.4",
     "@ministryofjustice/eslint-config-hmpps": "^1.0.3",
     "@ministryofjustice/frontend-types": "2.0.0",
-    "@ministryofjustice/hmpps-npm-script-allowlist": "0.0.5",
+    "@ministryofjustice/hmpps-npm-script-allowlist": "0.0.6",
     "@ministryofjustice/hmpps-precommit-hooks": "3.0.1",
     "@playwright/test": "1.60.0",
     "@tsconfig/node24": "^24.0.4",
@@ -76,7 +76,7 @@
     "@types/nunjucks": "^3.2.6",
     "@types/passport": "^1.0.17",
     "@types/passport-oauth2": "^1.8.0",
-    "@types/superagent": "^8.1.9",
+    "@types/superagent": "^8.1.10",
     "@types/supertest": "^7.2.0",
     "audit-ci": "^7.1.0",
     "aws-sdk-client-mock": "^4.1.0",
@@ -92,7 +92,7 @@
     "lint-staged": "^17.0.5",
     "nock": "14.0.15",
     "supertest": "^7.2.2",
-    "ts-jest": "^29.4.9",
+    "ts-jest": "^29.4.10",
     "typescript": "^6.0.3"
   },
   "overrides": {
@@ -100,10 +100,10 @@
       "fast-xml-parser": "^5.8.0"
     },
     "@ministryofjustice/eslint-config-hmpps": {
-      "@typescript-eslint/eslint-plugin": "8.59.3"
+      "@typescript-eslint/eslint-plugin": "8.59.4"
     },
     "@opentelemetry/sdk-node": "^0.218.0",
     "@opentelemetry/exporter-prometheus": "^0.218.0",
-    "protobufjs": "^8.3.0"
+    "protobufjs": "^8.4.0"
   }
 }
