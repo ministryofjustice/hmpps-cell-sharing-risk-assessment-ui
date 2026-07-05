@@ -1,6 +1,7 @@
 import { Page } from '@playwright/test'
 import tokenVerification from './mockApis/tokenVerification'
 import hmppsAuth, { type UserToken } from './mockApis/hmppsAuth'
+import componentApi from './mockApis/componentApi'
 import { resetStubs } from './mockApis/wiremock'
 
 export { resetStubs }
@@ -24,6 +25,8 @@ export const login = async (
     hmppsAuth.stubSignOutPage(),
     hmppsAuth.token({ name, roles, authSource }),
     tokenVerification.stubVerifyToken(active),
+    // The DPS shared header/footer are fetched by getFrontendComponents on every authenticated page.
+    componentApi.stubComponents(),
   ])
   await attemptHmppsAuthLogin(page)
 }

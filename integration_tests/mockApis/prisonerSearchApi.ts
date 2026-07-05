@@ -1,13 +1,13 @@
 import type { SuperAgentRequest } from 'superagent'
 import { stubFor } from './wiremock'
-import type { CsraCurrentRating } from '../../server/data/csraApiTypes'
+import type { Prisoner } from '../../server/data/prisonerSearchApiTypes'
 
 export default {
   stubPing: (httpStatus = 200): SuperAgentRequest =>
     stubFor({
       request: {
         method: 'GET',
-        urlPattern: '/csra-api/health/ping',
+        urlPattern: '/prisoner-search-api/health/ping',
       },
       response: {
         status: httpStatus,
@@ -16,24 +16,16 @@ export default {
       },
     }),
 
-  stubGetCurrentRating: (prisonerNumber: string, currentRating: Partial<CsraCurrentRating> = {}): SuperAgentRequest =>
+  stubGetPrisoner: (prisoner: Prisoner): SuperAgentRequest =>
     stubFor({
       request: {
         method: 'GET',
-        urlPattern: `/csra-api/csra-review/prisoner/${prisonerNumber}/current-rating`,
+        urlPattern: `/prisoner-search-api/prisoner/${prisoner.prisonerNumber}`,
       },
       response: {
         status: 200,
         headers: { 'Content-Type': 'application/json;charset=UTF-8' },
-        jsonBody: {
-          prisonerNumber,
-          status: 'COMPLETE',
-          rating: 'STANDARD',
-          provisional: false,
-          riskTo: [],
-          vulnerabilities: [],
-          ...currentRating,
-        },
+        jsonBody: prisoner,
       },
     }),
 }
