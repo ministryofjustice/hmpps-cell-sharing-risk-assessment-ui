@@ -2,6 +2,8 @@ import { expect, test } from '@playwright/test'
 import csraApi from '../mockApis/csraApi'
 import hmppsAuth from '../mockApis/hmppsAuth'
 import tokenVerification from '../mockApis/tokenVerification'
+import prisonerSearchApi from '../mockApis/prisonerSearchApi'
+import componentApi from '../mockApis/componentApi'
 
 import { resetStubs } from '../testUtils'
 
@@ -12,7 +14,13 @@ test.describe('Health', () => {
 
   test.describe('All healthy', () => {
     test.beforeEach(async () => {
-      await Promise.all([hmppsAuth.stubPing(), csraApi.stubPing(), tokenVerification.stubPing()])
+      await Promise.all([
+        hmppsAuth.stubPing(),
+        csraApi.stubPing(),
+        tokenVerification.stubPing(),
+        prisonerSearchApi.stubPing(),
+        componentApi.stubPing(),
+      ])
     })
 
     test('Health check is accessible and status is UP', async ({ page }) => {
@@ -36,7 +44,13 @@ test.describe('Health', () => {
 
   test.describe('Some unhealthy', () => {
     test.beforeEach(async () => {
-      await Promise.all([hmppsAuth.stubPing(), csraApi.stubPing(), tokenVerification.stubPing(500)])
+      await Promise.all([
+        hmppsAuth.stubPing(),
+        csraApi.stubPing(),
+        tokenVerification.stubPing(500),
+        prisonerSearchApi.stubPing(),
+        componentApi.stubPing(),
+      ])
     })
 
     test('Health check status is down', async ({ page }) => {

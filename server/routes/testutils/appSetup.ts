@@ -10,6 +10,7 @@ import AuditService from '../../services/auditService'
 import { HmppsUser } from '../../interfaces/hmppsUser'
 import setUpWebSession from '../../middleware/setUpWebSession'
 import CsraService from '../../services/csraService'
+import PrisonerSearchService from '../../services/prisonerSearchService'
 
 jest.mock('../../services/auditService')
 
@@ -59,6 +60,7 @@ export function appWithAllRoutes({
   services = {
     auditService: new AuditService(null) as jest.Mocked<AuditService>,
     csraService: new CsraService(null) as jest.Mocked<CsraService>,
+    prisonerSearchService: new PrisonerSearchService(null) as jest.Mocked<PrisonerSearchService>,
   },
   userSupplier = () => user,
 }: {

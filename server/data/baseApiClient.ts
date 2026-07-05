@@ -1,4 +1,4 @@
-import { asUser, RestClient } from '@ministryofjustice/hmpps-rest-client'
+import { asSystem, asUser, RestClient } from '@ministryofjustice/hmpps-rest-client'
 import { AuthenticationClient } from '@ministryofjustice/hmpps-auth-clients'
 import config from '../config'
 import logger from '../../logger'
@@ -28,11 +28,16 @@ export default class BaseApiClient extends RestClient {
     queryParams?: string[]
     requestType: 'get' | 'post' | 'put' | 'delete' | 'patch'
     options?: {
-      cacheDuration: number
+      cacheDuration?: number
+      // When true, calls the API with a system (client-credentials) token stamped with the
+      // acting username, rather than the signed-in user's own token. Backend read APIs such as
+      // the CSRA API and prisoner-search grant their roles to the system client, so those calls
+      // must be made `asSystem`. The func's first argument is then the username, not a token.
+      asSystem?: boolean
     }
   }) {
     const func = async (
-      token: string,
+      tokenOrUsername: string,
       parameters: Parameters = {} as never,
       data: Data = undefined,
     ): Promise<ReturnType> => {
@@ -64,7 +69,7 @@ export default class BaseApiClient extends RestClient {
           query,
           data,
         },
-        asUser(token),
+        options?.asSystem ? asSystem(tokenOrUsername) : asUser(tokenOrUsername),
       )
 
       if (cacheDuration && this.redisClient) {
