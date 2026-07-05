@@ -1,0 +1,135 @@
+// Prisoner identity banner (mini-profile)
+.csra-prisoner-banner {
+  display: flex;
+  gap: govuk-spacing(4);
+  padding: govuk-spacing(3);
+  margin-bottom: govuk-spacing(6);
+  background-color: govuk-colour("light-grey");
+
+  &__photo {
+    flex: 0 0 auto;
+    width: 90px;
+    height: 110px;
+    object-fit: cover;
+    background-color: govuk-colour("mid-grey");
+  }
+
+  &__body {
+    flex: 1 1 auto;
+  }
+
+  &__name {
+    @include govuk-font($size: 24, $weight: bold);
+    margin: 0 0 govuk-spacing(2);
+  }
+
+  &__number {
+    @include govuk-font($size: 19, $weight: regular);
+    display: block;
+    color: $govuk-secondary-text-colour;
+  }
+
+  &__grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: govuk-spacing(3) govuk-spacing(6);
+    margin: 0;
+  }
+
+  &__item {
+    dt {
+      @include govuk-font($size: 16, $weight: bold);
+      margin: 0;
+    }
+
+    dd {
+      @include govuk-font($size: 19);
+      margin: 0;
+    }
+  }
+}
+
+// Summary tiles
+.csra-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: govuk-spacing(4);
+  margin-bottom: govuk-spacing(6);
+
+  @include govuk-media-query($until: tablet) {
+    grid-template-columns: 1fr;
+  }
+
+  &__card {
+    padding: govuk-spacing(3);
+    background-color: govuk-colour("light-grey");
+  }
+
+  &__caption {
+    @include govuk-font($size: 19);
+    margin: 0 0 govuk-spacing(1);
+  }
+
+  &__value {
+    @include govuk-font($size: 36, $weight: bold);
+    margin: 0;
+  }
+
+  &__hint {
+    @include govuk-font($size: 16);
+    color: $govuk-secondary-text-colour;
+    margin: govuk-spacing(1) 0 0;
+  }
+}
+
+// Review card
+.csra-review {
+  padding-bottom: govuk-spacing(4);
+  margin-bottom: govuk-spacing(4);
+  border-bottom: 1px solid $govuk-border-colour;
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: govuk-spacing(2);
+  }
+
+  &__type {
+    @include govuk-font($size: 19, $weight: bold);
+  }
+
+  &__comment {
+    margin-top: govuk-spacing(2);
+  }
+
+  &__meta {
+    color: $govuk-secondary-text-colour;
+    margin-bottom: 0;
+  }
+}
+
+// Pagination row
+.csra-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: govuk-spacing(2);
+  margin-bottom: govuk-spacing(4);
+
+  &__links {
+    display: flex;
+    align-items: center;
+    gap: govuk-spacing(3);
+    @include govuk-font($size: 19);
+  }
+
+  &__current {
+    @include govuk-font($size: 19, $weight: bold);
+  }
+
+  &__results {
+    @include govuk-font($size: 19);
+    margin: 0;
+  }
+}

@@ -10,6 +10,7 @@ import {
   csraStatusLabel,
   enumLabel,
   formatDate,
+  formatMonthYear,
   initialiseName,
 } from './utils'
 import config from '../config'
@@ -20,6 +21,7 @@ export default function nunjucksSetup(app: express.Express): void {
 
   app.locals.asset_path = '/assets/'
   app.locals.applicationName = 'Cell Sharing Risk Assessment'
+  app.locals.dpsUrl = config.serviceUrls.digitalPrison
   app.locals.environmentName = config.environmentName
   app.locals.environmentNameColour = config.environmentName === 'PRE-PRODUCTION' ? 'govuk-tag--green' : ''
   let assetManifest: Record<string, string> = {}
@@ -50,6 +52,7 @@ export default function nunjucksSetup(app: express.Express): void {
   njkEnv.addFilter('assetMap', (url: string) => assetManifest[url] || url)
   njkEnv.addFilter('convertToTitleCase', convertToTitleCase)
   njkEnv.addFilter('formatDate', formatDate)
+  njkEnv.addFilter('formatMonthYear', formatMonthYear)
   njkEnv.addFilter('csraRatingLabel', csraRatingLabel)
   njkEnv.addFilter('csraRatingTagClass', csraRatingTagClass)
   njkEnv.addFilter('csraStatusLabel', csraStatusLabel)

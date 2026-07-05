@@ -2,7 +2,7 @@ import type { AuthenticationClient } from '@ministryofjustice/hmpps-auth-clients
 import config from '../config'
 import BaseApiClient from './baseApiClient'
 import { RedisClient } from './redisClient'
-import type { CsraCurrentRating } from './csraApiTypes'
+import type { CsraCurrentRating, CsraHistoryQuery, CsraReviewHistory } from './csraApiTypes'
 
 export default class CsraApiClient extends BaseApiClient {
   constructor(redisClient: RedisClient, authenticationClient: AuthenticationClient) {
@@ -19,6 +19,20 @@ export default class CsraApiClient extends BaseApiClient {
   getCurrentCsraRating = this.apiCall<CsraCurrentRating, { prisonerNumber: string }>({
     path: '/csra-review/prisoner/:prisonerNumber/current-rating',
     requestType: 'get',
+    options: { asSystem: true },
+  })
+
+  /**
+   * Get a page of a prisoner's CSRA history (newest first) plus whole-history summary counts.
+   *
+   * Called `asSystem` (see getCurrentCsraRating). Filters (`ratings`, `fromDate`, `toDate`) and paging
+   * (`page`, `size`) are passed as query params; the API returns an empty list with zeroed counts when
+   * the prisoner has no history.
+   */
+  getCsraHistory = this.apiCall<CsraReviewHistory, { prisonerNumber: string } & CsraHistoryQuery>({
+    path: '/csra-review/prisoner/:prisonerNumber/history',
+    requestType: 'get',
+    queryParams: ['page', 'size', 'ratings', 'fromDate', 'toDate'],
     options: { asSystem: true },
   })
 }

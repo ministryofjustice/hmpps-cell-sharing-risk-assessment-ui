@@ -12,4 +12,6 @@ export interface Prisoner {
   prisonName?: string
   cellLocation?: string
   status?: string
+  pncNumber?: string
+  mostSeriousOffence?: string
 }
