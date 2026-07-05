@@ -146,6 +146,7 @@ export const parseUkDate = (value?: string): string | undefined => {
 
 export interface ParsedCsraHistoryQuery {
   ratings: RatingBucket[]
+  establishments: string[]
   fromDateRaw?: string
   toDateRaw?: string
   fromDate?: string
@@ -159,6 +160,8 @@ export const parseCsraHistoryQuery = (reqQuery: ParsedQs, size = HISTORY_PAGE_SI
   const ratings = toArray(reqQuery.ratings).filter((rating): rating is RatingBucket =>
     (ALL_RATING_BUCKETS as readonly string[]).includes(rating),
   )
+  // Establishments are prison ids (e.g. "LEI"); there is no fixed set, so normalise and pass through.
+  const establishments = toArray(reqQuery.establishments).map(prisonId => prisonId.toUpperCase())
   const fromDateRaw = firstValue(reqQuery.fromDate)
   const toDateRaw = firstValue(reqQuery.toDate)
   const fromDate = parseUkDate(fromDateRaw)
@@ -170,11 +173,12 @@ export const parseCsraHistoryQuery = (reqQuery: ParsedQs, size = HISTORY_PAGE_SI
     page: String(page - 1), // API pages are zero-based
     size: String(size),
     ratings: ratings.length ? ratings : undefined,
+    establishments: establishments.length ? establishments : undefined,
     fromDate,
     toDate,
   }
 
-  return { ratings, fromDateRaw, toDateRaw, fromDate, toDate, page, apiQuery }
+  return { ratings, establishments, fromDateRaw, toDateRaw, fromDate, toDate, page, apiQuery }
 }
 
 export interface PaginationItem {

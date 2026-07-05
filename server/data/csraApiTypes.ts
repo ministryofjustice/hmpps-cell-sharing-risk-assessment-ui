@@ -103,6 +103,7 @@ export type CsraHistoryQuery = {
   page: string
   size: string
   ratings?: string[]
+  establishments?: string[]
   fromDate?: string
   toDate?: string
 }

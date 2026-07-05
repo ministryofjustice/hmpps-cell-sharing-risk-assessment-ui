@@ -147,29 +147,34 @@ describe('parseCsraHistoryQuery', () => {
     const result = parseCsraHistoryQuery({})
     expect(result.page).toBe(1)
     expect(result.ratings).toEqual([])
+    expect(result.establishments).toEqual([])
     expect(result.apiQuery).toEqual({
       page: '0',
       size: '20',
       ratings: undefined,
+      establishments: undefined,
       fromDate: undefined,
       toDate: undefined,
     })
   })
 
-  it('whitelists ratings, parses dates and translates the 1-based page to zero-based', () => {
+  it('whitelists ratings, normalises establishments, parses dates and translates the 1-based page to zero-based', () => {
     const result = parseCsraHistoryQuery({
       ratings: ['HIGH', 'BOGUS', 'STANDARD'],
+      establishments: ['lei', 'MDI'],
       fromDate: '1/1/2020',
       toDate: '31/12/2024',
       page: '3',
     })
     expect(result.ratings).toEqual(['HIGH', 'STANDARD'])
+    expect(result.establishments).toEqual(['LEI', 'MDI'])
     expect(result.fromDateRaw).toBe('1/1/2020')
     expect(result.page).toBe(3)
     expect(result.apiQuery).toEqual({
       page: '2',
       size: '20',
       ratings: ['HIGH', 'STANDARD'],
+      establishments: ['LEI', 'MDI'],
       fromDate: '2020-01-01',
       toDate: '2024-12-31',
     })

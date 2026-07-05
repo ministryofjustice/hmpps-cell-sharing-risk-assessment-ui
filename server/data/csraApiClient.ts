@@ -32,7 +32,7 @@ export default class CsraApiClient extends BaseApiClient {
   getCsraHistory = this.apiCall<CsraReviewHistory, { prisonerNumber: string } & CsraHistoryQuery>({
     path: '/csra-review/prisoner/:prisonerNumber/history',
     requestType: 'get',
-    queryParams: ['page', 'size', 'ratings', 'fromDate', 'toDate'],
+    queryParams: ['page', 'size', 'ratings', 'establishments', 'fromDate', 'toDate'],
     options: { asSystem: true },
   })
 }

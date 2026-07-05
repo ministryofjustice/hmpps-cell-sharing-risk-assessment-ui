@@ -46,7 +46,7 @@ export default function routes({
       return next(createError(404, 'Prisoner not found'))
     }
 
-    const { ratings, fromDateRaw, toDateRaw, page, apiQuery } = parseCsraHistoryQuery(req.query)
+    const { ratings, establishments, fromDateRaw, toDateRaw, page, apiQuery } = parseCsraHistoryQuery(req.query)
 
     const [prisoner, history] = await Promise.all([
       prisonerSearchService.getPrisoner(username, prisonerNumber),
@@ -64,6 +64,7 @@ export default function routes({
     // appends its own). Use the raw (as-typed) date values so the filter inputs stay populated.
     const baseQueryParams = new URLSearchParams()
     ratings.forEach(rating => baseQueryParams.append('ratings', rating))
+    establishments.forEach(establishment => baseQueryParams.append('establishments', establishment))
     if (fromDateRaw) baseQueryParams.set('fromDate', fromDateRaw)
     if (toDateRaw) baseQueryParams.set('toDate', toDateRaw)
 
@@ -85,7 +86,7 @@ export default function routes({
         history.size,
         baseQueryParams.toString(),
       ),
-      filters: { ratings, establishments: [], fromDate: fromDateRaw ?? '', toDate: toDateRaw ?? '' },
+      filters: { ratings, establishments, fromDate: fromDateRaw ?? '', toDate: toDateRaw ?? '' },
     })
   })
 

@@ -25,6 +25,10 @@ const history: CsraReviewHistory = {
     firstAssessmentDate: '2011-06-15',
     lastAssessmentDate: '2025-10-11',
     lastHighDate: '2013-07-14',
+    establishments: [
+      { prisonId: 'HLI', prisonName: 'Hull (HMP)' },
+      { prisonId: 'LEI', prisonName: 'Leeds (HMP)' },
+    ],
   },
   content: [
     {
@@ -76,6 +80,24 @@ test.describe('Prisoner CSRA history', () => {
     await expect(historyPage.reviews.first()).toContainText('No concerns identified at this review.')
     await expect(historyPage.reviews.nth(1)).toContainText('High risk – specific')
     await expect(historyPage.pagination).toContainText('of 13 CSRAs')
+    // Establishment filter checkboxes and resolved prison name in the review card
+    await expect(historyPage.filters).toContainText('Hull (HMP)')
+    await expect(historyPage.filters).toContainText('Leeds (HMP)')
+    await expect(historyPage.reviews.first()).toContainText('Recorded at Leeds (HMP)')
+  })
+
+  test('filters by establishment and passes the selection to the API', async ({ page }) => {
+    await login(page)
+    await prisonerSearchApi.stubGetPrisoner(prisoner)
+    await prisonApi.stubGetPrisonerImage('A5197BD')
+    await csraApi.stubGetCsraHistory('A5197BD', history)
+
+    await page.goto('/prisoner/A5197BD/history')
+
+    await page.getByLabel('Leeds (HMP)').check()
+    await page.getByTestId('apply-filters').click()
+
+    await expect(page).toHaveURL(/establishments=LEI/)
   })
 
   test('filters by rating type and passes the selection to the API', async ({ page }) => {

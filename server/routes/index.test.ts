@@ -179,6 +179,7 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
           page: '0',
           size: '20',
           ratings: undefined,
+          establishments: undefined,
           fromDate: undefined,
           toDate: undefined,
         })
@@ -191,20 +192,46 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
       })
   })
 
-  it('passes whitelisted rating/date filters and the zero-based page to the service', () => {
+  it('passes whitelisted rating/establishment/date filters and the zero-based page to the service', () => {
     csraService.getHistory.mockResolvedValue(history)
 
     return request(app)
-      .get('/prisoner/A1234BC/history?ratings=HIGH&ratings=BOGUS&fromDate=1/1/2020&page=2')
+      .get('/prisoner/A1234BC/history?ratings=HIGH&ratings=BOGUS&establishments=lei&fromDate=1/1/2020&page=2')
       .expect(200)
       .expect(() => {
         expect(csraService.getHistory).toHaveBeenCalledWith(user.username, 'A1234BC', {
           page: '1',
           size: '20',
           ratings: ['HIGH'],
+          establishments: ['LEI'],
           fromDate: '2020-01-01',
           toDate: undefined,
         })
+      })
+  })
+
+  it('renders establishment checkboxes and resolves prison names when the summary supplies them', () => {
+    csraService.getHistory.mockResolvedValue({
+      ...history,
+      summary: {
+        ...history.summary,
+        establishments: [
+          { prisonId: 'HLI', prisonName: 'Hull (HMP)' },
+          { prisonId: 'LEI', prisonName: 'Leeds (HMP)' },
+        ],
+      },
+    })
+
+    return request(app)
+      .get('/prisoner/A1234BC/history')
+      .expect(200)
+      .expect(res => {
+        // Establishment filter checkboxes
+        expect(res.text).toContain('Hull (HMP)')
+        expect(res.text).toContain('value="LEI"')
+        // "Recorded at" resolves the prison name instead of the raw id
+        expect(res.text).toContain('Recorded at Leeds (HMP)')
+        expect(res.text).not.toContain('Recorded at LEI')
       })
   })
 

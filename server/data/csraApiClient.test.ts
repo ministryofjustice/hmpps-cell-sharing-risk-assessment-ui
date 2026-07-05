@@ -92,7 +92,14 @@ describe('CsraApiClient', () => {
     it('should GET the history with paging + filters as query params, using a system token', async () => {
       nock(config.apis.csraApi.url)
         .get('/csra-review/prisoner/A1234BC/history')
-        .query({ page: '0', size: '20', ratings: ['HIGH', 'STANDARD'], fromDate: '2020-01-01', toDate: '2024-12-31' })
+        .query({
+          page: '0',
+          size: '20',
+          ratings: ['HIGH', 'STANDARD'],
+          establishments: ['LEI', 'MDI'],
+          fromDate: '2020-01-01',
+          toDate: '2024-12-31',
+        })
         .matchHeader('authorization', 'Bearer test-system-token')
         .reply(200, history)
 
@@ -101,6 +108,7 @@ describe('CsraApiClient', () => {
         page: '0',
         size: '20',
         ratings: ['HIGH', 'STANDARD'],
+        establishments: ['LEI', 'MDI'],
         fromDate: '2020-01-01',
         toDate: '2024-12-31',
       })
