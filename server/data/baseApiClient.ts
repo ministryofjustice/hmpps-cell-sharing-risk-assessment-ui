@@ -16,7 +16,7 @@ export default class BaseApiClient extends RestClient {
 
   protected apiCall<
     ReturnType extends object | string,
-    Parameters extends { [k: string]: string },
+    Parameters extends { [k: string]: string | string[] | undefined },
     Data extends Record<string, unknown> | string[] | string = undefined,
   >({
     path,
@@ -41,8 +41,10 @@ export default class BaseApiClient extends RestClient {
       parameters: Parameters = {} as never,
       data: Data = undefined,
     ): Promise<ReturnType> => {
-      const filledPath = path.replace(/:(\w+)/g, (_, name) => parameters[name])
-      const query = queryParams?.length ? Object.fromEntries(queryParams.map(p => [p, parameters[p]])) : undefined
+      const filledPath = path.replace(/:(\w+)/g, (_, name) => String(parameters[name] ?? ''))
+      const query = queryParams?.length
+        ? Object.fromEntries(queryParams.map(p => [p, parameters[p]]).filter(([, value]) => value !== undefined))
+        : undefined
 
       const cacheDuration = options?.cacheDuration || 0
       if (cacheDuration && this.redisClient) {
@@ -81,7 +83,7 @@ export default class BaseApiClient extends RestClient {
       return result
     }
     func.clearCache = async (parameters: Parameters = {} as never) => {
-      const filledPath = path.replace(/:(\w+)/g, (_, name) => parameters[name])
+      const filledPath = path.replace(/:(\w+)/g, (_, name) => String(parameters[name] ?? ''))
       if (this.redisClient) {
         await this.redisClient.del(filledPath)
       }

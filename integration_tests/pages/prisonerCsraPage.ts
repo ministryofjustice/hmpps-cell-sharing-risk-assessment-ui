@@ -4,7 +4,7 @@ import AbstractPage from './abstractPage'
 export default class PrisonerCsraPage extends AbstractPage {
   readonly prisonerName: Locator
 
-  readonly prisonerDetails: Locator
+  readonly prisonerBanner: Locator
 
   readonly rating: Locator
 
@@ -19,7 +19,7 @@ export default class PrisonerCsraPage extends AbstractPage {
   private constructor(page: Page) {
     super(page)
     this.prisonerName = page.getByTestId('prisoner-name')
-    this.prisonerDetails = page.getByTestId('prisoner-details')
+    this.prisonerBanner = page.getByTestId('prisoner-banner')
     this.rating = page.getByTestId('csra-rating')
     this.summary = page.getByTestId('csra-summary')
     this.riskTo = page.getByTestId('csra-risk-to')

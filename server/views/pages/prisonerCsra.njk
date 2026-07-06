@@ -8,17 +8,16 @@
 {% set pageTitle = applicationName + " - CSRA for " + prisonerName %}
 {% set mainClasses = "govuk-body" %}
 
+{% set currentTab = "current" %}
+
 {% block content %}
+  {% include "../partials/prisonerBanner.njk" %}
+  {% include "../partials/csraSubNav.njk" %}
+
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
-      <span class="govuk-caption-l" data-qa="page-caption">Cell sharing risk assessment</span>
-      <h1 class="govuk-heading-xl govuk-!-margin-bottom-2" data-qa="prisoner-name">{{ prisonerName }}</h1>
-      <p class="govuk-body" data-qa="prisoner-details">
-        Prison number: {{ prisonerNumber }}<br>
-        Establishment: {{ prisoner.prisonName or "Not known" }}<br>
-        Location: {{ prisoner.cellLocation or "Not known" }}
-      </p>
+      <h1 class="govuk-heading-xl govuk-!-margin-bottom-2" data-qa="page-heading">Current rating</h1>
 
       {% if csra.status == "NO_RATING" %}
 
@@ -28,8 +27,6 @@
         }) }}
 
       {% else %}
-
-        <h2 class="govuk-heading-l govuk-!-margin-top-6">Current rating</h2>
 
         <p class="govuk-body">
           {{ govukTag({
