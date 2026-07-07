@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import csraApi from '../mockApis/csraApi'
 import prisonerSearchApi from '../mockApis/prisonerSearchApi'
 import prisonApi from '../mockApis/prisonApi'
+import manageUsersApi from '../mockApis/manageUsersApi'
 import { login, resetStubs } from '../testUtils'
 import PrisonerCsraHistoryPage from '../pages/prisonerCsraHistoryPage'
 import type { CsraReviewHistory } from '../../server/data/csraApiTypes'
@@ -63,6 +64,7 @@ test.describe('Prisoner CSRA history', () => {
     await login(page)
     await prisonerSearchApi.stubGetPrisoner(prisoner)
     await prisonApi.stubGetPrisonerImage('A5197BD')
+    await manageUsersApi.stubGetUserCaseloads(['LEI'])
     await csraApi.stubGetCsraHistory('A5197BD', history)
 
     await page.goto('/prisoner/A5197BD/history')
@@ -90,6 +92,7 @@ test.describe('Prisoner CSRA history', () => {
     await login(page)
     await prisonerSearchApi.stubGetPrisoner(prisoner)
     await prisonApi.stubGetPrisonerImage('A5197BD')
+    await manageUsersApi.stubGetUserCaseloads(['LEI'])
     await csraApi.stubGetCsraHistory('A5197BD', history)
 
     await page.goto('/prisoner/A5197BD/history')
@@ -104,6 +107,7 @@ test.describe('Prisoner CSRA history', () => {
     await login(page)
     await prisonerSearchApi.stubGetPrisoner(prisoner)
     await prisonApi.stubGetPrisonerImage('A5197BD')
+    await manageUsersApi.stubGetUserCaseloads(['LEI'])
     await csraApi.stubGetCsraHistory('A5197BD', history)
 
     await page.goto('/prisoner/A5197BD/history')
@@ -120,6 +124,7 @@ test.describe('Prisoner CSRA history', () => {
     await login(page)
     await prisonerSearchApi.stubGetPrisoner(prisoner)
     await prisonApi.stubGetPrisonerImage('A5197BD')
+    await manageUsersApi.stubGetUserCaseloads(['LEI'])
     await csraApi.stubGetCsraHistory('A5197BD', {
       summary: { totalCsras: 0, highCount: 0, standardCount: 0 },
       content: [],

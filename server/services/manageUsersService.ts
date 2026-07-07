@@ -1,5 +1,5 @@
 import { ManageUsersApiClient } from '../data'
-import type { UserCaseloads } from '../data/manageUsersApiClient'
+import type { UserCaseloads } from '../data/manageUsersApiTypes'
 
 export default class ManageUsersService {
   constructor(private readonly manageUsersApiClient: ManageUsersApiClient) {}

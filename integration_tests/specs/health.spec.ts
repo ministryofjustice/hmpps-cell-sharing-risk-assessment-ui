@@ -4,6 +4,7 @@ import hmppsAuth from '../mockApis/hmppsAuth'
 import tokenVerification from '../mockApis/tokenVerification'
 import prisonerSearchApi from '../mockApis/prisonerSearchApi'
 import prisonApi from '../mockApis/prisonApi'
+import manageUsersApi from '../mockApis/manageUsersApi'
 import componentApi from '../mockApis/componentApi'
 
 import { resetStubs } from '../testUtils'
@@ -21,6 +22,7 @@ test.describe('Health', () => {
         tokenVerification.stubPing(),
         prisonerSearchApi.stubPing(),
         prisonApi.stubPing(),
+        manageUsersApi.stubPing(),
         componentApi.stubPing(),
       ])
     })

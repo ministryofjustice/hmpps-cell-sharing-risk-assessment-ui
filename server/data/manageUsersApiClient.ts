@@ -2,19 +2,7 @@ import type { AuthenticationClient } from '@ministryofjustice/hmpps-auth-clients
 import config from '../config'
 import BaseApiClient from './baseApiClient'
 import { RedisClient } from './redisClient'
-
-export interface Caseload {
-  id: string
-  name: string
-}
-
-export interface UserCaseloads {
-  username: string
-  active: boolean
-  accountType: string
-  activeCaseload?: Caseload
-  caseloads: Caseload[]
-}
+import type { UserCaseloads } from './manageUsersApiTypes'
 
 export default class ManageUsersApiClient extends BaseApiClient {
   constructor(redisClient: RedisClient, authenticationClient: AuthenticationClient) {

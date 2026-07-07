@@ -5,7 +5,7 @@ import checkPrisonerAccess from './checkPrisonerAccess'
 import PrisonerSearchService from '../services/prisonerSearchService'
 import ManageUsersService from '../services/manageUsersService'
 import type { Prisoner } from '../data/prisonerSearchApiTypes'
-import type { UserCaseloads } from '../data/manageUsersApiClient'
+import type { UserCaseloads } from '../data/manageUsersApiTypes'
 
 jest.mock('../services/prisonerSearchService')
 jest.mock('../services/manageUsersService')
