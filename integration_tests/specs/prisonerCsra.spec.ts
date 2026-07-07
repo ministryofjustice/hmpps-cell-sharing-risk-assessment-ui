@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import csraApi from '../mockApis/csraApi'
 import prisonerSearchApi from '../mockApis/prisonerSearchApi'
 import prisonApi from '../mockApis/prisonApi'
+import manageUsersApi from '../mockApis/manageUsersApi'
 import { login, resetStubs } from '../testUtils'
 import PrisonerCsraPage from '../pages/prisonerCsraPage'
 
@@ -25,6 +26,7 @@ test.describe('Prisoner CSRA', () => {
     await login(page)
     await prisonerSearchApi.stubGetPrisoner(prisoner)
     await prisonApi.stubGetPrisonerImage('A1234BC')
+    await manageUsersApi.stubGetUserCaseloads(['MDI'])
     await csraApi.stubGetCurrentRating('A1234BC', {
       status: 'COMPLETE',
       rating: 'HIGH_SPECIFIC',
@@ -54,6 +56,7 @@ test.describe('Prisoner CSRA', () => {
     await login(page)
     await prisonerSearchApi.stubGetPrisoner(prisoner)
     await prisonApi.stubGetPrisonerImage('A1234BC')
+    await manageUsersApi.stubGetUserCaseloads(['MDI'])
     await csraApi.stubGetCurrentRating('A1234BC', { status: 'NO_RATING', rating: null })
 
     await page.goto('/prisoner/A1234BC')

@@ -4,6 +4,7 @@ import AuthService from './authService'
 import CsraService from './csraService'
 import PrisonerSearchService from './prisonerSearchService'
 import PrisonApiService from './prisonApiService'
+import ManageUsersService from './manageUsersService'
 
 export const services = () => {
   const {
@@ -13,6 +14,7 @@ export const services = () => {
     csraApiClient,
     prisonerSearchApiClient,
     prisonApiClient,
+    manageUsersApiClient,
   } = dataAccess()
 
   return {
@@ -21,6 +23,7 @@ export const services = () => {
     csraService: new CsraService(csraApiClient),
     prisonerSearchService: new PrisonerSearchService(prisonerSearchApiClient),
     prisonApiService: new PrisonApiService(prisonApiClient),
+    manageUsersService: new ManageUsersService(manageUsersApiClient),
     authService: new AuthService(hmppsAuthClient),
   }
 }

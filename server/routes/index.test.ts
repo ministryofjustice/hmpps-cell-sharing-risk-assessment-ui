@@ -4,25 +4,39 @@ import { appWithAllRoutes, user } from './testutils/appSetup'
 import AuditService, { Page } from '../services/auditService'
 import CsraService from '../services/csraService'
 import PrisonerSearchService from '../services/prisonerSearchService'
+import ManageUsersService from '../services/manageUsersService'
 import type { CsraCurrentRating, CsraReviewHistory } from '../data/csraApiTypes'
 import type { Prisoner } from '../data/prisonerSearchApiTypes'
 
 jest.mock('../services/auditService')
 jest.mock('../services/csraService')
 jest.mock('../services/prisonerSearchService')
+jest.mock('../services/manageUsersService')
 
 const auditService = new AuditService(null) as jest.Mocked<AuditService>
 const csraService = new CsraService(null) as jest.Mocked<CsraService>
 const prisonerSearchService = new PrisonerSearchService(null) as jest.Mocked<PrisonerSearchService>
+const manageUsersService = new ManageUsersService(null) as jest.Mocked<ManageUsersService>
 
 let app: Express
 
 beforeEach(() => {
+  // The prisoner fixtures below sit in LEI, which is in the user's caseloads, so the access guard
+  // (checkPrisonerAccess) lets these requests through. Access rules are covered in
+  // checkPrisonerAccess.test.ts.
+  manageUsersService.getUserCaseloads.mockResolvedValue({
+    username: 'user1',
+    active: true,
+    accountType: 'GENERAL',
+    activeCaseload: { id: 'LEI', name: 'Leeds (HMP)' },
+    caseloads: [{ id: 'LEI', name: 'Leeds (HMP)' }],
+  })
   app = appWithAllRoutes({
     services: {
       auditService,
       csraService,
       prisonerSearchService,
+      manageUsersService,
     },
     userSupplier: () => user,
   })
@@ -55,6 +69,7 @@ describe('GET /prisoner/:prisonerNumber', () => {
     prisonerNumber: 'A1234BC',
     firstName: 'JOHN',
     lastName: 'SMITH',
+    prisonId: 'LEI',
     prisonName: 'Moorland (HMP)',
     cellLocation: 'A-1-001',
   }
@@ -124,6 +139,7 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
     firstName: 'DANIEL',
     lastName: 'HAVERS',
     dateOfBirth: '1972-02-03',
+    prisonId: 'LEI',
     pncNumber: '15/17564AG',
   }
 
