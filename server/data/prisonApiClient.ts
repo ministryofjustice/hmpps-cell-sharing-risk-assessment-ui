@@ -8,6 +8,13 @@ export interface PrisonerImage {
   contentType: string
 }
 
+export interface CaseLoad {
+  caseLoadId: string
+  description: string
+  type: string
+  currentlyActive: boolean
+}
+
 /**
  * Prison API client for the prisoner photo.
  *
@@ -28,5 +35,20 @@ export default class PrisonApiClient {
       .responseType('blob')
       .timeout(config.apis.prisonApi.timeout)
     return { body: response.body, contentType: response.headers['content-type'] ?? 'image/jpeg' }
+  }
+
+  /**
+   * The caseloads (establishments) the signed-in user has access to.
+   *
+   * Unlike getPrisonerImage, this is a "me" endpoint so it must be called with the user's own
+   * token, not a system (client-credentials) token stamped with the username.
+   */
+  async getUserCaseLoads(userToken: string): Promise<CaseLoad[]> {
+    logger.debug('Getting caseloads for current user from Prison API')
+    const response = await superagent
+      .get(`${config.apis.prisonApi.url}/api/users/me/caseLoads`)
+      .auth(userToken, { type: 'bearer' })
+      .timeout(config.apis.prisonApi.timeout)
+    return response.body
   }
 }

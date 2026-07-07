@@ -4,25 +4,35 @@ import { appWithAllRoutes, user } from './testutils/appSetup'
 import AuditService, { Page } from '../services/auditService'
 import CsraService from '../services/csraService'
 import PrisonerSearchService from '../services/prisonerSearchService'
+import PrisonApiService from '../services/prisonApiService'
 import type { CsraCurrentRating, CsraReviewHistory } from '../data/csraApiTypes'
 import type { Prisoner } from '../data/prisonerSearchApiTypes'
 
 jest.mock('../services/auditService')
 jest.mock('../services/csraService')
 jest.mock('../services/prisonerSearchService')
+jest.mock('../services/prisonApiService')
 
 const auditService = new AuditService(null) as jest.Mocked<AuditService>
 const csraService = new CsraService(null) as jest.Mocked<CsraService>
 const prisonerSearchService = new PrisonerSearchService(null) as jest.Mocked<PrisonerSearchService>
+const prisonApiService = new PrisonApiService(null) as jest.Mocked<PrisonApiService>
 
 let app: Express
 
 beforeEach(() => {
+  // The prisoner fixtures below sit in LEI, which is in the user's caseloads, so the access guard
+  // (checkPrisonerAccess) lets these requests through. Access rules are covered in
+  // checkPrisonerAccess.test.ts.
+  prisonApiService.getUserCaseLoads.mockResolvedValue([
+    { caseLoadId: 'LEI', description: 'Leeds (HMP)', type: 'INST', currentlyActive: true },
+  ])
   app = appWithAllRoutes({
     services: {
       auditService,
       csraService,
       prisonerSearchService,
+      prisonApiService,
     },
     userSupplier: () => user,
   })
@@ -55,6 +65,7 @@ describe('GET /prisoner/:prisonerNumber', () => {
     prisonerNumber: 'A1234BC',
     firstName: 'JOHN',
     lastName: 'SMITH',
+    prisonId: 'LEI',
     prisonName: 'Moorland (HMP)',
     cellLocation: 'A-1-001',
   }
@@ -124,6 +135,7 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
     firstName: 'DANIEL',
     lastName: 'HAVERS',
     dateOfBirth: '1972-02-03',
+    prisonId: 'LEI',
     pncNumber: '15/17564AG',
   }
 

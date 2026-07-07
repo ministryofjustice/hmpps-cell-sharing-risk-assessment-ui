@@ -1,9 +1,9 @@
 import { Router } from 'express'
-import createError from 'http-errors'
 
 import type { Services } from '../services'
 import { Page } from '../services/auditService'
-import { buildPagination, isPrisonerNumber, parseCsraHistoryQuery } from '../utils/utils'
+import { buildPagination, parseCsraHistoryQuery } from '../utils/utils'
+import checkPrisonerAccess from '../middleware/checkPrisonerAccess'
 
 export default function routes({
   auditService,
@@ -13,6 +13,10 @@ export default function routes({
 }: Services): Router {
   const router = Router()
 
+  // Guards all prisoner routes: enforces the caseload/role access rules and, on success, stashes
+  // the looked-up prisoner on res.locals.prisoner for the handlers to reuse.
+  const requirePrisonerAccess = checkPrisonerAccess(prisonerSearchService, prisonApiService)
+
   router.get('/', async (req, res, next) => {
     await auditService.logPageView(Page.EXAMPLE_PAGE, { who: res.locals.user.username, correlationId: req.id })
 
@@ -20,14 +24,12 @@ export default function routes({
     return res.render('pages/index', { currentTime: now.toISOString() })
   })
 
-  router.get('/prisoner/:prisonerNumber', async (req, res) => {
+  router.get('/prisoner/:prisonerNumber', requirePrisonerAccess, async (req, res) => {
     const { prisonerNumber } = req.params
     const { username } = res.locals.user
+    const { prisoner } = res.locals
 
-    const [prisoner, csra] = await Promise.all([
-      prisonerSearchService.getPrisoner(username, prisonerNumber),
-      csraService.getCurrentRating(username, prisonerNumber),
-    ])
+    const csra = await csraService.getCurrentRating(username, prisonerNumber)
 
     await auditService.logPageView(Page.PRISONER_CSRA, {
       who: username,
@@ -39,19 +41,14 @@ export default function routes({
     return res.render('pages/prisonerCsra', { prisoner, csra, prisonerNumber })
   })
 
-  router.get('/prisoner/:prisonerNumber/history', async (req, res, next) => {
+  router.get('/prisoner/:prisonerNumber/history', requirePrisonerAccess, async (req, res) => {
     const { prisonerNumber } = req.params
     const { username } = res.locals.user
-    if (!isPrisonerNumber(prisonerNumber)) {
-      return next(createError(404, 'Prisoner not found'))
-    }
+    const { prisoner } = res.locals
 
     const { ratings, establishments, fromDateRaw, toDateRaw, page, apiQuery } = parseCsraHistoryQuery(req.query)
 
-    const [prisoner, history] = await Promise.all([
-      prisonerSearchService.getPrisoner(username, prisonerNumber),
-      csraService.getHistory(username, prisonerNumber, apiQuery),
-    ])
+    const history = await csraService.getHistory(username, prisonerNumber, apiQuery)
 
     await auditService.logPageView(Page.PRISONER_CSRA_HISTORY, {
       who: username,
@@ -93,12 +90,9 @@ export default function routes({
   // Proxy the prisoner photo through the app so the browser never needs a backend token. On any error
   // (no image, prisoner unknown, backend down) fall back to a neutral placeholder so the banner still
   // renders.
-  router.get('/prisoner/:prisonerNumber/image', async (req, res, next) => {
+  router.get('/prisoner/:prisonerNumber/image', requirePrisonerAccess, async (req, res) => {
     const { prisonerNumber } = req.params
     const { username } = res.locals.user
-    if (!isPrisonerNumber(prisonerNumber)) {
-      return next(createError(404, 'Prisoner not found'))
-    }
 
     try {
       const { body, contentType } = await prisonApiService.getPrisonerImage(username, prisonerNumber)
