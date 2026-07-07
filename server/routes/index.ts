@@ -10,12 +10,13 @@ export default function routes({
   prisonerSearchService,
   csraService,
   prisonApiService,
+  manageUsersService,
 }: Services): Router {
   const router = Router()
 
   // Guards all prisoner routes: enforces the caseload/role access rules and, on success, stashes
   // the looked-up prisoner on res.locals.prisoner for the handlers to reuse.
-  const requirePrisonerAccess = checkPrisonerAccess(prisonerSearchService, prisonApiService)
+  const requirePrisonerAccess = checkPrisonerAccess(prisonerSearchService, manageUsersService)
 
   router.get('/', async (req, res, next) => {
     await auditService.logPageView(Page.EXAMPLE_PAGE, { who: res.locals.user.username, correlationId: req.id })

@@ -3,17 +3,23 @@ import type { HttpError } from 'http-errors'
 
 import checkPrisonerAccess from './checkPrisonerAccess'
 import PrisonerSearchService from '../services/prisonerSearchService'
-import PrisonApiService from '../services/prisonApiService'
+import ManageUsersService from '../services/manageUsersService'
 import type { Prisoner } from '../data/prisonerSearchApiTypes'
-import type { CaseLoad } from '../data/prisonApiClient'
+import type { UserCaseloads } from '../data/manageUsersApiClient'
 
 jest.mock('../services/prisonerSearchService')
-jest.mock('../services/prisonApiService')
+jest.mock('../services/manageUsersService')
 
 const prisonerSearchService = new PrisonerSearchService(null) as jest.Mocked<PrisonerSearchService>
-const prisonApiService = new PrisonApiService(null) as jest.Mocked<PrisonApiService>
+const manageUsersService = new ManageUsersService(null) as jest.Mocked<ManageUsersService>
 
-const leeds: CaseLoad = { caseLoadId: 'LEI', description: 'Leeds (HMP)', type: 'INST', currentlyActive: true }
+const caseloadsWith = (...ids: string[]): UserCaseloads => ({
+  username: 'user1',
+  active: true,
+  accountType: 'GENERAL',
+  activeCaseload: ids[0] ? { id: ids[0], name: ids[0] } : undefined,
+  caseloads: ids.map(id => ({ id, name: id })),
+})
 
 const prisonerAt = (prisonId?: string): Prisoner => ({
   prisonerNumber: 'A1234BC',
@@ -27,7 +33,7 @@ const prisonerAt = (prisonId?: string): Prisoner => ({
  * once on both the success and error paths), returning the error passed to next (if any).
  */
 async function run(prisonerNumber: string, userRoles: string[]): Promise<HttpError | undefined> {
-  const handler = checkPrisonerAccess(prisonerSearchService, prisonApiService)
+  const handler = checkPrisonerAccess(prisonerSearchService, manageUsersService)
   const req = { params: { prisonerNumber } } as unknown as Request<{ prisonerNumber: string }>
   const res = { locals: { user: { username: 'user1', token: 'token', userRoles } } } as unknown as Response
 
@@ -38,7 +44,7 @@ async function run(prisonerNumber: string, userRoles: string[]): Promise<HttpErr
 
 beforeEach(() => {
   jest.resetAllMocks()
-  prisonApiService.getUserCaseLoads.mockResolvedValue([leeds])
+  manageUsersService.getUserCaseloads.mockResolvedValue(caseloadsWith('LEI'))
 })
 
 describe('checkPrisonerAccess', () => {
@@ -47,7 +53,7 @@ describe('checkPrisonerAccess', () => {
 
     expect(err?.status).toBe(404)
     expect(prisonerSearchService.getPrisoner).not.toHaveBeenCalled()
-    expect(prisonApiService.getUserCaseLoads).not.toHaveBeenCalled()
+    expect(manageUsersService.getUserCaseloads).not.toHaveBeenCalled()
   })
 
   describe('prisoner currently in an establishment', () => {
@@ -73,13 +79,13 @@ describe('checkPrisonerAccess', () => {
       const err = await run('A1234BC', ['GLOBAL_SEARCH'])
 
       expect(err).toBeUndefined()
-      expect(prisonApiService.getUserCaseLoads).not.toHaveBeenCalled()
+      expect(manageUsersService.getUserCaseloads).not.toHaveBeenCalled()
     })
 
     it('stashes the looked-up prisoner on res.locals for handlers to reuse', async () => {
       const prisoner = prisonerAt('LEI')
       prisonerSearchService.getPrisoner.mockResolvedValue(prisoner)
-      const handler = checkPrisonerAccess(prisonerSearchService, prisonApiService)
+      const handler = checkPrisonerAccess(prisonerSearchService, manageUsersService)
       const req = { params: { prisonerNumber: 'A1234BC' } } as unknown as Request<{ prisonerNumber: string }>
       const res = { locals: { user: { username: 'user1', token: 'token', userRoles: [] } } } as unknown as Response
 

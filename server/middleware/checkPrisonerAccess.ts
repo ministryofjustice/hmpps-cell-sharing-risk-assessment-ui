@@ -2,7 +2,7 @@ import type { RequestHandler } from 'express'
 import createError from 'http-errors'
 
 import type PrisonerSearchService from '../services/prisonerSearchService'
-import type PrisonApiService from '../services/prisonApiService'
+import type ManageUsersService from '../services/manageUsersService'
 import { isPrisonerNumber } from '../utils/utils'
 import { Role } from '../utils/roles'
 import asyncMiddleware from './asyncMiddleware'
@@ -26,7 +26,7 @@ const OUT_OF_PRISON = ['OUT', 'TRN']
  */
 export default function checkPrisonerAccess(
   prisonerSearchService: PrisonerSearchService,
-  prisonApiService: PrisonApiService,
+  manageUsersService: ManageUsersService,
 ): RequestHandler<{ prisonerNumber: string }> {
   return asyncMiddleware(async (req, res, next) => {
     const { prisonerNumber } = req.params
@@ -46,8 +46,8 @@ export default function checkPrisonerAccess(
     } else if (roles.includes(Role.GLOBAL_SEARCH)) {
       allowed = true
     } else {
-      const caseloads = await prisonApiService.getUserCaseLoads(user)
-      allowed = caseloads.some(caseload => caseload.caseLoadId === prisoner.prisonId)
+      const { caseloads } = await manageUsersService.getUserCaseloads(user)
+      allowed = caseloads.some(caseload => caseload.id === prisoner.prisonId)
     }
 
     if (!allowed) {

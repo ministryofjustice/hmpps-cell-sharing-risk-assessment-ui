@@ -4,19 +4,19 @@ import { appWithAllRoutes, user } from './testutils/appSetup'
 import AuditService, { Page } from '../services/auditService'
 import CsraService from '../services/csraService'
 import PrisonerSearchService from '../services/prisonerSearchService'
-import PrisonApiService from '../services/prisonApiService'
+import ManageUsersService from '../services/manageUsersService'
 import type { CsraCurrentRating, CsraReviewHistory } from '../data/csraApiTypes'
 import type { Prisoner } from '../data/prisonerSearchApiTypes'
 
 jest.mock('../services/auditService')
 jest.mock('../services/csraService')
 jest.mock('../services/prisonerSearchService')
-jest.mock('../services/prisonApiService')
+jest.mock('../services/manageUsersService')
 
 const auditService = new AuditService(null) as jest.Mocked<AuditService>
 const csraService = new CsraService(null) as jest.Mocked<CsraService>
 const prisonerSearchService = new PrisonerSearchService(null) as jest.Mocked<PrisonerSearchService>
-const prisonApiService = new PrisonApiService(null) as jest.Mocked<PrisonApiService>
+const manageUsersService = new ManageUsersService(null) as jest.Mocked<ManageUsersService>
 
 let app: Express
 
@@ -24,15 +24,19 @@ beforeEach(() => {
   // The prisoner fixtures below sit in LEI, which is in the user's caseloads, so the access guard
   // (checkPrisonerAccess) lets these requests through. Access rules are covered in
   // checkPrisonerAccess.test.ts.
-  prisonApiService.getUserCaseLoads.mockResolvedValue([
-    { caseLoadId: 'LEI', description: 'Leeds (HMP)', type: 'INST', currentlyActive: true },
-  ])
+  manageUsersService.getUserCaseloads.mockResolvedValue({
+    username: 'user1',
+    active: true,
+    accountType: 'GENERAL',
+    activeCaseload: { id: 'LEI', name: 'Leeds (HMP)' },
+    caseloads: [{ id: 'LEI', name: 'Leeds (HMP)' }],
+  })
   app = appWithAllRoutes({
     services: {
       auditService,
       csraService,
       prisonerSearchService,
-      prisonApiService,
+      manageUsersService,
     },
     userSupplier: () => user,
   })
