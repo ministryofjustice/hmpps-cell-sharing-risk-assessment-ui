@@ -141,18 +141,22 @@ a debugger.
 The app is served at http://localhost:3000, talks to auth at http://localhost:8080/auth and
 to the CSRA API at http://localhost:8090.
 
-#### Stubbed prisoner-search
+#### Stubbed supporting services
 
-Prisoner detail lookups (hmpps-prisoner-search) are served locally by a WireMock container on
-http://localhost:8083, seeded from `local-stack/prisoner-search`:
+Several backing services are stubbed by WireMock containers (seed data under `local-stack/`),
+so the prisoner CSRA pages render end-to-end. Edit the JSON under each service's
+`mappings` / `__files` and restart that service to change the sample data.
 
-- `GET /health/ping` — health stub
-- `GET /prisoner/{prisonerNumber}` — returns a sample prisoner (`__files/prisoner.json`), with
-  response templating so any prisoner number works (the requested number is echoed back)
+| Service | Port | Stub of | Endpoints |
+| --- | --- | --- | --- |
+| `prisoner-search` | 8083 | hmpps-prisoner-search | `GET /prisoner/{prisonerNumber}` (response-templated, so any number works), `GET /health/ping` |
+| `manage-users-api` | 8084 | hmpps-manage-users-api | `GET /users/me/caseloads` (seeded caseload `MDI`, matching the prisoner stub so the access guard allows any prisoner), `GET /health/ping` |
+| `component-api` | 8085 | DPS frontend-components | `GET /components` (shared header/footer), `GET /ping` |
 
-Edit the JSON under `local-stack/prisoner-search/mappings` / `__files` to change the sample
-data; restart the `prisoner-search` service to pick up changes. prison-api (the prisoner
-image) is intentionally not stubbed — the UI falls back gracefully without it.
+`redis` (port 6379) backs the session store and token cache (`REDIS_ENABLED=true`).
+
+prison-api (the prisoner image) is intentionally not stubbed — the UI falls back gracefully
+without it.
 
 ### Logging in with a test user
 

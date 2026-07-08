@@ -1,0 +1,17 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/users/me/caseloads"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "username": "AUTH_USER",
+      "active": true,
+      "accountType": "GENERAL",
+      "activeCaseload": { "id": "MDI", "name": "Moorland (HMP & YOI)" },
+      "caseloads": [{ "id": "MDI", "name": "Moorland (HMP & YOI)" }]
+    }
+  }
+}
