@@ -1,0 +1,38 @@
+{#
+  Prisoner identity banner (mini-profile). Reads `prisoner` and `prisonerNumber` from the current
+  context; both the CSRA current-rating and history routes pass these. The photo is proxied through
+  the app at /prisoner/:prisonerNumber/image (falls back to a placeholder on error).
+#}
+{% set bannerPrisonerName = (prisoner.firstName + " " + prisoner.lastName) | convertToTitleCase %}
+
+<div class="csra-prisoner-banner" data-qa="prisoner-banner">
+  <img
+    class="csra-prisoner-banner__photo"
+    src="/prisoner/{{ prisonerNumber }}/image"
+    alt="Photograph of {{ bannerPrisonerName }}"
+  />
+  <div class="csra-prisoner-banner__body">
+    <p class="csra-prisoner-banner__name">
+      {% if dpsUrl %}
+        <a class="govuk-link" href="{{ dpsUrl }}/prisoner/{{ prisonerNumber }}" data-qa="prisoner-name">{{ bannerPrisonerName }}</a>
+      {% else %}
+        <span data-qa="prisoner-name">{{ bannerPrisonerName }}</span>
+      {% endif %}
+      <span class="csra-prisoner-banner__number">{{ prisonerNumber }}</span>
+    </p>
+    <dl class="csra-prisoner-banner__grid">
+      <div class="csra-prisoner-banner__item">
+        <dt>Date of birth</dt>
+        <dd data-qa="prisoner-dob">{{ (prisoner.dateOfBirth | formatDate) or "Not entered" }}</dd>
+      </div>
+      <div class="csra-prisoner-banner__item">
+        <dt>PNC number</dt>
+        <dd data-qa="prisoner-pnc">{{ prisoner.pncNumber or "Not entered" }}</dd>
+      </div>
+      <div class="csra-prisoner-banner__item">
+        <dt>Main offence</dt>
+        <dd data-qa="prisoner-offence">{{ prisoner.mostSeriousOffence or "Not entered" }}</dd>
+      </div>
+    </dl>
+  </div>
+</div>

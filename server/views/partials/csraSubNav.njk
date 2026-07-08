@@ -1,0 +1,20 @@
+{#
+  CSRA tab navigation. Reads `prisonerNumber` and `currentTab` ("current" | "history") from context.
+#}
+{% from "moj/components/sub-navigation/macro.njk" import mojSubNavigation %}
+
+{{ mojSubNavigation({
+  label: "CSRA sections",
+  items: [
+    {
+      text: "Current rating",
+      href: "/prisoner/" + prisonerNumber,
+      active: currentTab == "current"
+    },
+    {
+      text: "CSRA history",
+      href: "/prisoner/" + prisonerNumber + "/history",
+      active: currentTab == "history"
+    }
+  ]
+}) }}

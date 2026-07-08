@@ -1,0 +1,83 @@
+{% extends "../partials/layout.njk" %}
+
+{% from "govuk/components/tag/macro.njk" import govukTag %}
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
+
+{% set prisonerName = (prisoner.firstName + " " + prisoner.lastName) | convertToTitleCase %}
+{% set pageTitle = applicationName + " - CSRA for " + prisonerName %}
+{% set mainClasses = "govuk-body" %}
+
+{% set currentTab = "current" %}
+
+{% block content %}
+  {% include "../partials/prisonerBanner.njk" %}
+  {% include "../partials/csraSubNav.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <h1 class="govuk-heading-xl govuk-!-margin-bottom-2" data-qa="page-heading">Current rating</h1>
+
+      {% if csra.status == "NO_RATING" %}
+
+        {{ govukInsetText({
+          attributes: { "data-qa": "no-csra" },
+          html: "<strong>This person does not have a current CSRA.</strong><br>A cell sharing risk assessment needs to be carried out."
+        }) }}
+
+      {% else %}
+
+        <p class="govuk-body">
+          {{ govukTag({
+            text: csra.rating | csraRatingLabel or (csra.status | csraStatusLabel),
+            classes: csra.rating | csraRatingTagClass,
+            attributes: { "data-qa": "csra-rating" }
+          }) }}
+          {% if csra.provisional %}
+            {{ govukTag({ text: "Provisional", classes: "govuk-tag--yellow", attributes: { "data-qa": "csra-provisional" } }) }}
+          {% endif %}
+        </p>
+
+        {% set ratingRows = [
+          { key: { text: "Status" }, value: { text: csra.status | csraStatusLabel } },
+          { key: { text: "Assessment comment" }, value: { text: csra.assessmentComment or "None recorded" } }
+        ] %}
+        {% if csra.provisionalAssessmentComment %}
+          {% set ratingRows = (ratingRows.push({ key: { text: "Provisional (Day 1) comment" }, value: { text: csra.provisionalAssessmentComment } }), ratingRows) %}
+        {% endif %}
+        {% if csra.provisionalDate %}
+          {% set ratingRows = (ratingRows.push({ key: { text: "Provisional rating date" }, value: { text: csra.provisionalDate | formatDate } }), ratingRows) %}
+        {% endif %}
+        {% if csra.finalDate %}
+          {% set ratingRows = (ratingRows.push({ key: { text: "Final rating date" }, value: { text: csra.finalDate | formatDate } }), ratingRows) %}
+        {% endif %}
+        {% if csra.nextReviewDate %}
+          {% set ratingRows = (ratingRows.push({ key: { text: "Next review due" }, value: { text: csra.nextReviewDate | formatDate } }), ratingRows) %}
+        {% endif %}
+
+        {{ govukSummaryList({ rows: ratingRows, attributes: { "data-qa": "csra-summary" } }) }}
+
+        {% if csra.riskTo.length %}
+          <h2 class="govuk-heading-m govuk-!-margin-top-6">Who this person is a risk to</h2>
+          <ul class="govuk-list govuk-list--bullet" data-qa="csra-risk-to">
+            {% for risk in csra.riskTo %}
+              <li>{{ risk.category | enumLabel }}{% if risk.details %} — {{ risk.details }}{% endif %}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+
+        {% if csra.vulnerabilities.length %}
+          <h2 class="govuk-heading-m govuk-!-margin-top-6">Vulnerabilities</h2>
+          <ul class="govuk-list govuk-list--bullet" data-qa="csra-vulnerabilities">
+            {% for vulnerability in csra.vulnerabilities %}
+              <li>{{ vulnerability.category | enumLabel }}{% if vulnerability.details %} — {{ vulnerability.details }}{% endif %}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+
+      {% endif %}
+
+    </div>
+  </div>
+{% endblock %}

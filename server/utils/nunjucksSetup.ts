@@ -3,7 +3,16 @@ import path from 'path'
 import nunjucks from 'nunjucks'
 import express from 'express'
 import fs from 'fs'
-import { initialiseName } from './utils'
+import {
+  convertToTitleCase,
+  csraRatingLabel,
+  csraRatingTagClass,
+  csraStatusLabel,
+  enumLabel,
+  formatDate,
+  formatMonthYear,
+  initialiseName,
+} from './utils'
 import config from '../config'
 import logger from '../../logger'
 
@@ -12,6 +21,7 @@ export default function nunjucksSetup(app: express.Express): void {
 
   app.locals.asset_path = '/assets/'
   app.locals.applicationName = 'Cell Sharing Risk Assessment'
+  app.locals.dpsUrl = config.serviceUrls.digitalPrison
   app.locals.environmentName = config.environmentName
   app.locals.environmentNameColour = config.environmentName === 'PRE-PRODUCTION' ? 'govuk-tag--green' : ''
   let assetManifest: Record<string, string> = {}
@@ -30,6 +40,7 @@ export default function nunjucksSetup(app: express.Express): void {
       path.join(__dirname, '../../server/views'),
       'node_modules/govuk-frontend/dist/',
       'node_modules/@ministryofjustice/frontend/',
+      'node_modules/@ministryofjustice/hmpps-connect-dps-components/dist/assets/',
     ],
     {
       autoescape: true,
@@ -39,4 +50,11 @@ export default function nunjucksSetup(app: express.Express): void {
 
   njkEnv.addFilter('initialiseName', initialiseName)
   njkEnv.addFilter('assetMap', (url: string) => assetManifest[url] || url)
+  njkEnv.addFilter('convertToTitleCase', convertToTitleCase)
+  njkEnv.addFilter('formatDate', formatDate)
+  njkEnv.addFilter('formatMonthYear', formatMonthYear)
+  njkEnv.addFilter('csraRatingLabel', csraRatingLabel)
+  njkEnv.addFilter('csraRatingTagClass', csraRatingTagClass)
+  njkEnv.addFilter('csraStatusLabel', csraStatusLabel)
+  njkEnv.addFilter('enumLabel', enumLabel)
 }

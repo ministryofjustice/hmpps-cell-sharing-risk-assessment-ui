@@ -81,9 +81,52 @@ export default {
       },
       agent: new AgentConfig(Number(get('CSRA_API_TIMEOUT_RESPONSE', 5000))),
     },
+    prisonerSearchApi: {
+      url: get(
+        'PRISONER_SEARCH_API_URL',
+        'https://prisoner-search-dev.hmpps.service.justice.gov.uk',
+        requiredInProduction,
+      ),
+      healthPath: '/health/ping',
+      timeout: {
+        response: Number(get('PRISONER_SEARCH_API_TIMEOUT_RESPONSE', 5000)),
+        deadline: Number(get('PRISONER_SEARCH_API_TIMEOUT_DEADLINE', 5000)),
+      },
+      agent: new AgentConfig(Number(get('PRISONER_SEARCH_API_TIMEOUT_RESPONSE', 5000))),
+    },
+    prisonApi: {
+      url: get('PRISON_API_URL', 'http://localhost:8080', requiredInProduction),
+      healthPath: '/health/ping',
+      timeout: {
+        response: Number(get('PRISON_API_TIMEOUT_RESPONSE', 5000)),
+        deadline: Number(get('PRISON_API_TIMEOUT_DEADLINE', 5000)),
+      },
+      agent: new AgentConfig(Number(get('PRISON_API_TIMEOUT_RESPONSE', 5000))),
+    },
+    manageUsersApi: {
+      url: get('MANAGE_USERS_API_URL', 'http://localhost:9091', requiredInProduction),
+      healthPath: '/health/ping',
+      timeout: {
+        response: Number(get('MANAGE_USERS_API_TIMEOUT_RESPONSE', 5000)),
+        deadline: Number(get('MANAGE_USERS_API_TIMEOUT_DEADLINE', 5000)),
+      },
+      agent: new AgentConfig(Number(get('MANAGE_USERS_API_TIMEOUT_RESPONSE', 5000))),
+    },
+    componentApi: {
+      url: get('COMPONENT_API_URL', 'http://localhost:8082', requiredInProduction),
+      healthPath: '/ping',
+      timeout: {
+        response: Number(get('COMPONENT_API_TIMEOUT_RESPONSE', 5000)),
+        deadline: Number(get('COMPONENT_API_TIMEOUT_DEADLINE', 5000)),
+      },
+      agent: new AgentConfig(Number(get('COMPONENT_API_TIMEOUT_RESPONSE', 5000))),
+    },
   },
   sqs: {
     audit: auditConfig(),
+  },
+  serviceUrls: {
+    digitalPrison: get('DPS_URL', 'https://dps-dev.prison.service.justice.gov.uk', requiredInProduction),
   },
   ingressUrl: get('INGRESS_URL', 'http://localhost:3000', requiredInProduction),
   environmentName: get('ENVIRONMENT_NAME', ''),
