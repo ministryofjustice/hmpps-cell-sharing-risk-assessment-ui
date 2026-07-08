@@ -115,6 +115,32 @@ And then, to build the assets and start the app with esbuild:
 
 `npm run start:dev`
 
+### Running the frontend locally against the dockerised dependencies
+
+This is the recommended dev/debug workflow: run hmpps-auth, the CSRA API, Postgres and
+LocalStack in Docker, and run the frontend on the host so you get hot reload and can attach
+a debugger.
+
+1. Start the dependencies (everything except the app):
+
+   `docker compose up --scale=app=0`
+
+   The dockerised `hmpps-auth` is seeded with the CSRA OAuth clients via the flyway migration
+   in `local-stack/auth-seed/` (mounted at `/seed`), so no auth changes are needed at runtime.
+
+2. Create your local env file and install dependencies (Node 24 — see `.nvmrc`):
+
+   `cp .env.local.example .env.local`
+
+   `npm ci`
+
+3. Build assets and run the frontend on the host:
+
+   `npm run start:local`
+
+The app is served at http://localhost:3000, talks to auth at http://localhost:8080/auth and
+to the CSRA API at http://localhost:8090.
+
 ### Logging in with a test user
 
 Once the application is running you should then be able to login with:
