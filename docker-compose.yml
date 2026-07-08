@@ -53,6 +53,26 @@ services:
       - CELL_SHARING_RISK_ASSESSMENT_API_CLIENT_ID=hmpps-cell-sharing-risk-assessment-api
       - CELL_SHARING_RISK_ASSESSMENT_API_CLIENT_SECRET=clientsecret
 
+  prisoner-search:
+    # WireMock stub for hmpps-prisoner-search (prisoner detail lookups); seed data in
+    # local-stack/prisoner-search. prison-api (prisoner image) is intentionally not stubbed.
+    image: wiremock/wiremock:latest
+    networks:
+      - hmpps
+    container_name: prisoner-search
+    command: ["--global-response-templating", "--disable-banner"]
+    ports:
+      - "8083:8080"
+    volumes:
+      - ./local-stack/prisoner-search:/home/wiremock:ro
+    healthcheck:
+      # The wiremock image has no curl; bash + /dev/tcp checks the stub server is up
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 15s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
   localstack:
     image: localstack/localstack:stable
     networks:
@@ -100,6 +120,8 @@ services:
         condition: service_healthy
       cell-sharing-risk-assessment-api:
         condition: service_healthy
+      prisoner-search:
+        condition: service_healthy
     ports:
       - "3000:3000"
     healthcheck:
@@ -122,6 +144,7 @@ services:
       - INGRESS_URL=http://localhost:3000
       - NO_HTTPS=true
       - CSRA_API_URL=http://cell-sharing-risk-assessment-api:8080
+      - PRISONER_SEARCH_API_URL=http://prisoner-search:8080
 
 networks:
   hmpps:

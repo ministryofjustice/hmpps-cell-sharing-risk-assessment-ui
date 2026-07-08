@@ -8,7 +8,8 @@
 -- Two clients are created, mirroring production wiring:
 --   * hmpps-cell-sharing-risk-assessment-ui         - authorization_code (user login)
 --   * hmpps-cell-sharing-risk-assessment-ui-system  - client_credentials (system->API calls),
---       granted the CSRA API roles ROLE_CSRA_REVIEW__R / ROLE_CSRA_REVIEW__RW.
+--       granted the CSRA API roles ROLE_CSRA_REVIEW__R / ROLE_CSRA_REVIEW__RW and the
+--       prisoner-search read role PRISONER_SEARCH__PRISONER__RO.
 --
 -- Each client is stored in the legacy `oauth_client_details` table and the Spring
 -- Authorization Server `oauth2_registered_client` table. We clone the template rows with
@@ -87,4 +88,4 @@ WHERE client_id = 'hmpps-typescript-template-system';
 -- registered_client_id must match the oauth2_registered_client.id used for the system client above
 INSERT INTO oauth2_authorization_consent (registered_client_id, principal_name, authorities)
 VALUES ('c57a0002-0000-4000-a000-000000000002', 'hmpps-cell-sharing-risk-assessment-ui-system',
-        'ROLE_CSRA_REVIEW__R,ROLE_CSRA_REVIEW__RW');
+        'ROLE_CSRA_REVIEW__R,ROLE_CSRA_REVIEW__RW,PRISONER_SEARCH__PRISONER__RO');

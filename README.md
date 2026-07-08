@@ -141,6 +141,19 @@ a debugger.
 The app is served at http://localhost:3000, talks to auth at http://localhost:8080/auth and
 to the CSRA API at http://localhost:8090.
 
+#### Stubbed prisoner-search
+
+Prisoner detail lookups (hmpps-prisoner-search) are served locally by a WireMock container on
+http://localhost:8083, seeded from `local-stack/prisoner-search`:
+
+- `GET /health/ping` — health stub
+- `GET /prisoner/{prisonerNumber}` — returns a sample prisoner (`__files/prisoner.json`), with
+  response templating so any prisoner number works (the requested number is echoed back)
+
+Edit the JSON under `local-stack/prisoner-search/mappings` / `__files` to change the sample
+data; restart the `prisoner-search` service to pick up changes. prison-api (the prisoner
+image) is intentionally not stubbed — the UI falls back gracefully without it.
+
 ### Logging in with a test user
 
 Once the application is running you should then be able to login with:
