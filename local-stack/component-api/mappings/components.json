@@ -1,0 +1,27 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/components"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "header": {
+        "html": "<header data-qa=\"common-header\" class=\"connect-dps-common-header\" role=\"banner\"><div class=\"connect-dps-common-header__container\"><a class=\"connect-dps-common-header__title\" href=\"http://localhost:3000\">Digital Prison Services</a><nav><a data-qa=\"manageDetails\" class=\"connect-dps-common-header__link\" href=\"/account-details\">Manage your details</a><a data-qa=\"signOut\" class=\"connect-dps-common-header__link\" href=\"/sign-out\">Sign out</a></nav></div></header>",
+        "css": [],
+        "javascript": []
+      },
+      "footer": {
+        "html": "<footer data-qa=\"common-footer\" class=\"connect-dps-common-footer\" role=\"contentinfo\"><div class=\"connect-dps-common-footer__container\"><a class=\"connect-dps-common-footer__link\" href=\"/feedback\">Feedback</a></div></footer>",
+        "css": [],
+        "javascript": []
+      },
+      "meta": {
+        "caseLoads": [{ "caseLoadId": "MDI", "description": "Moorland (HMP & YOI)", "currentlyActive": true }],
+        "activeCaseLoad": { "caseLoadId": "MDI", "description": "Moorland (HMP & YOI)", "currentlyActive": true },
+        "services": []
+      }
+    }
+  }
+}

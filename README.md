@@ -115,6 +115,49 @@ And then, to build the assets and start the app with esbuild:
 
 `npm run start:dev`
 
+### Running the frontend locally against the dockerised dependencies
+
+This is the recommended dev/debug workflow: run hmpps-auth, the CSRA API, Postgres and
+LocalStack in Docker, and run the frontend on the host so you get hot reload and can attach
+a debugger.
+
+1. Start the dependencies (everything except the app):
+
+   `docker compose up --scale=app=0`
+
+   The dockerised `hmpps-auth` is seeded with the CSRA OAuth clients via the flyway migration
+   in `local-stack/auth-seed/` (mounted at `/seed`), so no auth changes are needed at runtime.
+
+2. Create your local env file and install dependencies (Node 24 — see `.nvmrc`):
+
+   `cp .env.local.example .env.local`
+
+   `npm ci`
+
+3. Build assets and run the frontend on the host:
+
+   `npm run start:local`
+
+The app is served at http://localhost:3000, talks to auth at http://localhost:8080/auth and
+to the CSRA API at http://localhost:8090.
+
+#### Stubbed supporting services
+
+Several backing services are stubbed by WireMock containers (seed data under `local-stack/`),
+so the prisoner CSRA pages render end-to-end. Edit the JSON under each service's
+`mappings` / `__files` and restart that service to change the sample data.
+
+| Service | Port | Stub of | Endpoints |
+| --- | --- | --- | --- |
+| `prisoner-search` | 8083 | hmpps-prisoner-search | `GET /prisoner/{prisonerNumber}` (response-templated, so any number works), `GET /health/ping` |
+| `manage-users-api` | 8084 | hmpps-manage-users-api | `GET /users/me/caseloads` (seeded caseload `MDI`, matching the prisoner stub so the access guard allows any prisoner), `GET /health/ping` |
+| `component-api` | 8085 | DPS frontend-components | `GET /components` (shared header/footer), `GET /ping` |
+
+`redis` (port 6379) backs the session store and token cache (`REDIS_ENABLED=true`).
+
+prison-api (the prisoner image) is intentionally not stubbed — the UI falls back gracefully
+without it.
+
 ### Logging in with a test user
 
 Once the application is running you should then be able to login with:
