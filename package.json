@@ -10,6 +10,7 @@
     "build": "node esbuild/esbuild",
     "start": "node $NODE_OPTIONS dist/server.js | bunyan -o short",
     "start:dev": "node esbuild/esbuild --watch",
+    "start:local": "node esbuild/esbuild --watch --env .env.local",
     "start-feature": " node $NODE_DEBUG_OPTION --env-file=feature.env dist/server.js | bunyan -o short",
     "start-feature:dev": "node esbuild/esbuild --watch --env feature.env",
     "lint": "eslint . --cache --max-warnings 0",
@@ -30,7 +31,7 @@
     "npm": "^11"
   },
   "dependencies": {
-    "@aws-sdk/client-sqs": "3.1075.0",
+    "@aws-sdk/client-sqs": "3.1079.0",
     "@ministryofjustice/frontend": "^9.0.0",
     "@ministryofjustice/hmpps-auth-clients": "^3.0.0",
     "@ministryofjustice/hmpps-connect-dps-components": "6.2.1",
@@ -54,7 +55,7 @@
     "nunjucks": "^3.2.4",
     "passport": "^0.7.0",
     "passport-oauth2": "^1.8.0",
-    "redis": "^6.0.1",
+    "redis": "^6.1.0",
     "superagent": "^10.3.0"
   },
   "devDependencies": {
@@ -101,10 +102,11 @@
       "fast-xml-parser": "^5.9.3"
     },
     "@ministryofjustice/eslint-config-hmpps": {
-      "@typescript-eslint/eslint-plugin": "8.62.0"
+      "@typescript-eslint/eslint-plugin": "8.62.1"
     },
-    "@opentelemetry/sdk-node": "^0.219.0",
-    "@opentelemetry/exporter-prometheus": "^0.219.0",
-    "protobufjs": "^8.4.2"
+    "@opentelemetry/sdk-node": "^0.220.0",
+    "@opentelemetry/exporter-prometheus": "^0.220.0",
+    "@opentelemetry/core": "^2.9.0",
+    "protobufjs": "^8.6.6"
   }
 }

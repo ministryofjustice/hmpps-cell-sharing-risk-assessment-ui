@@ -8,10 +8,20 @@ services:
     ports:
       - "8080:8080"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/auth/health"]
+      # The auth image has no curl/wget; bash + /dev/tcp checks the Spring connector is up
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 15s
+      timeout: 3s
+      retries: 20
+      start_period: 60s
+    volumes:
+      # Extra flyway migration that seeds the CSRA UI OAuth clients (see local-stack/auth-seed)
+      - ./local-stack/auth-seed:/seed:ro
     environment:
       - SPRING_PROFILES_ACTIVE=dev
       - APPLICATION_AUTHENTICATION_UI_ALLOWLIST=0.0.0.0/0
+      # Append our mounted /seed migration to the default dev (auth-seed profile) flyway locations
+      - SPRING_FLYWAY_LOCATIONS=classpath:db/auth,classpath:db/auth_{vendor},classpath:db/dev/data/auth_{vendor},classpath:db/dev/data/auth,filesystem:/seed
 
   cell-sharing-risk-assessment-api:
     image: ghcr.io/ministryofjustice/hmpps-cell-sharing-risk-assessment-api:latest
@@ -19,13 +29,21 @@ services:
       - hmpps
     container_name: cell-sharing-risk-assessment-api
     depends_on:
-      - hmpps-auth
-      - cell-sharing-risk-assessment-db
-      - localstack
+      hmpps-auth:
+        condition: service_healthy
+      cell-sharing-risk-assessment-db:
+        condition: service_healthy
+      localstack:
+        condition: service_started
     ports:
       - "8090:8080"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ping"]
+      # The api image has no curl/wget; bash + /dev/tcp checks the Spring connector is up
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 15s
+      timeout: 3s
+      retries: 20
+      start_period: 60s
     environment:
       - SERVER_PORT=8080
       - SPRING_PROFILES_ACTIVE=dev
@@ -34,6 +52,78 @@ services:
       - HMPPS_SQS_LOCALSTACK_URL=http://localstack:4566
       - CELL_SHARING_RISK_ASSESSMENT_API_CLIENT_ID=hmpps-cell-sharing-risk-assessment-api
       - CELL_SHARING_RISK_ASSESSMENT_API_CLIENT_SECRET=clientsecret
+
+  prisoner-search:
+    # WireMock stub for hmpps-prisoner-search (prisoner detail lookups); seed data in
+    # local-stack/prisoner-search. prison-api (prisoner image) is intentionally not stubbed.
+    image: wiremock/wiremock:latest
+    networks:
+      - hmpps
+    container_name: prisoner-search
+    command: ["--global-response-templating", "--disable-banner"]
+    ports:
+      - "8083:8080"
+    volumes:
+      - ./local-stack/prisoner-search:/home/wiremock:ro
+    healthcheck:
+      # The wiremock image has no curl; bash + /dev/tcp checks the stub server is up
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 15s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  manage-users-api:
+    # WireMock stub for hmpps-manage-users-api (signed-in user's caseloads); seed data in
+    # local-stack/manage-users-api. The seeded caseload (MDI) matches the prisoner-search stub so
+    # the prisoner CSRA access guard allows any looked-up prisoner.
+    image: wiremock/wiremock:latest
+    networks:
+      - hmpps
+    container_name: manage-users-api
+    command: ["--disable-banner"]
+    ports:
+      - "8084:8080"
+    volumes:
+      - ./local-stack/manage-users-api:/home/wiremock:ro
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 15s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  component-api:
+    # WireMock stub for the DPS frontend-components API (shared header/footer); seed data in
+    # local-stack/component-api. The UI falls back to a local header/footer if this is unavailable.
+    image: wiremock/wiremock:latest
+    networks:
+      - hmpps
+    container_name: component-api
+    command: ["--disable-banner"]
+    ports:
+      - "8085:8080"
+    volumes:
+      - ./local-stack/component-api:/home/wiremock:ro
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 15s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    networks:
+      - hmpps
+    container_name: redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
 
   localstack:
     image: localstack/localstack:stable
@@ -62,6 +152,11 @@ services:
       - POSTGRES_PASSWORD=cell_sharing_risk_assessment
       - POSTGRES_USER=cell_sharing_risk_assessment
       - POSTGRES_DB=cell_sharing_risk_assessment
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cell_sharing_risk_assessment"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
 
   app:
     build:
@@ -73,29 +168,43 @@ services:
     networks:
       - hmpps
     depends_on:
-        - hmpps-auth
-        - cell-sharing-risk-assessment-api
+      hmpps-auth:
+        condition: service_healthy
+      cell-sharing-risk-assessment-api:
+        condition: service_healthy
+      prisoner-search:
+        condition: service_healthy
+      manage-users-api:
+        condition: service_healthy
+      component-api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "3000:3000"
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:3000/health"]
     environment:
       - PRODUCT_ID=UNASSIGNED
-      - REDIS_ENABLED=false
-      - REDIS_HOST=localhost
+      - REDIS_ENABLED=true
+      - REDIS_HOST=redis
+      # External (browser-facing) URL for auth, internal URLs for container-to-container calls
       - HMPPS_AUTH_EXTERNAL_URL=http://localhost:8080/auth
       - HMPPS_AUTH_URL=http://hmpps-auth:8080/auth
-      # These will need to match new creds in the seed auth service auth
-      - AUTH_CODE_CLIENT_ID=hmpps-typescript-template
+      # Clients seeded by local-stack/auth-seed/V901__csra_local_clients.sql
+      - AUTH_CODE_CLIENT_ID=hmpps-cell-sharing-risk-assessment-ui
       - AUTH_CODE_CLIENT_SECRET=clientsecret
-      - CLIENT_CREDS_CLIENT_ID=clientid
+      - CLIENT_CREDS_CLIENT_ID=hmpps-cell-sharing-risk-assessment-ui-system
       - CLIENT_CREDS_CLIENT_SECRET=clientsecret
       - SESSION_SECRET=somesecretvalue
       - TOKEN_VERIFICATION_API_URL=http://hmpps-auth:8080/auth
       - TOKEN_VERIFICATION_ENABLED=false
       - INGRESS_URL=http://localhost:3000
       - NO_HTTPS=true
-      - CSRA_API_URL=http://localhost:8090
+      - CSRA_API_URL=http://cell-sharing-risk-assessment-api:8080
+      - PRISONER_SEARCH_API_URL=http://prisoner-search:8080
+      - MANAGE_USERS_API_URL=http://manage-users-api:8080
+      - COMPONENT_API_URL=http://component-api:8080
 
 networks:
   hmpps:

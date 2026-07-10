@@ -3,7 +3,7 @@ import type { AuthenticationClient } from '@ministryofjustice/hmpps-auth-clients
 import CsraApiClient from './csraApiClient'
 import config from '../config'
 import { RedisClient } from './redisClient'
-import type { CsraCurrentRating } from './csraApiTypes'
+import type { CsraCurrentRating, CsraReviewHistory } from './csraApiTypes'
 
 describe('CsraApiClient', () => {
   let csraApiClient: CsraApiClient
@@ -62,6 +62,75 @@ describe('CsraApiClient', () => {
 
       expect(response.status).toBe('NO_RATING')
       expect(response.rating).toBeNull()
+    })
+  })
+
+  describe('getCsraHistory', () => {
+    const history: CsraReviewHistory = {
+      summary: {
+        totalCsras: 2,
+        highCount: 1,
+        standardCount: 1,
+        firstAssessmentDate: '2020-01-01',
+        lastAssessmentDate: '2024-07-23',
+        lastHighDate: '2024-07-23',
+      },
+      content: [
+        {
+          id: 'de91dfa7-821f-4552-a427-bf2f32eafeb0',
+          type: 'REVIEW',
+          rating: 'HIGH_SPECIFIC',
+          recordedDate: '2024-07-23',
+        },
+      ],
+      page: 0,
+      size: 20,
+      totalElements: 2,
+      totalPages: 1,
+    }
+
+    it('should GET the history with paging + filters as query params, using a system token', async () => {
+      nock(config.apis.csraApi.url)
+        .get('/csra-review/prisoner/A1234BC/history')
+        .query({
+          page: '0',
+          size: '20',
+          ratings: ['HIGH', 'STANDARD'],
+          establishments: ['LEI', 'MDI'],
+          fromDate: '2020-01-01',
+          toDate: '2024-12-31',
+        })
+        .matchHeader('authorization', 'Bearer test-system-token')
+        .reply(200, history)
+
+      const response = await csraApiClient.getCsraHistory('AUSER_GEN', {
+        prisonerNumber: 'A1234BC',
+        page: '0',
+        size: '20',
+        ratings: ['HIGH', 'STANDARD'],
+        establishments: ['LEI', 'MDI'],
+        fromDate: '2020-01-01',
+        toDate: '2024-12-31',
+      })
+
+      expect(response).toEqual(history)
+      expect(mockAuthenticationClient.getToken).toHaveBeenCalledWith('AUSER_GEN')
+    })
+
+    it('should omit undefined filter query params', async () => {
+      // nock only matches the exact query below, so this fails if fromDate/toDate/ratings are sent.
+      nock(config.apis.csraApi.url)
+        .get('/csra-review/prisoner/A1234BC/history')
+        .query({ page: '0', size: '20' })
+        .reply(200, history)
+
+      const response = await csraApiClient.getCsraHistory('AUSER_GEN', {
+        prisonerNumber: 'A1234BC',
+        page: '0',
+        size: '20',
+      })
+
+      expect(response).toEqual(history)
     })
   })
 })

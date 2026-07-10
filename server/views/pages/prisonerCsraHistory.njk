@@ -1,0 +1,157 @@
+{% extends "../partials/layout.njk" %}
+
+{% from "govuk/components/tag/macro.njk" import govukTag %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+{% from "moj/components/date-picker/macro.njk" import mojDatePicker %}
+
+{% set prisonerName = (prisoner.firstName + " " + prisoner.lastName) | convertToTitleCase %}
+{% set pageTitle = applicationName + " - CSRA history for " + prisonerName %}
+{% set mainClasses = "govuk-body" %}
+{% set currentTab = "history" %}
+
+{% macro pager(pagination) %}
+  <div class="csra-pagination" data-qa="pagination">
+    <nav class="csra-pagination__links" aria-label="Pagination">
+      {% if pagination.previous %}
+        <a class="govuk-link csra-pagination__prev" href="{{ pagination.previous.href }}">Previous</a>
+      {% endif %}
+      {% for item in pagination.items %}
+        {% if item.type == "dots" %}
+          <span class="csra-pagination__dots">&hellip;</span>
+        {% elif item.selected %}
+          <span class="csra-pagination__current" aria-current="page">{{ item.text }}</span>
+        {% else %}
+          <a class="govuk-link" href="{{ item.href }}">{{ item.text }}</a>
+        {% endif %}
+      {% endfor %}
+      {% if pagination.next %}
+        <a class="govuk-link csra-pagination__next" href="{{ pagination.next.href }}">Next</a>
+      {% endif %}
+    </nav>
+    <p class="csra-pagination__results">
+      Showing <strong>{{ pagination.results.from }}</strong> to <strong>{{ pagination.results.to }}</strong>
+      of <strong>{{ pagination.results.count }}</strong> CSRAs
+    </p>
+  </div>
+{% endmacro %}
+
+{% block content %}
+  {% include "../partials/prisonerBanner.njk" %}
+  {% include "../partials/csraSubNav.njk" %}
+
+  <h1 class="govuk-heading-xl govuk-!-margin-bottom-6" data-qa="page-heading">CSRA history</h1>
+
+  <div class="csra-summary" data-qa="csra-summary">
+    <div class="csra-summary__card">
+      <p class="csra-summary__caption">Total CSRAs</p>
+      <p class="csra-summary__value" data-qa="summary-total">{{ summary.totalCsras }}</p>
+      {% if summary.firstAssessmentDate and summary.lastAssessmentDate %}
+        <p class="csra-summary__hint">{{ summary.firstAssessmentDate | formatMonthYear }} &ndash; {{ summary.lastAssessmentDate | formatMonthYear }}</p>
+      {% endif %}
+    </div>
+    <div class="csra-summary__card">
+      <p class="csra-summary__caption">High ratings</p>
+      <p class="csra-summary__value" data-qa="summary-high">{{ summary.highCount }}</p>
+      {% if summary.lastHighDate %}
+        <p class="csra-summary__hint">Last high {{ summary.lastHighDate | formatDate }}</p>
+      {% endif %}
+    </div>
+    <div class="csra-summary__card">
+      <p class="csra-summary__caption">Standard ratings</p>
+      <p class="csra-summary__value" data-qa="summary-standard">{{ summary.standardCount }}</p>
+    </div>
+  </div>
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-one-third">
+      <form method="get" action="/prisoner/{{ prisonerNumber }}/history" novalidate data-qa="csra-filters">
+        <h2 class="govuk-heading-m">Filter</h2>
+
+        {{ govukCheckboxes({
+          idPrefix: "ratings",
+          name: "ratings",
+          classes: "govuk-checkboxes--small",
+          fieldset: { legend: { text: "CSRA rating type", classes: "govuk-fieldset__legend--s" } },
+          items: [
+            { value: "HIGH", text: "High (" + summary.highCount + ")", checked: "HIGH" in filters.ratings },
+            { value: "STANDARD", text: "Standard (" + summary.standardCount + ")", checked: "STANDARD" in filters.ratings }
+          ]
+        }) }}
+
+        {# Establishment filter is deferred: renders only once the API returns the establishment list
+           on the summary (see MAPA-180 follow-up). #}
+        {% if summary.establishments.length %}
+          {% set establishmentItems = [] %}
+          {% for establishment in summary.establishments %}
+            {% set establishmentItems = (establishmentItems.push({
+              value: establishment.prisonId,
+              text: establishment.prisonName,
+              checked: establishment.prisonId in filters.establishments
+            }), establishmentItems) %}
+          {% endfor %}
+          {{ govukCheckboxes({
+            idPrefix: "establishments",
+            name: "establishments",
+            classes: "govuk-checkboxes--small",
+            fieldset: { legend: { text: "Establishment", classes: "govuk-fieldset__legend--s" } },
+            items: establishmentItems
+          }) }}
+        {% endif %}
+
+        {{ mojDatePicker({
+          id: "fromDate",
+          name: "fromDate",
+          label: { text: "Date from (earliest)", classes: "govuk-label--s" },
+          hint: { text: "For example, 17/5/2024." },
+          value: filters.fromDate
+        }) }}
+
+        {{ mojDatePicker({
+          id: "toDate",
+          name: "toDate",
+          label: { text: "Date to (latest)", classes: "govuk-label--s" },
+          hint: { text: "For example, 17/5/2024." },
+          value: filters.toDate
+        }) }}
+
+        {{ govukButton({ text: "Apply", attributes: { "data-qa": "apply-filters" } }) }}
+        <p class="govuk-body">
+          <a class="govuk-link" href="/prisoner/{{ prisonerNumber }}/history" data-qa="clear-filters">Clear filters</a>
+        </p>
+      </form>
+    </div>
+
+    <div class="govuk-grid-column-two-thirds">
+      {% if reviews.length == 0 %}
+        <p class="govuk-body" data-qa="no-results">No CSRAs found.</p>
+      {% else %}
+        {{ pager(pagination) }}
+
+        {% for review in reviews %}
+          <div class="csra-review" data-qa="csra-review">
+            <div class="csra-review__header">
+              <span class="csra-review__type">Review</span>
+              <a class="govuk-link" href="/prisoner/{{ prisonerNumber }}/history/{{ review.id }}" data-qa="view-full-review">View full review</a>
+            </div>
+            {{ govukTag({
+              text: review.rating | csraRatingLabel,
+              classes: review.rating | csraRatingTagClass,
+              attributes: { "data-qa": "review-rating" }
+            }) }}
+            <p class="govuk-body csra-review__comment">
+              <strong>Review comment:</strong><br>
+              {{ review.reviewComment or "No comment recorded" }}
+            </p>
+            <p class="govuk-body-s csra-review__meta">
+              Recorded at {{ establishmentNames[review.prisonId] or review.prisonId or "an unknown establishment" }}<br>
+              {{ review.recordedDate | formatDate }}
+            </p>
+          </div>
+        {% endfor %}
+
+        {{ pager(pagination) }}
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
