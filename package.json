@@ -31,14 +31,14 @@
     "npm": "^11"
   },
   "dependencies": {
-    "@aws-sdk/client-sqs": "3.1068.0",
+    "@aws-sdk/client-sqs": "3.1079.0",
     "@ministryofjustice/frontend": "^9.0.0",
     "@ministryofjustice/hmpps-auth-clients": "^3.0.0",
     "@ministryofjustice/hmpps-connect-dps-components": "6.2.1",
     "@ministryofjustice/hmpps-monitoring": "^2.1.0",
-    "@ministryofjustice/hmpps-rest-client": "^2.1.0",
-    "applicationinsights": "^3.15.0",
-    "body-parser": "^2.2.2",
+    "@ministryofjustice/hmpps-rest-client": "^2.2.0",
+    "applicationinsights": "^3.15.1",
+    "body-parser": "^2.3.0",
     "bunyan": "^1.8.15",
     "bunyan-format": "^0.2.1",
     "compression": "^1.8.1",
@@ -47,7 +47,7 @@
     "csrf-sync": "^4.2.1",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
-    "govuk-frontend": "^6.2.0",
+    "govuk-frontend": "^6.3.0",
     "helmet": "^8.2.0",
     "http-errors": "^2.0.1",
     "jwt-decode": "^4.0.0",
@@ -55,7 +55,7 @@
     "nunjucks": "^3.2.4",
     "passport": "^0.7.0",
     "passport-oauth2": "^1.8.0",
-    "redis": "^6.0.0",
+    "redis": "^6.1.0",
     "superagent": "^10.3.0"
   },
   "devDependencies": {
@@ -64,7 +64,7 @@
     "@ministryofjustice/frontend-types": "2.0.0",
     "@ministryofjustice/hmpps-npm-script-allowlist": "0.0.6",
     "@ministryofjustice/hmpps-precommit-hooks": "3.0.1",
-    "@playwright/test": "1.60.0",
+    "@playwright/test": "1.61.1",
     "@tsconfig/node24": "^24.0.4",
     "@types/bunyan": "^1.8.11",
     "@types/bunyan-format": "^0.2.9",
@@ -91,22 +91,22 @@
     "jest-html-reporter": "^4.4.0",
     "jest-junit": "^17.0.0",
     "jsonwebtoken": "^9.0.3",
-    "lint-staged": "^17.0.7",
-    "nock": "14.0.15",
+    "lint-staged": "^17.0.8",
+    "nock": "14.0.16",
     "supertest": "^7.2.2",
     "ts-jest": "^29.4.11",
     "typescript": "^6.0.3"
   },
   "overrides": {
     "@aws-sdk/xml-builder": {
-      "fast-xml-parser": "^5.8.0"
+      "fast-xml-parser": "^5.9.3"
     },
     "@ministryofjustice/eslint-config-hmpps": {
-      "@typescript-eslint/eslint-plugin": "8.61.0"
+      "@typescript-eslint/eslint-plugin": "8.62.1"
     },
-    "@opentelemetry/sdk-node": "^0.219.0",
-    "@opentelemetry/exporter-prometheus": "^0.219.0",
-    "@opentelemetry/core": "^2.8.0",
-    "protobufjs": "^8.6.0"
+    "@opentelemetry/sdk-node": "^0.220.0",
+    "@opentelemetry/exporter-prometheus": "^0.220.0",
+    "@opentelemetry/core": "^2.9.0",
+    "protobufjs": "^8.6.5"
   }
 }
