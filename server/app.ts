@@ -41,13 +41,14 @@ export default function createApp(services: Services): express.Application {
   app.use(setUpCsrf())
   app.use(setUpCurrentUser())
 
-  app.use(
+  app.get(
+    '*allPaths',
     getFrontendComponents({
       logger,
       componentApiConfig: config.apis.componentApi,
       dpsUrl: config.serviceUrls.digitalPrison,
       requestOptions: {
-        includeSharedData: false,
+        includeSharedData: true,
         environmentName: config.environmentName,
         authUrl: config.apis.hmppsAuth.externalUrl,
       },

@@ -94,13 +94,13 @@ The easiest way to run the app is to use docker compose to create the service an
 
 `docker compose pull`
 
-`docker compose up`
+`docker compose --profile include-frontend up`
 
 ### Running the app for development
 
 To start the main services excluding the example typescript template app:
 
-`docker compose up --scale=app=0`
+`docker compose up`
 
 Create an environment file by copying `.env.example` -> `.env`
 Environment variables set in here will be available when running `start:dev`
@@ -123,7 +123,7 @@ a debugger.
 
 1. Start the dependencies (everything except the app):
 
-   `docker compose up --scale=app=0`
+   `docker compose up`
 
    The dockerised `hmpps-auth` is seeded with the CSRA OAuth clients via the flyway migration
    in `local-stack/auth-seed/` (mounted at `/seed`), so no auth changes are needed at runtime.

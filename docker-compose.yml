@@ -94,17 +94,13 @@ services:
       start_period: 10s
 
   component-api:
-    # WireMock stub for the DPS frontend-components API (shared header/footer); seed data in
-    # local-stack/component-api. The UI falls back to a local header/footer if this is unavailable.
-    image: wiremock/wiremock:latest
+    image: ghcr.io/ministryofjustice/hmpps-micro-frontend-components:latest
+    platform: linux/amd64
     networks:
       - hmpps
     container_name: component-api
-    command: ["--disable-banner"]
     ports:
       - "8085:8080"
-    volumes:
-      - ./local-stack/component-api:/home/wiremock:ro
     healthcheck:
       test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
       interval: 15s
@@ -182,6 +178,8 @@ services:
         condition: service_healthy
     ports:
       - "3000:3000"
+    profiles:
+      - include-frontend
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:3000/health"]
     environment:
