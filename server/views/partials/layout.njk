@@ -1,4 +1,5 @@
 {% extends "govuk/template.njk" %}
+{% from "govuk/components/breadcrumbs/macro.njk" import govukBreadcrumbs %}
 
 {% block head %}
   <link href="{{ '/assets/css/index.css' | assetMap }}" rel="stylesheet"/>
@@ -24,6 +25,22 @@
 {% endblock %}
 
 {% block bodyStart %}
+{% endblock %}
+
+{% block beforeContent %}
+  <div class="govuk-width-container">
+    <div class="govuk-grid-row govuk-!-margin-bottom-0">
+      <div class="govuk-grid-column-full">
+        {{ govukBreadcrumbs({
+          collapseOnMobile: true,
+          items: [
+            { text: "Digital prison services", href: "/" }
+          ],
+          classes: "govuk-!-display-none-print"
+        }) }}
+      </div>
+    </div>
+  </div>
 {% endblock %}
 
 {% block bodyEnd %}
