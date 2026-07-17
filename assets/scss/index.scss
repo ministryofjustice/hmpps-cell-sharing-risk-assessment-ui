@@ -1,6 +1,9 @@
 $govuk-global-styles: true;
 $path: "/assets/images/";
 
+$background-tint: #f0f4f5;
+$card-tint: #f3f2f1;
+
 $moj-page-width: 1170px;
 $govuk-page-width: $moj-page-width;
 
@@ -12,4 +15,5 @@ $govuk-page-width: $moj-page-width;
 
 @import './components/header-bar';
 @import './components/csra';
+@import './components/card';
 @import './overrides/local';

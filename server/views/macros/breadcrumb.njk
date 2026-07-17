@@ -2,11 +2,7 @@
 
 {% macro breadcrumb(pageTitle, breadcrumbList, displayCurrentPageTitle="true") %}
 
-  {% set rows = [ {
-    text: "Home",
-    href: '/'
-    } ]
-  %}
+  {% set rows = [] %}
 
   {% for item in breadcrumbList %}
     {% set rows = (rows.push(

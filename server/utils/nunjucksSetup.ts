@@ -18,6 +18,8 @@ import logger from '../../logger'
 
 export default function nunjucksSetup(app: express.Express): void {
   app.set('view engine', 'njk')
+  const isProduction = process.env.NODE_ENV === 'production'
+  const isTest = process.env.NODE_ENV === 'test'
 
   app.locals.asset_path = '/assets/'
   app.locals.applicationName = 'Cell Sharing Risk Assessment'
@@ -47,6 +49,8 @@ export default function nunjucksSetup(app: express.Express): void {
     {
       autoescape: true,
       express: app,
+      watch: !isProduction && !isTest,
+      noCache: !isProduction,
     },
   )
 
