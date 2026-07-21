@@ -144,19 +144,32 @@ to the CSRA API at http://localhost:8090.
 #### Stubbed supporting services
 
 Several backing services are stubbed by WireMock containers (seed data under `local-stack/`),
-so the prisoner CSRA pages render end-to-end. Edit the JSON under each service's
-`mappings` / `__files` and restart that service to change the sample data.
+so the prisoner CSRA pages render end-to-end. The stubs serve both the frontend and the
+dockerised CSRA API, which calls out to prisoner-search, prison-api and prison-register.
+Edit the JSON under each service's `mappings` / `__files` and restart that service to change
+the sample data.
 
 | Service | Port | Stub of | Endpoints |
 | --- | --- | --- | --- |
-| `prisoner-search` | 8083 | hmpps-prisoner-search | `GET /prisoner/{prisonerNumber}` (response-templated, so any number works), `GET /health/ping` |
+| `prisoner-search` | 8083 | hmpps-prisoner-search | `GET /prisoner/{prisonerNumber}` (response-templated, so any number works), `GET /prisoner-search/prison/{prisonId}` and `POST /prisoner-search/prisoner-numbers` (the 5-prisoner `MDI` roll the API counts), `GET /health/ping` |
 | `manage-users-api` | 8084 | hmpps-manage-users-api | `GET /users/me/caseloads` (seeded caseload `MDI`, matching the prisoner stub so the access guard allows any prisoner), `GET /health/ping` |
 | `component-api` | 8085 | DPS frontend-components | `GET /components` (shared header/footer), `GET /ping` |
+| `prison-api` | 8086 | prison-api | `GET /api/bookings/offenderNo/{prisonerNumber}/image/data` (the prisoner photo), `GET /api/movements/{prisonId}/in` (recent arrivals, dated relative to today), `GET /health/ping` |
+| `prison-register` | 8087 | prison-register | `GET /prisons` (prison id → name reference data), `GET /health/ping` |
 
 `redis` (port 6379) backs the session store and token cache (`REDIS_ENABLED=true`).
 
-prison-api (the prisoner image) is intentionally not stubbed — the UI falls back gracefully
-without it.
+#### OAuth clients and CSRA data
+
+`local-stack/auth-seed/V901__csra_local_clients.sql` seeds three clients into the dockerised
+auth: the UI's auth-code and system clients, and the API's own system client
+(`SYSTEM_CLIENT_ID`/`SYSTEM_CLIENT_SECRET`) which it uses to call prisoner-search and
+prison-api. All use the secret `clientsecret`. Because the seed is a flyway migration into
+auth's in-memory database, changing it needs the container recreated (`docker compose down`).
+
+The CSRA database starts **empty**, so the dashboard tiles show every prisoner as "no rating"
+and prisoner pages show `NO_RATING` until you create some. Add data through the API's Swagger
+UI at http://localhost:8090/swagger-ui/index.html.
 
 ### Logging in with a test user
 

@@ -1,0 +1,11 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/api/bookings/offenderNo/[A-Za-z0-9]+/image/data"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "image/jpeg" },
+    "bodyFileName": "prisoner-photo.jpg"
+  }
+}
