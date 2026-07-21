@@ -2,7 +2,7 @@ import type { AuthenticationClient } from '@ministryofjustice/hmpps-auth-clients
 import config from '../config'
 import BaseApiClient from './baseApiClient'
 import { RedisClient } from './redisClient'
-import type { CsraCurrentRating, CsraHistoryQuery, CsraReviewHistory } from './csraApiTypes'
+import type { CsraCurrentRating, CsraHistoryQuery, CsraPrisonRatingSummary, CsraReviewHistory } from './csraApiTypes'
 
 export default class CsraApiClient extends BaseApiClient {
   constructor(redisClient: RedisClient, authenticationClient: AuthenticationClient) {
@@ -33,6 +33,16 @@ export default class CsraApiClient extends BaseApiClient {
     path: '/csra-review/prisoner/:prisonerNumber/history',
     requestType: 'get',
     queryParams: ['page', 'size', 'ratings', 'establishments', 'fromDate', 'toDate'],
+    options: { asSystem: true },
+  })
+
+  /**
+   * Get CSRA rating counts for a prison's current roll (the homepage tile counts).
+   * Called `asSystem` (see getCurrentCsraRating).
+   */
+  getRatingSummary = this.apiCall<CsraPrisonRatingSummary, { prisonId: string }>({
+    path: '/csra-review/prison/:prisonId/rating-summary',
+    requestType: 'get',
     options: { asSystem: true },
   })
 }

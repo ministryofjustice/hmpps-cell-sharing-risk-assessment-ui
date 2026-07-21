@@ -1,6 +1,6 @@
 import CsraService from './csraService'
 import { CsraApiClient } from '../data'
-import type { CsraCurrentRating, CsraReviewHistory } from '../data/csraApiTypes'
+import type { CsraCurrentRating, CsraPrisonRatingSummary, CsraReviewHistory } from '../data/csraApiTypes'
 
 jest.mock('../data')
 
@@ -12,6 +12,7 @@ describe('CsraService', () => {
     csraApiClient = {
       getCurrentCsraRating: jest.fn(),
       getCsraHistory: jest.fn(),
+      getRatingSummary: jest.fn(),
     } as unknown as jest.Mocked<CsraApiClient>
     csraService = new CsraService(csraApiClient)
   })
@@ -42,6 +43,24 @@ describe('CsraService', () => {
 
       expect(result).toEqual(history)
       expect(csraApiClient.getCsraHistory).toHaveBeenCalledWith('AUSER_GEN', { prisonerNumber: 'A1234BC', ...query })
+    })
+  })
+
+  describe('getRatingSummary', () => {
+    it('delegates to the client, passing the username and prison id', async () => {
+      const ratingSummary = {
+        prisonId: 'MDI',
+        total: 1015,
+        noRating: 3,
+        highRisk: 217,
+        standardRisk: 795,
+      } as unknown as CsraPrisonRatingSummary
+      ;(csraApiClient.getRatingSummary as unknown as jest.Mock).mockResolvedValue(ratingSummary)
+
+      const result = await csraService.getRatingSummary('AUSER_GEN', 'MDI')
+
+      expect(result).toEqual(ratingSummary)
+      expect(csraApiClient.getRatingSummary).toHaveBeenCalledWith('AUSER_GEN', { prisonId: 'MDI' })
     })
   })
 })

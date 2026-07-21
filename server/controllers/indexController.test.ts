@@ -2,6 +2,16 @@ import indexController from './indexController'
 import { Page } from '../services/auditService'
 
 describe('indexController', () => {
+  const csraService = {
+    getRatingSummary: jest.fn().mockResolvedValue({
+      prisonId: 'MDI',
+      total: 1015,
+      noRating: 3,
+      highRisk: 217,
+      standardRisk: 795,
+    }),
+  }
+
   afterEach(() => {
     jest.resetAllMocks()
   })
@@ -11,7 +21,7 @@ describe('indexController', () => {
       logPageView: jest.fn().mockResolvedValue(null),
     }
 
-    const controller = indexController({ auditService } as any)
+    const controller = indexController({ auditService, csraService } as any)
 
     const req = {
       id: 'request-id-123',
@@ -77,6 +87,8 @@ describe('indexController', () => {
         },
       ],
       stats: {
+        prisonId: 'MDI',
+        total: 1015,
         noRating: 3,
         highRisk: 217,
         standardRisk: 795,
@@ -94,7 +106,7 @@ describe('indexController', () => {
       logPageView: jest.fn().mockResolvedValue(null),
     }
 
-    const controller = indexController({ auditService } as any)
+    const controller = indexController({ auditService, csraService } as any)
 
     const req = {
       id: 'request-id-456',

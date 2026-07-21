@@ -20,7 +20,7 @@ export default function routes({
   // the looked-up prisoner on res.locals.prisoner for the handlers to reuse.
   const requirePrisonerAccess = checkPrisonerAccess(prisonerSearchService, manageUsersService)
 
-  router.get('/', indexController({ auditService }))
+  router.get('/', indexController({ auditService, csraService }))
 
   router.get('/prisoner/:prisonerNumber', requirePrisonerAccess, prisonerCsraController({ auditService, csraService }))
 
