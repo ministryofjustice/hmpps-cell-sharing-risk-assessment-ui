@@ -1,12 +1,66 @@
 {% extends "../partials/layout.njk" %}
 
+{% from "../macros/cardGroup.njk" import cardGroup %}
+
 {% set pageTitle = applicationName + " - Home" %}
 {% set mainClasses = "govuk-body" %}
 
-{% block content %}
+{% block main %}
+  <main class="govuk-main-wrapper" id="main-content" role="main">
+    <div class="govuk-width-container">
+      {% block outerHeading %}
+        <div class="govuk-grid-row">
+          <div class="govuk-grid-column-full">
+            {% block heading %}
+              {% if titleCaption %}
+                <span class="govuk-caption-m" data-qa="title-caption">{{ titleCaption }}</span>
+              {% endif %}
+              <h1 class="govuk-heading-l">{{ title }}</h1>
+            {% endblock %}
+          </div>
+        </div>
+      {% endblock %}
+    </div>
 
-  <h1>This site is under construction...</h1>
-  <p>Please check back later when there is content to view.</p>
-  <p data-qa="timestamp">The time is currently {{ currentTime }}</p>
+    {% block content %}
+      <div class="cards-area govuk-!-margin-bottom-9">
+        <div class="govuk-width-container govuk-!-margin-bottom-0">
+          {% for cardsSection in cardsSections %}
+            <div class="cards-section">
+              <h2 class="cards-section-subheading">{{ cardsSection.subheading }}</h2>
+              {{ cardGroup(cardsSection.cards) }}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
 
+      <div class="ratings-area govuk-width-container govuk-!-margin-bottom-9">
+        <h2 class="govuk-heading-m">CSRA ratings at {{ establishmentName }}</h2>
+        {{ cardGroup([
+          {
+            heading: "Prisoners with no rating",
+            description: stats.noRating,
+            clickable: false,
+            'data-qa': 'no-rating-card'
+          },
+          {
+            heading: "High risk prisoners",
+            description: stats.highRisk,
+            clickable: false,
+            'data-qa': 'high-csra-card'
+          },
+          {
+            heading: "Standard risk prisoners",
+            description: stats.standardRisk,
+            clickable: false,
+            'data-qa': 'standard-csra-card'
+          }
+        ]) }}
+
+        <h2 class="govuk-heading-m">
+          <a class="govuk-link card__link govuk-link--no-visited-state" href="/all-prisoners">View all prisoners</a>
+        </h2>
+      </div>
+    {% endblock %}
+  </main>
 {% endblock %}

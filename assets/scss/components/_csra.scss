@@ -1,17 +1,53 @@
 // Prisoner identity banner (mini-profile)
+.cards-area {
+  background-color: $background-tint;
+  padding: govuk-spacing(9) 0 govuk-spacing(4) 0;
+
+  .card {
+    box-sizing: border-box;
+    height: 175px;
+  }
+
+  .cards-section {
+    margin-bottom: govuk-spacing(6);
+  }
+
+  .cards-section-subheading {
+    @include govuk-font($size: 24, $weight: bold);
+    margin: 0 0 govuk-spacing(4);
+  }
+}
+
+.ratings-area {
+  .card {
+    background-color: $card-tint;
+    border: none;
+    box-sizing: border-box;
+    min-height: 150px;
+  }
+
+  .card__heading {
+    @include govuk-font($size: 19, $weight: bold);
+  }
+
+  .card__description {
+    @include govuk-font($size: 48, $weight: bold);
+  }
+}
+
 .csra-prisoner-banner {
   display: flex;
   gap: govuk-spacing(4);
   padding: govuk-spacing(3);
   margin-bottom: govuk-spacing(6);
-  background-color: govuk-colour("light-grey");
+  background-color: govuk-colour("black", $variant: "tint-95");
 
   &__photo {
     flex: 0 0 auto;
     width: 90px;
     height: 110px;
     object-fit: cover;
-    background-color: govuk-colour("mid-grey");
+    background-color: govuk-colour("black", $variant: "tint-80");
   }
 
   &__body {
@@ -62,7 +98,7 @@
 
   &__card {
     padding: govuk-spacing(3);
-    background-color: govuk-colour("light-grey");
+    background-color: govuk-colour("black", $variant: "tint-95");
   }
 
   &__caption {

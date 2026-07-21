@@ -21,6 +21,7 @@ import setUpWebSession from './middleware/setUpWebSession'
 
 import routes from './routes'
 import type { Services } from './services'
+import addBreadcrumb from './middleware/addBreadcrumb'
 
 export default function createApp(services: Services): express.Application {
   const app = express()
@@ -54,6 +55,8 @@ export default function createApp(services: Services): express.Application {
       },
     }),
   )
+
+  app.use(addBreadcrumb({ title: 'Digital Prison Services', href: app.locals.dpsUrl }))
 
   app.use(routes(services))
 
