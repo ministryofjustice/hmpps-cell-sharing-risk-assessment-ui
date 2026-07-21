@@ -2,12 +2,28 @@ import { type RequestHandler } from 'express'
 
 import type { Services } from '../services'
 import { Page } from '../services/auditService'
+import logger from '../../logger'
 
-type Dependencies = Pick<Services, 'auditService'>
+type Dependencies = Pick<Services, 'auditService' | 'csraService'>
 
-export default function indexController({ auditService }: Dependencies): RequestHandler {
+export default function indexController({ auditService, csraService }: Dependencies): RequestHandler {
   return async (req, res) => {
     await auditService.logPageView(Page.INDEX, { who: res.locals.user.username, correlationId: req.id })
+
+    let stats: { noRating: string | number; highRisk: string | number; standardRisk: string | number } = {
+      noRating: '-',
+      highRisk: '-',
+      standardRisk: '-',
+    }
+
+    try {
+      stats = await csraService.getRatingSummary(
+        res.locals.user.username,
+        res.locals.feComponents?.sharedData?.activeCaseLoad?.caseLoadId,
+      )
+    } catch (error) {
+      logger.error('Error fetching prisoner ratings for index page', error)
+    }
 
     return res.render('pages/index', {
       title: 'Cell sharing risk assessment (CSRA)',
@@ -48,12 +64,7 @@ export default function indexController({ auditService }: Dependencies): Request
         },
       ],
       establishmentName: res.locals.feComponents?.sharedData?.activeCaseLoad?.description ?? 'Unknown establishment',
-      stats: {
-        // TODO: Replace with real stats when available
-        noRating: 3,
-        highRisk: 217,
-        standardRisk: 795,
-      },
+      stats,
     })
   }
 }

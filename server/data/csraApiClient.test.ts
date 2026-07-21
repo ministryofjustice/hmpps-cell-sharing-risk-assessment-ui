@@ -3,7 +3,7 @@ import type { AuthenticationClient } from '@ministryofjustice/hmpps-auth-clients
 import CsraApiClient from './csraApiClient'
 import config from '../config'
 import { RedisClient } from './redisClient'
-import type { CsraCurrentRating, CsraReviewHistory } from './csraApiTypes'
+import type { CsraCurrentRating, CsraPrisonRatingSummary, CsraReviewHistory } from './csraApiTypes'
 
 describe('CsraApiClient', () => {
   let csraApiClient: CsraApiClient
@@ -131,6 +131,28 @@ describe('CsraApiClient', () => {
       })
 
       expect(response).toEqual(history)
+    })
+  })
+
+  describe('getRatingSummary', () => {
+    it('should GET prison rating summary using a system token stamped with the username', async () => {
+      const ratingSummary: CsraPrisonRatingSummary = {
+        prisonId: 'MDI',
+        total: 1015,
+        noRating: 3,
+        highRisk: 217,
+        standardRisk: 795,
+      }
+
+      nock(config.apis.csraApi.url)
+        .get('/csra-review/prison/MDI/rating-summary')
+        .matchHeader('authorization', 'Bearer test-system-token')
+        .reply(200, ratingSummary)
+
+      const response = await csraApiClient.getRatingSummary('AUSER_GEN', { prisonId: 'MDI' })
+
+      expect(response).toEqual(ratingSummary)
+      expect(mockAuthenticationClient.getToken).toHaveBeenCalledWith('AUSER_GEN')
     })
   })
 })

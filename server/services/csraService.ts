@@ -1,5 +1,10 @@
 import { CsraApiClient } from '../data'
-import type { CsraCurrentRating, CsraHistoryQuery, CsraReviewHistory } from '../data/csraApiTypes'
+import type {
+  CsraCurrentRating,
+  CsraHistoryQuery,
+  CsraPrisonRatingSummary,
+  CsraReviewHistory,
+} from '../data/csraApiTypes'
 
 export default class CsraService {
   constructor(private readonly csraApiClient: CsraApiClient) {}
@@ -18,5 +23,13 @@ export default class CsraService {
    */
   getHistory(username: string, prisonerNumber: string, query: CsraHistoryQuery): Promise<CsraReviewHistory> {
     return this.csraApiClient.getCsraHistory(username, { prisonerNumber, ...query })
+  }
+
+  /**
+   * Get CSRA rating counts for a prison's current roll (no rating, high risk, standard risk).
+   * `username` is stamped onto the system token used for the call.
+   */
+  getRatingSummary(username: string, prisonId: string): Promise<CsraPrisonRatingSummary> {
+    return this.csraApiClient.getRatingSummary(username, { prisonId })
   }
 }

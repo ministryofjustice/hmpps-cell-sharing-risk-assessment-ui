@@ -126,3 +126,12 @@ export interface CsraCurrentRating {
   startedBy?: string | null
   startedAt?: string | null
 }
+
+/** CSRA rating counts for a prison's current population (mirrors dto.CsraPrisonRatingSummary). */
+export interface CsraPrisonRatingSummary {
+  prisonId: string
+  total: number
+  noRating: number
+  highRisk: number
+  standardRisk: number
+}
