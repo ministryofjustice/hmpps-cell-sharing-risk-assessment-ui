@@ -2,25 +2,30 @@ import indexController from './indexController'
 import { Page } from '../services/auditService'
 
 describe('indexController', () => {
-  const csraService = {
-    getRatingSummary: jest.fn().mockResolvedValue({
-      prisonId: 'MDI',
-      total: 1015,
-      noRating: 3,
-      highRisk: 217,
-      standardRisk: 795,
-    }),
-  }
+  let auditService: { logPageView: jest.Mock }
+  let csraService: { getRatingSummary: jest.Mock }
 
-  afterEach(() => {
-    jest.resetAllMocks()
-  })
-
-  it('renders the index page with expected locals', async () => {
-    const auditService = {
+  beforeEach(() => {
+    auditService = {
       logPageView: jest.fn().mockResolvedValue(null),
     }
 
+    csraService = {
+      getRatingSummary: jest.fn().mockResolvedValue({
+        prisonId: 'MDI',
+        total: 1015,
+        noRating: 0,
+        highRisk: 217,
+        standardRisk: 795,
+      }),
+    }
+  })
+
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('renders the index page with expected locals', async () => {
     const controller = indexController({ auditService, csraService } as any)
 
     const req = {
@@ -87,11 +92,9 @@ describe('indexController', () => {
         },
       ],
       stats: {
-        prisonId: 'MDI',
-        total: 1015,
-        noRating: 3,
-        highRisk: 217,
-        standardRisk: 795,
+        noRating: '0',
+        highRisk: '217',
+        standardRisk: '795',
       },
     })
 
@@ -102,10 +105,6 @@ describe('indexController', () => {
   })
 
   it('falls back to Unknown establishment when active case load is unavailable', async () => {
-    const auditService = {
-      logPageView: jest.fn().mockResolvedValue(null),
-    }
-
     const controller = indexController({ auditService, csraService } as any)
 
     const req = {
