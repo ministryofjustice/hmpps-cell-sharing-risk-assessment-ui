@@ -64,7 +64,11 @@ export default function indexController({ auditService, csraService }: Dependenc
         },
       ],
       establishmentName: res.locals.feComponents?.sharedData?.activeCaseLoad?.description ?? 'Unknown establishment',
-      stats,
+      stats: {
+        noRating: String(stats.noRating),
+        highRisk: String(stats.highRisk),
+        standardRisk: String(stats.standardRisk),
+      },
     })
   }
 }

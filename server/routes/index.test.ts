@@ -31,6 +31,13 @@ beforeEach(() => {
     activeCaseload: { id: 'LEI', name: 'Leeds (HMP)' },
     caseloads: [{ id: 'LEI', name: 'Leeds (HMP)' }],
   })
+  csraService.getRatingSummary.mockResolvedValue({
+    prisonId: 'LEI',
+    total: 1015,
+    noRating: 0,
+    highRisk: 217,
+    standardRisk: 795,
+  })
   app = appWithAllRoutes({
     services: {
       auditService,
