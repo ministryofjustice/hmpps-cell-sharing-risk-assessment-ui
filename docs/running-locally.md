@@ -28,8 +28,15 @@ five prisoners: `A1234BC`, `A2345CD`, `A3456DE`, `A4567EF`, `A5678FG`.
 ## Seeding example CSRA reviews
 
 The CSRA database starts empty, so every prisoner shows as **No rating** until you create some
-reviews. You can create them through the API's Swagger UI at
-http://localhost:8090/swagger-ui/index.html, or with the curl commands below.
+reviews. The quickest way is the bundled script, which runs the curl commands below for you:
+
+```bash
+./scripts/seed-csra-reviews.sh
+```
+
+You can also create reviews through the API's Swagger UI at
+http://localhost:8090/swagger-ui/index.html, or run the curl commands by hand as described below
+to understand what the script does.
 
 A completed CSRA review is created in two calls: **start** an initial assessment, then submit
 its **final** rating. Both calls use a client-credentials token from the UI's system client

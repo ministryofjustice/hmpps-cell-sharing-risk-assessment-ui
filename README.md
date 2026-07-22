@@ -168,10 +168,10 @@ prison-api. All use the secret `clientsecret`. Because the seed is a flyway migr
 auth's in-memory database, changing it needs the container recreated (`docker compose down`).
 
 The CSRA database starts **empty**, so the dashboard tiles show every prisoner as "no rating"
-and prisoner pages show `NO_RATING` until you create some. See
-[docs/running-locally.md](./docs/running-locally.md) for copy-paste curl commands that
-self-seed a few standard and high-risk CSRA reviews, or add data through the API's Swagger UI
-at http://localhost:8090/swagger-ui/index.html.
+and prisoner pages show `NO_RATING` until you create some. Run `./scripts/seed-csra-reviews.sh`
+to self-seed a few standard and high-risk CSRA reviews (see
+[docs/running-locally.md](./docs/running-locally.md) for what it does), or add data through the
+API's Swagger UI at http://localhost:8090/swagger-ui/index.html.
 
 ### Logging in with a test user
 
