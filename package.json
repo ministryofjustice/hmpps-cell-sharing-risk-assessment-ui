@@ -107,6 +107,6 @@
     "@opentelemetry/sdk-node": "^0.220.0",
     "@opentelemetry/exporter-prometheus": "^0.220.0",
     "@opentelemetry/core": "^2.9.0",
-    "protobufjs": "^8.6.5"
+    "protobufjs": "^8.6.6"
   }
 }
