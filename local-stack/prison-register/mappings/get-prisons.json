@@ -1,0 +1,16 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/prisons"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": [
+      { "prisonId": "MDI", "prisonName": "Moorland (HMP & YOI)" },
+      { "prisonId": "LEI", "prisonName": "Leeds (HMP)" },
+      { "prisonId": "BXI", "prisonName": "Brixton (HMP)" },
+      { "prisonId": "WWI", "prisonName": "Wandsworth (HMP)" }
+    ]
+  }
+}

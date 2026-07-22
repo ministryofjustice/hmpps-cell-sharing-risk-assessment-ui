@@ -1,0 +1,17 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/prisoner-search/prisoner-numbers"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": [
+      { "prisonerNumber": "A1234BC", "firstName": "John", "lastName": "Saunders" },
+      { "prisonerNumber": "A2345CD", "firstName": "Marcus", "lastName": "Webb" },
+      { "prisonerNumber": "A3456DE", "firstName": "Ashley", "lastName": "Okafor" },
+      { "prisonerNumber": "A4567EF", "firstName": "Daniel", "lastName": "Ferreira" },
+      { "prisonerNumber": "A5678FG", "firstName": "Robert", "lastName": "Nowak" }
+    ]
+  }
+}

@@ -34,7 +34,13 @@ services:
       cell-sharing-risk-assessment-db:
         condition: service_healthy
       localstack:
-        condition: service_started
+        condition: service_healthy
+      prisoner-search:
+        condition: service_healthy
+      prison-api:
+        condition: service_healthy
+      prison-register:
+        condition: service_healthy
     ports:
       - "8090:8080"
     healthcheck:
@@ -50,12 +56,19 @@ services:
       - HMPPS_AUTH_URL=http://hmpps-auth:8080/auth
       - SPRING_DATASOURCE_URL=jdbc:postgresql://cell-sharing-risk-assessment-db:5432/cell_sharing_risk_assessment?sslmode=prefer
       - HMPPS_SQS_LOCALSTACK_URL=http://localstack:4566
-      - CELL_SHARING_RISK_ASSESSMENT_API_CLIENT_ID=hmpps-cell-sharing-risk-assessment-api
-      - CELL_SHARING_RISK_ASSESSMENT_API_CLIENT_SECRET=clientsecret
+      # The API's own client-credentials registration (application.yml binds system.client.*), used
+      # for its calls out to prisoner-search and prison-api. Seeded by local-stack/auth-seed.
+      - SYSTEM_CLIENT_ID=hmpps-cell-sharing-risk-assessment-api
+      - SYSTEM_CLIENT_SECRET=clientsecret
+      # Without these the API falls back to its application-dev.yml localhost defaults, which inside
+      # the container are its own loopback, so every downstream call fails.
+      - PRISONER_SEARCH_URL=http://prisoner-search:8080
+      - PRISON_API_URL=http://prison-api:8080
+      - PRISON_REGISTER_URL=http://prison-register:8080
 
   prisoner-search:
-    # WireMock stub for hmpps-prisoner-search (prisoner detail lookups); seed data in
-    # local-stack/prisoner-search. prison-api (prisoner image) is intentionally not stubbed.
+    # WireMock stub for hmpps-prisoner-search; seed data in local-stack/prisoner-search. Serves both
+    # the UI (prisoner detail lookups) and the CSRA API (prison roll for the dashboard counts).
     image: wiremock/wiremock:latest
     networks:
       - hmpps
@@ -67,6 +80,46 @@ services:
       - ./local-stack/prisoner-search:/home/wiremock:ro
     healthcheck:
       # The wiremock image has no curl; bash + /dev/tcp checks the stub server is up
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 15s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  prison-api:
+    # WireMock stub for prison-api; seed data in local-stack/prison-api. Serves the UI (prisoner
+    # photo) and the CSRA API (external movements behind the recent-arrivals worklist).
+    image: wiremock/wiremock:latest
+    networks:
+      - hmpps
+    container_name: prison-api
+    # NB: no --global-response-templating here. It would also be applied to the binary image
+    # response and corrupt the JPEG; the movements stub opts in via its own "transformers".
+    command: ["--disable-banner"]
+    ports:
+      - "8086:8080"
+    volumes:
+      - ./local-stack/prison-api:/home/wiremock:ro
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 15s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  prison-register:
+    # WireMock stub for prison-register (prison id -> name reference data); seed data in
+    # local-stack/prison-register. Used by the CSRA API for history establishment names.
+    image: wiremock/wiremock:latest
+    networks:
+      - hmpps
+    container_name: prison-register
+    command: ["--disable-banner"]
+    ports:
+      - "8087:8080"
+    volumes:
+      - ./local-stack/prison-register:/home/wiremock:ro
+    healthcheck:
       test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
       interval: 15s
       timeout: 3s
@@ -126,7 +179,10 @@ services:
       retries: 10
 
   localstack:
-    image: localstack/localstack:stable
+    # community-archive, not `stable`: the current LocalStack images are the licensed Pro build and
+    # exit on startup without a LOCALSTACK_AUTH_TOKEN, which leaves the API unable to start its SQS
+    # listeners. Matches the API repo's own docker-compose.
+    image: localstack/localstack:community-archive
     networks:
       - hmpps
     container_name: localstack
@@ -136,10 +192,16 @@ services:
     environment:
       - DEBUG=${DEBUG- }
       - DOCKER_HOST=unix:///var/run/docker.sock
-      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN}
+      - SERVICES=sqs,sns
     volumes:
       - "${TMPDIR:-/tmp/localstack}:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
 
   cell-sharing-risk-assessment-db:
     image: postgres:18
@@ -175,6 +237,8 @@ services:
         condition: service_healthy
       prisoner-search:
         condition: service_healthy
+      prison-api:
+        condition: service_healthy
       manage-users-api:
         condition: service_healthy
       component-api:
@@ -206,6 +270,7 @@ services:
       - NO_HTTPS=true
       - CSRA_API_URL=http://cell-sharing-risk-assessment-api:8080
       - PRISONER_SEARCH_API_URL=http://prisoner-search:8080
+      - PRISON_API_URL=http://prison-api:8080
       - MANAGE_USERS_API_URL=http://manage-users-api:8080
       - COMPONENT_API_URL=http://component-api:8080
 
