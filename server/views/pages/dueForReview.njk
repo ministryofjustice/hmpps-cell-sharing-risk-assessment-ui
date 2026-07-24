@@ -148,6 +148,9 @@
                   ],
                   rows: tableRows
                 }) }}
+                <p class="govuk-body" data-qa="due-for-review-total-results">
+                  {{ totalResults }} total result{% if totalResults != 1 %}s{% endif %}
+                </p>
               {% else %}
                 <p class="govuk-body">No prisoners have been found for the selected filters.</p>
                 <p class="govuk-body">You can:</p>
