@@ -56,7 +56,7 @@ export default function indexController({ auditService, csraService }: Dependenc
             },
             {
               heading: 'Reviews in progress',
-              description: 'Continue incomplete cell sharing risk reviews for prisoners.',
+              description: 'View incomplete cell sharing risk reviews for prisoners.',
               href: '/reviews-in-progress',
               clickable: true,
             },

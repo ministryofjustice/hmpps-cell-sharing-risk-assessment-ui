@@ -169,3 +169,22 @@
     margin: 0;
   }
 }
+
+.csra-due-for-review-table {
+  .govuk-table__body {
+    .govuk-table__row {
+      height: 75px;
+    }
+
+    .govuk-table__cell {
+      vertical-align: middle;
+    }
+
+    &__rating-meta {
+      @include govuk-font($size: 16);
+      color: $govuk-secondary-text-colour;
+      display: block;
+      margin: 0;
+    }
+  }
+}

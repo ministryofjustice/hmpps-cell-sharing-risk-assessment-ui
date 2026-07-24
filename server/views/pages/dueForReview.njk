@@ -1,0 +1,168 @@
+{% extends "../partials/layout.njk" %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+{% from "govuk/components/table/macro.njk" import govukTable %}
+{% from "moj/components/date-picker/macro.njk" import mojDatePicker %}
+
+{% set pageTitle = applicationName + " - High risk prisoners due for review" %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-full">
+      {% if prisoners.length > 0 or hasSelectedFilters %}
+        <form method="get" action="/due-for-review" data-due-for-review-form>
+          <div class="moj-filter-layout">
+            <div class="moj-filter-layout__filter">
+              <div class="moj-filter" data-module="moj-filter">
+                <div class="moj-filter__content">
+                  <div class="moj-filter__selected">
+                    <div class="moj-filter__selected-heading">
+                      <div class="moj-filter__heading-title">
+                        <h2 class="govuk-heading-m">Filter</h2>
+                      </div>
+                    </div>
+
+                    {{ govukCheckboxes({
+                      name: "ratingType",
+                      classes: "govuk-checkboxes--small",
+                      fieldset: {
+                        legend: {
+                          text: "CSRA rating type",
+                          classes: "govuk-fieldset__legend--s"
+                        }
+                      },
+                      items: ratingTypeOptions
+                    }) }}
+
+                    {{ mojDatePicker({
+                      id: "reviewDateFrom",
+                      name: "reviewDateFrom",
+                      value: reviewDateFrom,
+                      errorMessage: validationErrors.reviewDateFrom if validationErrors,
+                      label: {
+                        text: "Review date from",
+                        classes: "govuk-label--s"
+                      },
+                      hint: {
+                        text: "For example, 1/2/2026"
+                      }
+                    }) }}
+
+                    {{ mojDatePicker({
+                      id: "reviewDateTo",
+                      name: "reviewDateTo",
+                      value: reviewDateTo,
+                      errorMessage: validationErrors.reviewDateTo if validationErrors,
+                      label: {
+                        text: "Review date to",
+                        classes: "govuk-label--s"
+                      },
+                      hint: {
+                        text: "For example, 1/2/2027"
+                      }
+                    }) }}
+
+                    <input type="hidden" name="sort" value="{{ sort or '' }}" data-sort-field>
+                    <input type="hidden" name="direction" value="{{ direction or '' }}" data-direction-field>
+
+                    {{ govukButton({
+                      text: "Apply"
+                    }) }}
+                    <p>
+                      <a class="govuk-link govuk-link--no-visited-state" href="/due-for-review">Clear filters</a>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="moj-filter-layout__content">
+              {% if prisoners.length > 0 %}
+                {% set tableRows = [] %}
+                {% for prisoner in prisoners %}
+                  {% set name %}
+                    <a class="govuk-link govuk-link--no-visited-state" href="{{ '/prisoner/' + prisoner.prisonerNumber }}">
+                      {{ prisoner.lastName | capitalize }}, {{ prisoner.firstName | capitalize }}
+                    </a>
+                  {% endset %}
+                  {% set overdueDays = prisoner.reviewDueBy | daysOverdue %}
+                  {% set reviewDueByHtml = prisoner.reviewDueBy | formatDate %}
+                  {% set ratingSourceLabel = 'Last reviewed' if prisoner.lastRatingSource == 'REVIEW' else 'Last assessed' %}
+                  {% set ratingHtml = (prisoner.rating | csraRatingLabel) + '<br><span class="csra-due-for-review-table__rating-meta govuk-body-s">' + ratingSourceLabel + ': ' + (prisoner.lastRatingDate | formatDate) + '</span>' %}
+                  {% if overdueDays > 0 %}
+                    {% set reviewDueByHtml = reviewDueByHtml + '<br><span class="govuk-error-message govuk-!-margin-0">' + overdueDays + ' days overdue</span>' %}
+                  {% endif %}
+                  {% set _ = tableRows.push([
+                    {
+                      html: name
+                    },
+                    {
+                      text: prisoner.prisonerNumber
+                    },
+                    {
+                      html: reviewDueByHtml,
+                      attributes: {
+                        "data-sort-value": prisoner.reviewDueBy
+                      }
+                    },
+                    {
+                      html: ratingHtml
+                    }
+                  ]) %}
+                {% endfor %}
+                {% set nameSortDir = "none" %}
+                {% if sort == "NAME" %}
+                  {% set nameSortDir = "descending" if direction == "DESC" else "ascending" %}
+                {% endif %}
+                {% set reviewDueBySortDir = "none" %}
+                {% if sort == "REVIEW_DUE_BY" %}
+                  {% set reviewDueBySortDir = "descending" if direction == "DESC" else "ascending" %}
+                {% endif %}
+                {{ govukTable({
+                  classes: "csra-due-for-review-table",
+                  attributes: {
+                    "data-module": "moj-sortable-table",
+                    "data-qa": "due-for-review-table"
+                  },
+                  head: [
+                    {
+                      text: "Name",
+                      attributes: {
+                        "aria-sort": nameSortDir,
+                        "data-sort-key": "NAME"
+                      }
+                    },
+                    {
+                      text: "Prison number"
+                    },
+                    {
+                      text: "Review due by",
+                      attributes: {
+                        "aria-sort": reviewDueBySortDir,
+                        "data-sort-key": "REVIEW_DUE_BY"
+                      }
+                    },
+                    {
+                      text: "Current CSRA rating"
+                    }
+                  ],
+                  rows: tableRows
+                }) }}
+              {% else %}
+                <p class="govuk-body">No prisoners have been found for the selected filters.</p>
+                <p class="govuk-body">You can:</p>
+                <ul class="govuk-list govuk-list--bullet">
+                  <li>select different CSRA rating types</li>
+                  <li>choose different dates</li>
+                  <li>clear filters to view all prisoners due for review</li>
+                </ul>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+      {% else %}
+        <p class="govuk-body">There are no high risk prisoners due for review.</p>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

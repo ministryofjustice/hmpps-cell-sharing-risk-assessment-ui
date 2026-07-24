@@ -2,7 +2,14 @@ import type { AuthenticationClient } from '@ministryofjustice/hmpps-auth-clients
 import config from '../config'
 import BaseApiClient from './baseApiClient'
 import { RedisClient } from './redisClient'
-import type { CsraCurrentRating, CsraHistoryQuery, CsraPrisonRatingSummary, CsraReviewHistory } from './csraApiTypes'
+import type {
+  CsraCurrentRating,
+  CsraHighRiskDueForReview,
+  CsraHighRiskDueForReviewQuery,
+  CsraHistoryQuery,
+  CsraPrisonRatingSummary,
+  CsraReviewHistory,
+} from './csraApiTypes'
 
 export default class CsraApiClient extends BaseApiClient {
   constructor(redisClient: RedisClient, authenticationClient: AuthenticationClient) {
@@ -33,6 +40,20 @@ export default class CsraApiClient extends BaseApiClient {
     path: '/csra-review/prisoner/:prisonerNumber/history',
     requestType: 'get',
     queryParams: ['page', 'size', 'ratings', 'establishments', 'fromDate', 'toDate'],
+    options: { asSystem: true },
+  })
+
+  /**
+   * Get the high-risk prisoners in a prison who have a scheduled next review date.
+   * Called `asSystem` (see getCurrentCsraRating).
+   */
+  getHighRiskDueForReview = this.apiCall<
+    CsraHighRiskDueForReview,
+    { prisonId: string } & CsraHighRiskDueForReviewQuery
+  >({
+    path: '/csra-review/prison/:prisonId/high-risk-due-for-review',
+    requestType: 'get',
+    queryParams: ['ratingTypes', 'reviewDateFrom', 'reviewDateTo', 'sort', 'direction'],
     options: { asSystem: true },
   })
 

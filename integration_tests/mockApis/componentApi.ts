@@ -18,6 +18,11 @@ const footerHtml = `
     <a class="connect-dps-common-footer__link" href="/feedback">Feedback</a>
   </footer>`
 
+const defaultActiveCaseLoad = {
+  caseLoadId: 'LEI',
+  description: 'Leeds (HMP)',
+}
+
 export default {
   stubPing: (httpStatus = 200): SuperAgentRequest =>
     stubFor({
@@ -33,7 +38,9 @@ export default {
     }),
 
   // The DPS shared header/footer, fetched by getFrontendComponents on every authenticated page.
-  stubComponents: (): SuperAgentRequest =>
+  stubComponents: (
+    activeCaseLoad: { caseLoadId: string; description: string } | null = defaultActiveCaseLoad,
+  ): SuperAgentRequest =>
     stubFor({
       request: {
         method: 'GET',
@@ -46,8 +53,8 @@ export default {
           header: { html: headerHtml, css: [], javascript: [] },
           footer: { html: footerHtml, css: [], javascript: [] },
           meta: {
-            caseLoads: [],
-            activeCaseLoad: null,
+            caseLoads: activeCaseLoad ? [activeCaseLoad] : [],
+            activeCaseLoad,
             services: [],
           },
         },

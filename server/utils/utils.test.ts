@@ -4,6 +4,7 @@ import {
   csraRatingLabel,
   csraRatingTagClass,
   csraStatusLabel,
+  daysOverdue,
   enumLabel,
   formatDate,
   formatMonthYear,
@@ -112,6 +113,20 @@ describe('formatMonthYear', () => {
     ['date-time', '2025-10-11T09:00:00', 'October 2025'],
   ])('%s formatMonthYear(%s) === %s', (_: string, input: string, expected: string) => {
     expect(formatMonthYear(input)).toEqual(expected)
+  })
+})
+
+describe('daysOverdue', () => {
+  const now = new Date('2026-07-23T12:00:00Z')
+
+  it.each([
+    ['missing', undefined, 0],
+    ['invalid', 'not-a-date', 0],
+    ['today', '2026-07-23', 0],
+    ['future', '2026-07-30', 0],
+    ['past', '2026-07-14', 9],
+  ])('%s daysOverdue(%s) === %s', (_: string, input: string, expected: number) => {
+    expect(daysOverdue(input, now)).toEqual(expected)
   })
 })
 

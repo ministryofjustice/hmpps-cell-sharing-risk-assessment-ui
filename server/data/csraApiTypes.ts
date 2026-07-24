@@ -5,7 +5,7 @@
  */
 
 /** The outcome of a CSRA review (mirrors jpa.CsraResult). */
-export type CsraResult = 'HIGH' | 'HIGH_GENERAL' | 'HIGH_SPECIFIC' | 'STANDARD'
+export type CsraResult = 'HIGH' | 'HIGH_GENERAL' | 'HIGH_GENERAL_INTERIM' | 'HIGH_SPECIFIC' | 'STANDARD'
 
 /** The state of a prisoner's current CSRA rating (mirrors dto.CsraRatingStatus). */
 export type CsraRatingStatus = 'NO_RATING' | 'IN_PROGRESS' | 'PROVISIONAL' | 'COMPLETE'
@@ -125,6 +125,38 @@ export interface CsraCurrentRating {
   nextReviewDate?: string | null
   startedBy?: string | null
   startedAt?: string | null
+}
+
+/** The coarse type of assessment that produced the current rating. */
+export type CsraAssessmentTypeBucket = 'ASSESSMENT' | 'REVIEW'
+
+/** A single high-risk prisoner row in the due-for-review list (mirrors dto.CsraHighRiskReviewRow). */
+export interface CsraHighRiskReviewRow {
+  prisonerNumber: string
+  firstName?: string | null
+  lastName?: string | null
+  reviewDueBy: string
+  ratingType: CsraResult
+  rating: CsraResult
+  provisional: boolean
+  lastRatingSource: CsraAssessmentTypeBucket
+  lastRatingDate: string
+}
+
+/** Optional query params for the high-risk due-for-review endpoint. */
+export type CsraHighRiskDueForReviewQuery = {
+  ratingTypes?: string[]
+  reviewDateFrom?: string
+  reviewDateTo?: string
+  sort?: string
+  direction?: string
+}
+
+/** Prison's high-risk prisoners with a due review date (mirrors dto.CsraHighRiskDueForReview). */
+export interface CsraHighRiskDueForReview {
+  content: CsraHighRiskReviewRow[]
+  totalResults: number
+  availableRatingTypes: CsraResult[]
 }
 
 /** CSRA rating counts for a prison's current population (mirrors dto.CsraPrisonRatingSummary). */

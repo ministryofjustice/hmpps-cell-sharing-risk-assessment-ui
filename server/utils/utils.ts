@@ -1,4 +1,5 @@
 import type { ParsedQs } from 'qs'
+import { differenceInCalendarDays, isValid, parseISO, startOfDay } from 'date-fns'
 import type { CsraHistoryQuery } from '../data/csraApiTypes'
 
 const properCase = (word: string): string =>
@@ -46,6 +47,19 @@ export const formatMonthYear = (isoDate?: string | null): string => {
   const date = new Date(isoDate)
   if (Number.isNaN(date.getTime())) return ''
   return date.toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+}
+
+/**
+ * Number of calendar days an ISO date is overdue relative to today.
+ * Returns 0 when the date is today/in the future or invalid.
+ */
+export const daysOverdue = (isoDate?: string | null, now: Date = new Date()): number => {
+  if (!isoDate) return 0
+  const dueDate = parseISO(isoDate)
+  if (!isValid(dueDate)) return 0
+
+  const overdueDays = differenceInCalendarDays(startOfDay(now), startOfDay(dueDate))
+  return overdueDays > 0 ? overdueDays : 0
 }
 
 /** Human-readable label for a CSRA result (mirrors the API's CsraResult enum). */
