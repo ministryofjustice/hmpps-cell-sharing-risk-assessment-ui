@@ -50,8 +50,8 @@ describe('dueForReviewController', () => {
       ratingTypes: undefined,
       reviewDateFrom: undefined,
       reviewDateTo: undefined,
-      sort: undefined,
-      direction: undefined,
+      sort: 'REVIEW_DUE_BY',
+      direction: 'DESC',
     })
 
     expect(res.render).toHaveBeenCalledWith(
@@ -59,8 +59,8 @@ describe('dueForReviewController', () => {
       expect.objectContaining({
         reviewDateFrom: undefined,
         reviewDateTo: undefined,
-        sort: undefined,
-        direction: undefined,
+        sort: 'REVIEW_DUE_BY',
+        direction: 'DESC',
         hasSelectedFilters: false,
       }),
     )

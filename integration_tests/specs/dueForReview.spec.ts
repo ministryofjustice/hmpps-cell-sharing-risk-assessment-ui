@@ -56,9 +56,9 @@ test.describe('High risk prisoners due for review', () => {
     await page.goto('/due-for-review')
 
     const dueForReviewPage = await DueForReviewPage.verifyOnPage(page)
-    const firstRow = dueForReviewPage.tableRows.first()
-    await expect(firstRow.getByRole('link')).toHaveText('Reid, Callum')
-    await expect(firstRow.getByRole('link')).toHaveAttribute('href', '/prisoner/A1049JF')
+    const prisonerRow = dueForReviewPage.tableRows.filter({ hasText: 'A1049JF' }).first()
+    await expect(prisonerRow.getByRole('link')).toHaveText('Reid, Callum')
+    await expect(prisonerRow.getByRole('link')).toHaveAttribute('href', '/prisoner/A1049JF')
   })
 
   test('renders prison number and formatted review due date', async ({ page }) => {
@@ -68,9 +68,9 @@ test.describe('High risk prisoners due for review', () => {
     await page.goto('/due-for-review')
 
     const dueForReviewPage = await DueForReviewPage.verifyOnPage(page)
-    const firstRow = dueForReviewPage.tableRows.first()
-    await expect(firstRow).toContainText('A1049JF')
-    await expect(firstRow).toContainText('29 June 2026')
+    const prisonerRow = dueForReviewPage.tableRows.filter({ hasText: 'A1049JF' }).first()
+    await expect(prisonerRow).toContainText('A1049JF')
+    await expect(prisonerRow).toContainText('29 June 2026')
   })
 
   test('shows overdue message when review date is in the past', async ({ page }) => {
@@ -80,7 +80,9 @@ test.describe('High risk prisoners due for review', () => {
     await page.goto('/due-for-review')
 
     const dueForReviewPage = await DueForReviewPage.verifyOnPage(page)
-    await expect(dueForReviewPage.tableRows.first().locator('.govuk-error-message')).toContainText('days overdue')
+    await expect(
+      dueForReviewPage.tableRows.filter({ hasText: 'A1049JF' }).first().locator('.govuk-error-message'),
+    ).toContainText('days overdue')
   })
 
   test('renders CSRA rating with "Last assessed" for assessment source', async ({ page }) => {
@@ -90,9 +92,9 @@ test.describe('High risk prisoners due for review', () => {
     await page.goto('/due-for-review')
 
     const dueForReviewPage = await DueForReviewPage.verifyOnPage(page)
-    const firstRow = dueForReviewPage.tableRows.first()
-    await expect(firstRow).toContainText('High risk – general')
-    await expect(firstRow.locator('.csra-due-for-review-table__rating-meta')).toContainText(
+    const prisonerRow = dueForReviewPage.tableRows.filter({ hasText: 'A1049JF' }).first()
+    await expect(prisonerRow).toContainText('High risk – general')
+    await expect(prisonerRow.locator('.csra-due-for-review-table__rating-meta')).toContainText(
       'Last assessed: 24 June 2025',
     )
   })
@@ -104,9 +106,9 @@ test.describe('High risk prisoners due for review', () => {
     await page.goto('/due-for-review')
 
     const dueForReviewPage = await DueForReviewPage.verifyOnPage(page)
-    const secondRow = dueForReviewPage.tableRows.nth(1)
-    await expect(secondRow).toContainText('High risk – specific')
-    await expect(secondRow.locator('.csra-due-for-review-table__rating-meta')).toContainText(
+    const prisonerRow = dueForReviewPage.tableRows.filter({ hasText: 'A5197BD' }).first()
+    await expect(prisonerRow).toContainText('High risk – specific')
+    await expect(prisonerRow.locator('.csra-due-for-review-table__rating-meta')).toContainText(
       'Last reviewed: 1 February 2025',
     )
   })

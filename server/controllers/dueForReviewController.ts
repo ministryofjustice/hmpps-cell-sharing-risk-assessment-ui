@@ -7,6 +7,8 @@ import { csraRatingLabel, parseUkDate } from '../utils/utils'
 import { firstQueryValue, toArray } from '../utils/queryUtils'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
+const DEFAULT_SORT = 'REVIEW_DUE_BY'
+const DEFAULT_DIRECTION: 'ASC' | 'DESC' = 'DESC'
 
 const toSortDirection = (value?: string): 'ASC' | 'DESC' | undefined => {
   if (!value) return undefined
@@ -25,8 +27,8 @@ export default function dueForReviewController({ auditService, csraService }: De
       const selectedRatingTypes = toArray(req.query.ratingType)
       const reviewDateFromRaw = firstQueryValue(req.query.reviewDateFrom)
       const reviewDateToRaw = firstQueryValue(req.query.reviewDateTo)
-      const sort = firstQueryValue(req.query.sort)?.toUpperCase()
-      const direction = toSortDirection(firstQueryValue(req.query.direction))
+      const sort = firstQueryValue(req.query.sort)?.toUpperCase() || DEFAULT_SORT
+      const direction = toSortDirection(firstQueryValue(req.query.direction)) || DEFAULT_DIRECTION
       const hasSelectedFilters = Boolean(selectedRatingTypes.length || reviewDateFromRaw || reviewDateToRaw)
 
       const validationErrors: Record<string, { text: string }> = {}
@@ -55,6 +57,7 @@ export default function dueForReviewController({ auditService, csraService }: De
       return res.render('pages/dueForReview', {
         title: 'High risk prisoners due for review',
         prisoners: prisonersResult.content,
+        totalResults: prisonersResult.totalResults,
         ratingTypeOptions: prisonersResult.availableRatingTypes.map(ratingType => ({
           value: ratingType,
           text: csraRatingLabel(ratingType),
