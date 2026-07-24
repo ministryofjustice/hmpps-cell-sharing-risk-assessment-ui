@@ -1,6 +1,8 @@
 import { CsraApiClient } from '../data'
 import type {
   CsraCurrentRating,
+  CsraHighRiskDueForReview,
+  CsraHighRiskDueForReviewQuery,
   CsraHistoryQuery,
   CsraPrisonRatingSummary,
   CsraReviewHistory,
@@ -23,6 +25,18 @@ export default class CsraService {
    */
   getHistory(username: string, prisonerNumber: string, query: CsraHistoryQuery): Promise<CsraReviewHistory> {
     return this.csraApiClient.getCsraHistory(username, { prisonerNumber, ...query })
+  }
+
+  /**
+   * Get the high-risk prisoners in a prison who have a scheduled next review date.
+   * `username` is stamped onto the system token used for the call.
+   */
+  getHighRiskDueForReview(
+    username: string,
+    prisonId: string,
+    query: CsraHighRiskDueForReviewQuery = {},
+  ): Promise<CsraHighRiskDueForReview> {
+    return this.csraApiClient.getHighRiskDueForReview(username, { prisonId, ...query })
   }
 
   /**

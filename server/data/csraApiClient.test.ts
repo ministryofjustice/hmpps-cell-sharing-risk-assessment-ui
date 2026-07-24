@@ -3,7 +3,12 @@ import type { AuthenticationClient } from '@ministryofjustice/hmpps-auth-clients
 import CsraApiClient from './csraApiClient'
 import config from '../config'
 import { RedisClient } from './redisClient'
-import type { CsraCurrentRating, CsraPrisonRatingSummary, CsraReviewHistory } from './csraApiTypes'
+import type {
+  CsraCurrentRating,
+  CsraHighRiskDueForReview,
+  CsraPrisonRatingSummary,
+  CsraReviewHistory,
+} from './csraApiTypes'
 
 describe('CsraApiClient', () => {
   let csraApiClient: CsraApiClient
@@ -153,6 +158,60 @@ describe('CsraApiClient', () => {
 
       expect(response).toEqual(ratingSummary)
       expect(mockAuthenticationClient.getToken).toHaveBeenCalledWith('AUSER_GEN')
+    })
+  })
+
+  describe('getHighRiskDueForReview', () => {
+    it('should GET the high-risk due-for-review list using a system token', async () => {
+      const dueForReview: CsraHighRiskDueForReview = {
+        content: [
+          {
+            prisonerNumber: 'A1234BC',
+            firstName: 'Callum',
+            lastName: 'Reid',
+            reviewDueBy: '2026-06-29',
+            ratingType: 'HIGH_GENERAL',
+            rating: 'HIGH_GENERAL',
+            provisional: false,
+            lastRatingSource: 'REVIEW',
+            lastRatingDate: '2025-06-24',
+          },
+        ],
+        totalResults: 1,
+        availableRatingTypes: ['HIGH_GENERAL'],
+      }
+
+      nock(config.apis.csraApi.url)
+        .get('/csra-review/prison/MDI/high-risk-due-for-review')
+        .matchHeader('authorization', 'Bearer test-system-token')
+        .reply(200, dueForReview)
+
+      const response = await csraApiClient.getHighRiskDueForReview('AUSER_GEN', { prisonId: 'MDI' })
+
+      expect(response).toEqual(dueForReview)
+      expect(mockAuthenticationClient.getToken).toHaveBeenCalledWith('AUSER_GEN')
+    })
+
+    it('should pass filter query params when provided', async () => {
+      nock(config.apis.csraApi.url)
+        .get('/csra-review/prison/MDI/high-risk-due-for-review')
+        .query({
+          ratingTypes: ['HIGH', 'HIGH_SPECIFIC'],
+          reviewDateFrom: '2026-01-01',
+          sort: 'NAME',
+          direction: 'DESC',
+        })
+        .reply(200, { content: [], totalResults: 0, availableRatingTypes: [] })
+
+      const response = await csraApiClient.getHighRiskDueForReview('AUSER_GEN', {
+        prisonId: 'MDI',
+        ratingTypes: ['HIGH', 'HIGH_SPECIFIC'],
+        reviewDateFrom: '2026-01-01',
+        sort: 'NAME',
+        direction: 'DESC',
+      })
+
+      expect(response.content).toEqual([])
     })
   })
 })

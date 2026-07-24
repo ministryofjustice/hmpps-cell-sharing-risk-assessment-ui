@@ -8,6 +8,7 @@ import {
   csraRatingLabel,
   csraRatingTagClass,
   csraStatusLabel,
+  daysOverdue,
   enumLabel,
   formatDate,
   formatMonthYear,
@@ -59,6 +60,7 @@ export default function nunjucksSetup(app: express.Express): void {
   njkEnv.addFilter('convertToTitleCase', convertToTitleCase)
   njkEnv.addFilter('formatDate', formatDate)
   njkEnv.addFilter('formatMonthYear', formatMonthYear)
+  njkEnv.addFilter('daysOverdue', daysOverdue)
   njkEnv.addFilter('csraRatingLabel', csraRatingLabel)
   njkEnv.addFilter('csraRatingTagClass', csraRatingTagClass)
   njkEnv.addFilter('csraStatusLabel', csraStatusLabel)

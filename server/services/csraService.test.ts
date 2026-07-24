@@ -1,6 +1,11 @@
 import CsraService from './csraService'
 import { CsraApiClient } from '../data'
-import type { CsraCurrentRating, CsraPrisonRatingSummary, CsraReviewHistory } from '../data/csraApiTypes'
+import type {
+  CsraCurrentRating,
+  CsraHighRiskDueForReview,
+  CsraPrisonRatingSummary,
+  CsraReviewHistory,
+} from '../data/csraApiTypes'
 
 jest.mock('../data')
 
@@ -13,6 +18,7 @@ describe('CsraService', () => {
       getCurrentCsraRating: jest.fn(),
       getCsraHistory: jest.fn(),
       getRatingSummary: jest.fn(),
+      getHighRiskDueForReview: jest.fn(),
     } as unknown as jest.Mocked<CsraApiClient>
     csraService = new CsraService(csraApiClient)
   })
@@ -61,6 +67,37 @@ describe('CsraService', () => {
 
       expect(result).toEqual(ratingSummary)
       expect(csraApiClient.getRatingSummary).toHaveBeenCalledWith('AUSER_GEN', { prisonId: 'MDI' })
+    })
+  })
+
+  describe('getHighRiskDueForReview', () => {
+    it('delegates to the client, passing the username, prison id and query', async () => {
+      const dueForReview = {
+        content: [{ prisonerNumber: 'A1234BC', reviewDueBy: '2026-06-29' }],
+        totalResults: 1,
+        availableRatingTypes: ['HIGH'],
+      } as unknown as CsraHighRiskDueForReview
+      ;(csraApiClient.getHighRiskDueForReview as unknown as jest.Mock).mockResolvedValue(dueForReview)
+
+      const result = await csraService.getHighRiskDueForReview('AUSER_GEN', 'MDI', { ratingTypes: ['HIGH'] })
+
+      expect(result).toEqual(dueForReview)
+      expect(csraApiClient.getHighRiskDueForReview).toHaveBeenCalledWith('AUSER_GEN', {
+        prisonId: 'MDI',
+        ratingTypes: ['HIGH'],
+      })
+    })
+
+    it('uses an empty query when none is passed', async () => {
+      ;(csraApiClient.getHighRiskDueForReview as unknown as jest.Mock).mockResolvedValue({
+        content: [],
+        totalResults: 0,
+        availableRatingTypes: [],
+      })
+
+      await csraService.getHighRiskDueForReview('AUSER_GEN', 'MDI')
+
+      expect(csraApiClient.getHighRiskDueForReview).toHaveBeenCalledWith('AUSER_GEN', { prisonId: 'MDI' })
     })
   })
 })

@@ -1,5 +1,5 @@
 import { Router } from 'express'
-
+import dueForReviewController from '../controllers/dueForReviewController'
 import indexController from '../controllers/indexController'
 import prisonerCsraController from '../controllers/prisonerCsraController'
 import prisonerCsraHistoryController from '../controllers/prisonerCsraHistoryController'
@@ -21,6 +21,8 @@ export default function routes({
   const requirePrisonerAccess = checkPrisonerAccess(prisonerSearchService, manageUsersService)
 
   router.get('/', indexController({ auditService, csraService }))
+
+  router.get('/due-for-review', dueForReviewController({ auditService, csraService }))
 
   router.get('/prisoner/:prisonerNumber', requirePrisonerAccess, prisonerCsraController({ auditService, csraService }))
 

@@ -4,6 +4,7 @@ export enum Page {
   INDEX = 'INDEX',
   PRISONER_CSRA = 'PRISONER_CSRA',
   PRISONER_CSRA_HISTORY = 'PRISONER_CSRA_HISTORY',
+  DUE_FOR_REVIEW = 'DUE_FOR_REVIEW',
 }
 
 export interface PageViewEventDetails {
