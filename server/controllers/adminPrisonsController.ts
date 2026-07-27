@@ -79,9 +79,9 @@ export function adminSetPrisonActiveController({
     const name = typeof req.body.name === 'string' && req.body.name ? req.body.name : agencyId
 
     await csraService.setAgencyActive(username, agencyId, active)
-    // Drop the cached active-prison set so this pod reflects the toggle immediately; other pods
-    // converge on the TTL. Keeps the write gate in step with what the admin just changed.
-    activeAgenciesService.invalidate()
+    // Apply the change to the cached active-prison set so this pod reflects it immediately; other
+    // pods converge on the TTL. Keeps the write gate in step with what the admin just changed.
+    await activeAgenciesService.applyAgencyChange(agencyId, active)
 
     await auditService.logAuditEvent({
       what: AdminAction.SET_PRISON_ACTIVE,

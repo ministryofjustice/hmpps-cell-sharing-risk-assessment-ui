@@ -49,7 +49,29 @@ export default class ActiveAgenciesService {
     return (await this.getActiveAgencyIds()).has(prisonId)
   }
 
-  /** Drop the cache so the next lookup refreshes from the API. Called after an admin toggle. */
+  /**
+   * Records a change an admin has just made, so this pod reflects it immediately.
+   *
+   * Deliberately applies the known change rather than dropping the cache and refetching: the API
+   * caches `/info` for a couple of seconds, so a refetch triggered straight after a write reads back
+   * the *pre-change* list and then caches that for the full TTL. Switching a prison off is the
+   * dangerous direction there — it would stay writable in DPS after the admin had turned it off.
+   *
+   * Any other prison in the refreshed set could still be up to the API's `/info` cache window out of
+   * date, which only matters if two admins toggle different prisons in the same couple of seconds,
+   * and corrects itself on the next refresh.
+   */
+  async applyAgencyChange(agencyId: string, active: boolean): Promise<void> {
+    const ids = new Set(await this.getActiveAgencyIds())
+    if (active) {
+      ids.add(agencyId)
+    } else {
+      ids.delete(agencyId)
+    }
+    this.cache = { ids, expiry: Date.now() + ACTIVE_AGENCIES_TTL_MS }
+  }
+
+  /** Drop the cache so the next lookup refreshes from the API. */
   invalidate(): void {
     this.cache = null
   }

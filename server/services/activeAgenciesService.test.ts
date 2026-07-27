@@ -86,4 +86,42 @@ describe('ActiveAgenciesService', () => {
       expect(getActiveAgencyIds).not.toHaveBeenCalled()
     })
   })
+
+  describe('applyAgencyChange', () => {
+    it('adds a prison that has just been switched on', async () => {
+      getActiveAgencyIds.mockResolvedValue(['LEI'])
+
+      await service.applyAgencyChange('MDI', true)
+
+      expect(await service.getActiveAgencyIds()).toEqual(new Set(['LEI', 'MDI']))
+    })
+
+    it('removes a prison that has just been switched off', async () => {
+      getActiveAgencyIds.mockResolvedValue(['LEI', 'MDI'])
+
+      await service.applyAgencyChange('MDI', false)
+
+      expect(await service.getActiveAgencyIds()).toEqual(new Set(['LEI']))
+    })
+
+    it('keeps the change even when the API still reports the old list', async () => {
+      // The API caches /info briefly, so a read straight after a write can return the pre-change
+      // list. Dropping the cache and refetching would latch that stale list for the whole TTL.
+      getActiveAgencyIds.mockResolvedValue(['LEI'])
+      await service.getActiveAgencyIds()
+
+      await service.applyAgencyChange('MDI', true)
+
+      expect(await service.isPrisonActive('MDI')).toBe(true)
+    })
+
+    it('still records a switch-off when the API has not caught up either', async () => {
+      getActiveAgencyIds.mockResolvedValue(['LEI', 'MDI'])
+      await service.getActiveAgencyIds()
+
+      await service.applyAgencyChange('MDI', false)
+
+      expect(await service.isPrisonActive('MDI')).toBe(false)
+    })
+  })
 })

@@ -422,7 +422,7 @@ describe('Admin - manage enabled prisons', () => {
         .expect('Location', '/admin/prisons')
         .expect(() => {
           expect(csraService.setAgencyActive).toHaveBeenCalledWith(adminUser.username, 'LEI', true)
-          expect(activeAgenciesService.invalidate).toHaveBeenCalled()
+          expect(activeAgenciesService.applyAgencyChange).toHaveBeenCalledWith('LEI', true)
           expect(flashProvider).toHaveBeenCalledWith('success', 'CSRA is now switched on for Leeds (HMP).')
           expect(auditService.logAuditEvent).toHaveBeenCalledWith(
             expect.objectContaining({ what: 'SET_PRISON_ACTIVE', subjectId: 'LEI', details: { active: true } }),
