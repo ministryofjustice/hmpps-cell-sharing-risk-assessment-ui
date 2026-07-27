@@ -1,16 +1,46 @@
 {
+  "metadata": {
+    "comment": [
+      "Prison id -> name reference data. `active` marks a prison as still operational; the CSRA API's",
+      "rollout admin list offers only operational prisons, so XXI is here to show that filtering.",
+      "A prison already switched on stays listed even once it drops out of the operational set."
+    ]
+  },
   "request": {
     "method": "GET",
     "urlPath": "/prisons"
   },
   "response": {
     "status": 200,
-    "headers": { "Content-Type": "application/json" },
+    "headers": {
+      "Content-Type": "application/json"
+    },
     "jsonBody": [
-      { "prisonId": "MDI", "prisonName": "Moorland (HMP & YOI)" },
-      { "prisonId": "LEI", "prisonName": "Leeds (HMP)" },
-      { "prisonId": "BXI", "prisonName": "Brixton (HMP)" },
-      { "prisonId": "WWI", "prisonName": "Wandsworth (HMP)" }
+      {
+        "prisonId": "MDI",
+        "prisonName": "Moorland (HMP & YOI)",
+        "active": true
+      },
+      {
+        "prisonId": "LEI",
+        "prisonName": "Leeds (HMP)",
+        "active": true
+      },
+      {
+        "prisonId": "BXI",
+        "prisonName": "Brixton (HMP)",
+        "active": true
+      },
+      {
+        "prisonId": "WWI",
+        "prisonName": "Wandsworth (HMP)",
+        "active": true
+      },
+      {
+        "prisonId": "XXI",
+        "prisonName": "Closed (HMP)",
+        "active": false
+      }
     ]
   }
 }
