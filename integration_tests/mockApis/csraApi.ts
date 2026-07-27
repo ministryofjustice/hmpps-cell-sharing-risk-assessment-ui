@@ -1,6 +1,11 @@
 import type { SuperAgentRequest } from 'superagent'
 import { stubFor } from './wiremock'
-import type { CsraCurrentRating, CsraHighRiskDueForReview, CsraReviewHistory } from '../../server/data/csraApiTypes'
+import type {
+  AgencyStatus,
+  CsraCurrentRating,
+  CsraHighRiskDueForReview,
+  CsraReviewHistory,
+} from '../../server/data/csraApiTypes'
 
 export default {
   stubPing: (httpStatus = 200): SuperAgentRequest =>
@@ -88,6 +93,60 @@ export default {
           availableRatingTypes: ['HIGH_GENERAL', 'HIGH_SPECIFIC'],
           ...dueForReview,
         },
+      },
+    }),
+
+  stubGetRatingSummary: (prisonId: string, summary: Record<string, number> = {}): SuperAgentRequest =>
+    stubFor({
+      request: {
+        method: 'GET',
+        urlPattern: `/csra-api/csra-review/prison/${prisonId}/rating-summary`,
+      },
+      response: {
+        status: 200,
+        headers: { 'Content-Type': 'application/json;charset=UTF-8' },
+        jsonBody: { prisonId, total: 10, noRating: 1, highRisk: 2, standardRisk: 7, ...summary },
+      },
+    }),
+
+  /** The public /info endpoint the UI reads to know which prisons have CSRA switched on. */
+  stubGetInfo: (activeAgencies: string[] = []): SuperAgentRequest =>
+    stubFor({
+      request: {
+        method: 'GET',
+        urlPattern: '/csra-api/info',
+      },
+      response: {
+        status: 200,
+        headers: { 'Content-Type': 'application/json;charset=UTF-8' },
+        jsonBody: { build: { name: 'hmpps-cell-sharing-risk-assessment-api' }, activeAgencies },
+      },
+    }),
+
+  stubGetAllAgencies: (agencies: AgencyStatus[], priority?: number): SuperAgentRequest =>
+    stubFor({
+      priority,
+      request: {
+        method: 'GET',
+        urlPattern: '/csra-api/active-agencies/all',
+      },
+      response: {
+        status: 200,
+        headers: { 'Content-Type': 'application/json;charset=UTF-8' },
+        jsonBody: agencies,
+      },
+    }),
+
+  stubSetAgencyActive: (agency: AgencyStatus): SuperAgentRequest =>
+    stubFor({
+      request: {
+        method: 'PUT',
+        urlPattern: `/csra-api/active-agencies/${agency.agencyId}`,
+      },
+      response: {
+        status: 200,
+        headers: { 'Content-Type': 'application/json;charset=UTF-8' },
+        jsonBody: agency,
       },
     }),
 }

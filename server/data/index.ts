@@ -18,6 +18,7 @@ import logger from '../../logger'
 import CsraApiClient from './csraApiClient'
 import PrisonerSearchApiClient from './prisonerSearchApiClient'
 import PrisonApiClient from './prisonApiClient'
+import PrisonApiSplashClient from './prisonApiSplashClient'
 import ManageUsersApiClient from './manageUsersApiClient'
 
 export const dataAccess = () => {
@@ -33,6 +34,7 @@ export const dataAccess = () => {
     csraApiClient: new CsraApiClient(redisClient, hmppsAuthClient),
     prisonerSearchApiClient: new PrisonerSearchApiClient(redisClient, hmppsAuthClient),
     prisonApiClient: new PrisonApiClient(hmppsAuthClient),
+    prisonApiSplashClient: new PrisonApiSplashClient(redisClient, hmppsAuthClient),
     manageUsersApiClient: new ManageUsersApiClient(redisClient, hmppsAuthClient),
     hmppsAuditClient: new HmppsAuditClient(config.sqs.audit),
   }
@@ -46,5 +48,6 @@ export {
   CsraApiClient,
   PrisonerSearchApiClient,
   PrisonApiClient,
+  PrisonApiSplashClient,
   ManageUsersApiClient,
 }

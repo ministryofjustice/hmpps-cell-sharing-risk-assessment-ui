@@ -125,6 +125,22 @@ export default {
   sqs: {
     audit: auditConfig(),
   },
+  // Deliberately not under `apis`: setUpHealthChecks treats every entry there as a service to ping.
+  nomis: {
+    /**
+     * The NOMIS screens/modules that CSRA replaces, as a comma-separated list. Blocking them for a
+     * caseload forces staff at that prison to use DPS instead — the NOMIS half of DPS/NOMIS mutual
+     * exclusivity during rollout.
+     *
+     * Both are retired by the same rollout step, so they are managed together:
+     *  - OCDNOQUE — Offender Assessment Questionnaires, where a CSR Rating is recorded.
+     *  - OIDCAPPR — Classification Approval, the approval step the new service does not have.
+     */
+    csraModules: get('NOMIS_CSRA_MODULES', 'OCDNOQUE,OIDCAPPR')
+      .split(',')
+      .map((moduleName: string) => moduleName.trim())
+      .filter(Boolean),
+  },
   serviceUrls: {
     digitalPrison: get('DPS_URL', 'https://dps-dev.prison.service.justice.gov.uk', requiredInProduction),
   },
