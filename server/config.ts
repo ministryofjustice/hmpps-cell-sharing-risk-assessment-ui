@@ -125,6 +125,18 @@ export default {
   sqs: {
     audit: auditConfig(),
   },
+  activeAgencies: {
+    /**
+     * How long the set of prisons with CSRA switched on is trusted before it is refreshed from the
+     * CSRA API's `/info`. The list only changes when an admin toggles a prison during rollout, so a
+     * few minutes keeps the read path cheap while staying responsive.
+     *
+     * Zero disables the cache entirely, which the integration tests set: the cache is process-wide
+     * and outlives a single spec, so without this a stubbed rollout state would leak between specs
+     * and results would depend on the order they ran in.
+     */
+    ttlMs: Number(get('ACTIVE_AGENCIES_TTL_MS', 5 * 60 * 1000)),
+  },
   // Deliberately not under `apis`: setUpHealthChecks treats every entry there as a service to ping.
   nomis: {
     /**

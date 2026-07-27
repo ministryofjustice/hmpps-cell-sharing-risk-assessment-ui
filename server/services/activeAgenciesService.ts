@@ -1,14 +1,6 @@
 import CsraApiClient from '../data/csraApiClient'
+import config from '../config'
 import logger from '../../logger'
-
-/**
- * How long the set of DPS-active prisons is trusted before it is refreshed from the API's `/info`
- * endpoint. The list changes only when an admin toggles a prison during rollout, so a few minutes
- * keeps the read path cheap while staying responsive. A toggle in the admin console also invalidates
- * this cache in-process, so the acting admin sees the change immediately; the TTL is what converges
- * the other pods.
- */
-const ACTIVE_AGENCIES_TTL_MS = 5 * 60 * 1000
 
 /**
  * Resolves which prisons have the CSRA service switched on in DPS, so the service is usable only at a
@@ -18,7 +10,15 @@ const ACTIVE_AGENCIES_TTL_MS = 5 * 60 * 1000
 export default class ActiveAgenciesService {
   private cache: { ids: Set<string>; expiry: number } | null = null
 
-  constructor(private readonly csraApiClient: CsraApiClient) {}
+  /**
+   * [ttlMs] is how long a fetched set is trusted; zero disables caching (see config.activeAgencies).
+   * A toggle in the admin console updates this cache in-process so the acting admin sees the change
+   * immediately; the TTL is what converges the other pods.
+   */
+  constructor(
+    private readonly csraApiClient: CsraApiClient,
+    private readonly ttlMs: number = config.activeAgencies.ttlMs,
+  ) {}
 
   /**
    * The set of agency ids switched on in DPS, served from the short-lived cache when fresh.
@@ -35,7 +35,7 @@ export default class ActiveAgenciesService {
 
     try {
       const ids = new Set(await this.csraApiClient.getActiveAgencyIds())
-      this.cache = { ids, expiry: now + ACTIVE_AGENCIES_TTL_MS }
+      this.cache = { ids, expiry: now + this.ttlMs }
       return ids
     } catch (error) {
       logger.warn(`Failed to load active agencies: ${(error as Error).message}`)
@@ -68,7 +68,7 @@ export default class ActiveAgenciesService {
     } else {
       ids.delete(agencyId)
     }
-    this.cache = { ids, expiry: Date.now() + ACTIVE_AGENCIES_TTL_MS }
+    this.cache = { ids, expiry: Date.now() + this.ttlMs }
   }
 
   /** Drop the cache so the next lookup refreshes from the API. */

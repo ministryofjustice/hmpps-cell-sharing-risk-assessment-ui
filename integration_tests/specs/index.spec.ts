@@ -68,9 +68,7 @@ test.describe('Index page', () => {
   })
 
   test('says CSRA is still managed in NOMIS at an establishment that is not switched on', async ({ page }) => {
-    // Signs in at Leeds, which is never in the active set any spec stubs. The app caches the active
-    // agencies process-wide for a few minutes, so a spec that relied on an empty set here would pass
-    // or fail depending on which spec ran first.
+    // Leeds is not in the stubbed active set, so the establishment reads as not switched on.
     await csraApi.stubGetInfo([MOORLAND.caseLoadId])
     await csraApi.stubGetRatingSummary(LEEDS.caseLoadId)
     await login(page, { activeCaseLoad: LEEDS })

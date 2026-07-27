@@ -124,4 +124,17 @@ describe('ActiveAgenciesService', () => {
       expect(await service.isPrisonActive('MDI')).toBe(false)
     })
   })
+
+  describe('with caching disabled (ttlMs 0)', () => {
+    it('reads the API every time, so a process-wide cache cannot leak between tests', async () => {
+      const uncached = new ActiveAgenciesService(csraApiClient, 0)
+      getActiveAgencyIds.mockResolvedValue(['LEI'])
+      await uncached.getActiveAgencyIds()
+
+      getActiveAgencyIds.mockResolvedValue(['MDI'])
+
+      expect(await uncached.getActiveAgencyIds()).toEqual(new Set(['MDI']))
+      expect(getActiveAgencyIds).toHaveBeenCalledTimes(2)
+    })
+  })
 })
