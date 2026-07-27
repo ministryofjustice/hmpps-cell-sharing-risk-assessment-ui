@@ -6,6 +6,7 @@ import prisonerCsraHistoryController from '../controllers/prisonerCsraHistoryCon
 import prisonerImageController from '../controllers/prisonerImageController'
 import type { Services } from '../services'
 import checkPrisonerAccess from '../middleware/checkPrisonerAccess'
+import addBreadcrumb from '../middleware/addBreadcrumb'
 
 export default function routes({
   auditService,
@@ -22,7 +23,11 @@ export default function routes({
 
   router.get('/', indexController({ auditService, csraService }))
 
-  router.get('/due-for-review', dueForReviewController({ auditService, csraService }))
+  router.get(
+    '/due-for-review',
+    addBreadcrumb({ title: 'CSRA', href: '/' }),
+    dueForReviewController({ auditService, csraService }),
+  )
 
   router.get('/prisoner/:prisonerNumber', requirePrisonerAccess, prisonerCsraController({ auditService, csraService }))
 

@@ -179,12 +179,12 @@
     .govuk-table__cell {
       vertical-align: middle;
     }
+  }
 
-    &__rating-meta {
-      @include govuk-font($size: 16);
-      color: $govuk-secondary-text-colour;
-      display: block;
-      margin: 0;
-    }
+  &__rating-meta {
+    @include govuk-font($size: 16);
+    color: $govuk-secondary-text-colour;
+    display: block;
+    margin: 0;
   }
 }

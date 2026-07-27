@@ -1,5 +1,5 @@
 import type { ParsedQs } from 'qs'
-import { differenceInCalendarDays, isValid, parseISO, startOfDay } from 'date-fns'
+import { differenceInCalendarDays, format, isValid, parse, parseISO, startOfDay } from 'date-fns'
 import type { CsraHistoryQuery } from '../data/csraApiTypes'
 
 const properCase = (word: string): string =>
@@ -138,6 +138,53 @@ const toArray = (value: ParsedQs[string]): string[] =>
     .map(item => item?.toString().trim())
     .filter((item): item is string => Boolean(item))
 
+/** Error types returned by {@link validateUkDate}. */
+export type UkDateValidationError = 'WRONG_FORMAT' | 'INCOMPLETE' | 'NON_EXISTENT'
+
+/**
+ * Format string used by date-fns to parse UK date inputs (d/m/yyyy with slash separators only).
+ */
+const UK_DATE_FORMAT = 'd/M/yyyy'
+
+/**
+ * Validate a UK-format date string and return the specific error type, or null if valid/empty.
+ * Only slash separators are accepted (e.g. "17/5/2024"); dashes and dots are treated as wrong format.
+ * - 'WRONG_FORMAT': no slash separators, or non-numeric parts where digits are expected
+ * - 'INCOMPLETE': slashes present but fewer than three parts, or an empty part
+ * - 'NON_EXISTENT': well-formed d/m/yyyy but the calendar date does not exist (e.g. 31/4/2026)
+ */
+export const validateUkDate = (value?: string): UkDateValidationError | null => {
+  if (!value?.trim()) return null
+
+  const trimmed = value.trim()
+
+  if (!trimmed.includes('/')) return 'WRONG_FORMAT'
+
+  const parts = trimmed.split('/')
+  if (parts.length !== 3 || parts.some(p => !p)) return 'INCOMPLETE'
+
+  const match = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  if (!match) return 'WRONG_FORMAT'
+
+  const [, d, m, y] = match
+  const day = Number(d)
+  const month = Number(m)
+  const year = Number(y)
+
+  // Use date-fns to parse and validate the calendar date. Overflow (e.g. 31/4/2026 → May 1)
+  // is detected by comparing the parsed date's components back to the original values.
+  const parsed = parse(`${day}/${month}/${year}`, UK_DATE_FORMAT, new Date(0))
+  if (
+    !isValid(parsed) ||
+    parsed.getDate() !== day ||
+    parsed.getMonth() !== month - 1 ||
+    parsed.getFullYear() !== year
+  ) {
+    return 'NON_EXISTENT'
+  }
+  return null
+}
+
 /**
  * Parse a UK-format date ("17/5/2024", also accepting "-" or ".") into an ISO date ("2024-05-17"),
  * or undefined if it is missing or not a real calendar date. Used to translate the MOJ date-picker
@@ -145,17 +192,22 @@ const toArray = (value: ParsedQs[string]): string[] =>
  */
 export const parseUkDate = (value?: string): string | undefined => {
   if (!value) return undefined
-  const match = value.trim().match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/)
+  const match = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
   if (!match) return undefined
   const [, d, m, y] = match
   const day = Number(d)
   const month = Number(m)
   const year = Number(y)
-  const date = new Date(Date.UTC(year, month - 1, day))
-  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+  const parsed = parse(`${day}/${month}/${year}`, UK_DATE_FORMAT, new Date(0))
+  if (
+    !isValid(parsed) ||
+    parsed.getDate() !== day ||
+    parsed.getMonth() !== month - 1 ||
+    parsed.getFullYear() !== year
+  ) {
     return undefined
   }
-  return `${y}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  return format(parsed, 'yyyy-MM-dd')
 }
 
 export interface ParsedCsraHistoryQuery {
