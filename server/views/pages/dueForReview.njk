@@ -80,10 +80,9 @@
               {% if prisoners.length > 0 %}
                 {% set tableRows = [] %}
                 {% for prisoner in prisoners %}
-                  {% set name %}
-                    <a class="govuk-link govuk-link--no-visited-state" href="{{ '/prisoner/' + prisoner.prisonerNumber }}">
-                      {{ prisoner.lastName | capitalize }}, {{ prisoner.firstName | capitalize }}
-                    </a>
+                  {% set name = prisoner.lastName | capitalize + ', ' + prisoner.firstName | capitalize %}
+                  {% set nameHtml %}
+                    <a class="govuk-link govuk-link--no-visited-state" href="{{ '/prisoner/' + prisoner.prisonerNumber }}">{{ name }}</a>
                   {% endset %}
                   {% set overdueDays = prisoner.reviewDueBy | daysOverdue %}
                   {% set reviewDueByHtml = prisoner.reviewDueBy | formatDate %}
@@ -94,7 +93,10 @@
                   {% endif %}
                   {% set _ = tableRows.push([
                     {
-                      html: name
+                      html: nameHtml,
+                      attributes: {
+                        "data-sort-value": name
+                      }
                     },
                     {
                       text: prisoner.prisonerNumber
