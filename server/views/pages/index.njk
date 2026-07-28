@@ -23,19 +23,6 @@
     </div>
 
     {% block content %}
-      {% if not prisonActive %}
-        <div class="govuk-width-container">
-          <div class="govuk-grid-row">
-            <div class="govuk-grid-column-two-thirds">
-              <p class="govuk-inset-text" data-qa="nomis-banner">
-                Cell sharing risk assessments at {{ establishmentName }} are still managed in NOMIS.
-                You will be able to start and review assessments here once this establishment moves to DPS.
-              </p>
-            </div>
-          </div>
-        </div>
-      {% endif %}
-
       <div class="cards-area govuk-!-margin-bottom-9">
         <div class="govuk-width-container govuk-!-margin-bottom-0">
           {% for cardsSection in cardsSections %}

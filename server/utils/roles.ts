@@ -16,6 +16,16 @@ export const Role = {
   // Allows a user to administer the CSRA rollout: switch prisons on/off in DPS and control the
   // legacy NOMIS CSRA screen. Not caseload-scoped — it is a national control.
   CSRA__ADMIN: 'CSRA__ADMIN',
+  /**
+   * Allows a user to create and update CSRA assessments. Viewing needs no role, so a user without
+   * this one is read-only.
+   *
+   * Not enforced yet: the assessment write journeys do not exist. When they do, the gate is this role
+   * **and** the establishment being switched on for CSRA in DPS — see the note in server/routes/index.ts.
+   */
+  CSRA__ASSESSMENT_EDIT: 'CSRA__ASSESSMENT_EDIT',
+  /** The same, for CSRA reviews rather than assessments. Also not enforced yet. */
+  CSRA__REVIEW_EDIT: 'CSRA__REVIEW_EDIT',
 } as const
 
 export type Role = (typeof Role)[keyof typeof Role]

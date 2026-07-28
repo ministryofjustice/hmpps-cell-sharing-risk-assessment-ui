@@ -15,26 +15,20 @@ import addBreadcrumb from '../middleware/addBreadcrumb'
 import requireAdminRole from '../middleware/requireAdminRole'
 
 export default function routes(services: Services): Router {
-  const {
-    auditService,
-    prisonerSearchService,
-    csraService,
-    prisonApiService,
-    manageUsersService,
-    activeAgenciesService,
-  } = services
+  const { auditService, prisonerSearchService, csraService, prisonApiService, manageUsersService } = services
   const router = Router()
 
-  // NOTE: CSRA write journeys are gated on the user's establishment being switched on in DPS, so a
-  // prison still managed in NOMIS stays read-only here. Wrap each write route in
-  // `requireActivePrison(activeAgenciesService)` (server/middleware/requireActivePrison.ts) as those
-  // journeys are built. Reading is deliberately not gated; the landing page reflects the state instead.
+  // NOTE: reading CSRA information is open to any user with the prisoner in their caseload, so none of
+  // the routes below are gated on rollout. Writing is what rollout gates: as each write journey is
+  // built, wrap its route in `requireActivePrison(services.activeAgenciesService)`
+  // (server/middleware/requireActivePrison.ts) *and* a check on the user holding
+  // Role.CSRA__ASSESSMENT_EDIT or Role.CSRA__REVIEW_EDIT as appropriate.
 
   // Guards all prisoner routes: enforces the caseload/role access rules and, on success, stashes
   // the looked-up prisoner on res.locals.prisoner for the handlers to reuse.
   const requirePrisonerAccess = checkPrisonerAccess(prisonerSearchService, manageUsersService)
 
-  router.get('/', indexController({ auditService, csraService, activeAgenciesService }))
+  router.get('/', indexController({ auditService, csraService }))
 
   router.get(
     '/due-for-review',

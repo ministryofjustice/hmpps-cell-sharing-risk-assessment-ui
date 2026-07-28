@@ -11,15 +11,13 @@ test.describe('Index page', () => {
     await resetStubs()
   })
 
-  /** Sign in at Moorland with CSRA switched on there, so the journey tiles are available. */
-  const loginAtSwitchedOnPrison = async (page: Page) => {
-    await csraApi.stubGetInfo([MOORLAND.caseLoadId])
+  const loginAtMoorland = async (page: Page) => {
     await csraApi.stubGetRatingSummary(MOORLAND.caseLoadId)
     await login(page, { activeCaseLoad: MOORLAND })
   }
 
   test('renders the page title and heading', async ({ page }) => {
-    await loginAtSwitchedOnPrison(page)
+    await loginAtMoorland(page)
 
     await page.goto('/')
 
@@ -29,7 +27,7 @@ test.describe('Index page', () => {
   })
 
   test('renders the start and complete assessments card section', async ({ page }) => {
-    await loginAtSwitchedOnPrison(page)
+    await loginAtMoorland(page)
 
     await page.goto('/')
 
@@ -39,7 +37,7 @@ test.describe('Index page', () => {
   })
 
   test('renders the reviews card section', async ({ page }) => {
-    await loginAtSwitchedOnPrison(page)
+    await loginAtMoorland(page)
 
     await page.goto('/')
 
@@ -49,7 +47,7 @@ test.describe('Index page', () => {
   })
 
   test('renders CSRA ratings stats', async ({ page }) => {
-    await loginAtSwitchedOnPrison(page)
+    await loginAtMoorland(page)
 
     await page.goto('/')
 
@@ -60,29 +58,29 @@ test.describe('Index page', () => {
   })
 
   test('renders a link to view all prisoners', async ({ page }) => {
-    await loginAtSwitchedOnPrison(page)
+    await loginAtMoorland(page)
 
     await page.goto('/')
 
     await expect(page.getByRole('link', { name: 'View all prisoners' })).toBeVisible()
   })
 
-  test('says CSRA is still managed in NOMIS at an establishment that is not switched on', async ({ page }) => {
-    // Leeds is not in the stubbed active set, so the establishment reads as not switched on.
+  test('links the journey tiles at an establishment that is not switched on for CSRA', async ({ page }) => {
+    // Leeds is not in the active set, but the worklists are read-only and open to any user with the
+    // prisoner in their caseload, so the tiles still work and nothing says otherwise.
     await csraApi.stubGetInfo([MOORLAND.caseLoadId])
     await csraApi.stubGetRatingSummary(LEEDS.caseLoadId)
     await login(page, { activeCaseLoad: LEEDS })
 
     await page.goto('/')
 
-    await expect(page.getByTestId('nomis-banner')).toContainText('still managed in NOMIS')
-    // The tiles are still listed, so staff can see what is coming, but they do not lead anywhere yet.
-    await expect(page.getByRole('link', { name: 'Recent arrivals' })).toHaveCount(0)
-    await expect(page.getByText('Recent arrivals')).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Recent arrivals' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Reviews in progress' })).toBeVisible()
+    await expect(page.getByTestId('nomis-banner')).toHaveCount(0)
   })
 
   test('hides the admin tile from a user without the admin role', async ({ page }) => {
-    await loginAtSwitchedOnPrison(page)
+    await loginAtMoorland(page)
 
     await page.goto('/')
 

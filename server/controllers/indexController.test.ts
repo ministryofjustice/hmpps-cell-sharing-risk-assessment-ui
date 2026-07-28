@@ -7,15 +7,11 @@ describe('indexController', () => {
     getRatingSummary: jest.fn(),
   }
 
-  const activeAgenciesService = {
-    isPrisonActive: jest.fn(),
-  }
-
   const auditService = {
     logPageView: jest.fn(),
   }
 
-  const controller = () => indexController({ auditService, csraService, activeAgenciesService } as any)
+  const controller = () => indexController({ auditService, csraService } as any)
 
   const request = (id = 'request-id-123') => ({ id }) as any
 
@@ -36,7 +32,6 @@ describe('indexController', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     auditService.logPageView.mockResolvedValue(null)
-    activeAgenciesService.isPrisonActive.mockResolvedValue(true)
     csraService.getRatingSummary.mockResolvedValue({
       prisonId: 'MDI',
       total: 1015,
@@ -59,7 +54,6 @@ describe('indexController', () => {
     expect(res.render).toHaveBeenCalledWith('pages/index', {
       title: 'Cell sharing risk assessment (CSRA)',
       establishmentName: 'Leeds (HMP)',
-      prisonActive: true,
       isAdmin: false,
       cardsSections: [
         {
@@ -123,26 +117,21 @@ describe('indexController', () => {
     )
   })
 
-  it('unlinks the journey tiles when the establishment is not yet switched on in DPS', async () => {
-    activeAgenciesService.isPrisonActive.mockResolvedValue(false)
+  it('always links the journey tiles, whether or not the establishment is switched on', async () => {
+    // Reading CSRA information is open to any user with the prisoner in their caseload, so rollout
+    // deliberately does not gate these worklists. Rollout gates writing, which lives elsewhere.
     const res = response()
 
     await controller()(request(), res, jest.fn())
 
-    const renderLocals = res.render.mock.calls[0][1]
-    expect(renderLocals.prisonActive).toBe(false)
-    const journeyCards = renderLocals.cardsSections.flatMap((section: { cards: unknown[] }) => section.cards)
+    const journeyCards = res.render.mock.calls[0][1].cardsSections.flatMap(
+      (section: { cards: unknown[] }) => section.cards,
+    )
     expect(journeyCards).toHaveLength(4)
     journeyCards.forEach((card: { href?: string; clickable: boolean }) => {
-      expect(card.href).toBeUndefined()
-      expect(card.clickable).toBe(false)
+      expect(card.href).toBeDefined()
+      expect(card.clickable).toBe(true)
     })
-  })
-
-  it('checks rollout against the active caseload', async () => {
-    await controller()(request(), response(), jest.fn())
-
-    expect(activeAgenciesService.isPrisonActive).toHaveBeenCalledWith('MDI')
   })
 
   it('shows the admin tile only to a user with the admin role', async () => {

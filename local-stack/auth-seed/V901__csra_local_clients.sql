@@ -146,3 +146,15 @@ SELECT role_id, user_id
 FROM roles, users
 WHERE username = 'AUTH_USER'
   AND role_code = 'CSRA__ADMIN';
+
+-- The two CSRA edit roles. Nothing enforces them yet - the write journeys do not exist - but seeding
+-- them keeps local dev matching production, so those journeys work here the day they are built.
+INSERT INTO roles (role_id, role_code, role_name, role_description, admin_type)
+VALUES ('c57a0005-0000-4000-a000-000000000005', 'CSRA__ASSESSMENT_EDIT', 'Edit CSRA assessments', null, 'DPS_ADM'),
+       ('c57a0006-0000-4000-a000-000000000006', 'CSRA__REVIEW_EDIT', 'Edit CSRA reviews', null, 'DPS_ADM');
+
+INSERT INTO user_role (role_id, user_id)
+SELECT role_id, user_id
+FROM roles, users
+WHERE username = 'AUTH_USER'
+  AND role_code IN ('CSRA__ASSESSMENT_EDIT', 'CSRA__REVIEW_EDIT');

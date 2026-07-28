@@ -5,13 +5,9 @@ import { Page } from '../services/auditService'
 import { canAdminister } from '../middleware/requireAdminRole'
 import logger from '../../logger'
 
-type Dependencies = Pick<Services, 'auditService' | 'csraService' | 'activeAgenciesService'>
+type Dependencies = Pick<Services, 'auditService' | 'csraService'>
 
-export default function indexController({
-  auditService,
-  csraService,
-  activeAgenciesService,
-}: Dependencies): RequestHandler {
+export default function indexController({ auditService, csraService }: Dependencies): RequestHandler {
   return async (req, res) => {
     await auditService.logPageView(Page.INDEX, { who: res.locals.user.username, correlationId: req.id })
 
@@ -29,47 +25,47 @@ export default function indexController({
       logger.error('Error fetching prisoner ratings for index page', error)
     }
 
-    // During rollout a prison uses either DPS or NOMIS for CSRA. Until this establishment is switched
-    // on, the assessment/review journeys are not available here and the page says so instead.
-    const prisonActive = await activeAgenciesService.isPrisonActive(activeCaseloadId)
-
+    // These tiles all lead to read-only worklists, which any user may see for prisoners in their
+    // caseload — the same information already on the DPS prisoner profile. They are deliberately not
+    // gated on the establishment being switched on for CSRA in DPS: with data migrated and kept in
+    // two-way sync with NOMIS, it is accurate whichever system the prison records in. Rollout gates
+    // writes, not reads.
     return res.render('pages/index', {
       title: 'Cell sharing risk assessment (CSRA)',
-      prisonActive,
       isAdmin: canAdminister(res.locals.user.userRoles),
       cardsSections: [
         {
           subheading: 'Start and complete assessments',
           cards: [
-            journeyCard({
+            {
               heading: 'Recent arrivals',
               description: 'View recently arrived prisoners who may need an assessment.',
               href: '/recent-arrivals',
-              prisonActive,
-            }),
-            journeyCard({
+              clickable: true,
+            },
+            {
               heading: 'Assessments in progress',
               description: 'View prisoners who have an assessment in progress.',
               href: '/assessments-in-progress',
-              prisonActive,
-            }),
+              clickable: true,
+            },
           ],
         },
         {
           subheading: 'View upcoming and incomplete reviews',
           cards: [
-            journeyCard({
+            {
               heading: 'High risk prisoners due for review',
               description: 'View prisoners with a scheduled cell sharing risk review.',
               href: '/due-for-review',
-              prisonActive,
-            }),
-            journeyCard({
+              clickable: true,
+            },
+            {
               heading: 'Reviews in progress',
               description: 'View incomplete cell sharing risk reviews for prisoners.',
               href: '/reviews-in-progress',
-              prisonActive,
-            }),
+              clickable: true,
+            },
           ],
         },
         ...(canAdminister(res.locals.user.userRoles)
@@ -96,28 +92,5 @@ export default function indexController({
         standardRisk: String(stats.standardRisk),
       },
     })
-  }
-}
-
-/**
- * A CSRA journey tile. Until the establishment is switched on in DPS the journey does not exist here,
- * so the tile is shown without a link rather than hidden — staff can still see what is coming.
- */
-function journeyCard({
-  heading,
-  description,
-  href,
-  prisonActive,
-}: {
-  heading: string
-  description: string
-  href: string
-  prisonActive: boolean
-}) {
-  return {
-    heading,
-    description,
-    href: prisonActive ? href : undefined,
-    clickable: prisonActive,
   }
 }
