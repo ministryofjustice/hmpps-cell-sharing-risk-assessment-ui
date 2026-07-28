@@ -3,6 +3,7 @@ import config from '../config'
 import BaseApiClient from './baseApiClient'
 import { RedisClient } from './redisClient'
 import type {
+  AgencyStatus,
   CsraCurrentRating,
   CsraHighRiskDueForReview,
   CsraHighRiskDueForReviewQuery,
@@ -66,4 +67,38 @@ export default class CsraApiClient extends BaseApiClient {
     requestType: 'get',
     options: { asSystem: true },
   })
+
+  /**
+   * List every prison with whether the CSRA service is switched on, for the rollout admin console.
+   * Called `asSystem` (see getCurrentCsraRating); the system client must hold ROLE_PRISONER_CSRA__ADMIN.
+   */
+  getAllAgencies = this.apiCall<AgencyStatus[], Record<string, never>>({
+    path: '/active-agencies/all',
+    requestType: 'get',
+    options: { asSystem: true },
+  })
+
+  /**
+   * Switch the CSRA service on or off in DPS for a prison. Idempotent. Called `asSystem`; the system
+   * client must hold ROLE_PRISONER_CSRA__ADMIN.
+   */
+  setAgencyActive = this.apiCall<AgencyStatus, { agencyId: string }, { active: boolean }>({
+    path: '/active-agencies/:agencyId',
+    requestType: 'put',
+    options: { asSystem: true },
+  })
+
+  /**
+   * The ids of the prisons the CSRA service is switched on for, from the public `/info` endpoint's
+   * `activeAgencies` array.
+   *
+   * Called **unauthenticated** (no token): `/info` is public and this sits on the ordinary read path,
+   * so we avoid needing the privileged admin token here. Written directly rather than through
+   * `apiCall`, which always attaches a token. Returns `[]` when the key is absent (e.g. an older API
+   * deploy) so callers degrade safely to "no prison switched on".
+   */
+  async getActiveAgencyIds(): Promise<string[]> {
+    const info = await this.get<{ activeAgencies?: string[] }>({ path: '/info' })
+    return info?.activeAgencies ?? []
+  }
 }

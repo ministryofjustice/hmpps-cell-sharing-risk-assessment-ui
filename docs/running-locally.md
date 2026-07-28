@@ -127,6 +127,41 @@ curl -s -X PUT "$API/csra-review/prisoner/A5678FG/assessment/$id/provisional" \
 
 The prisoner's current rating then shows as `PROVISIONAL` until the final stage is submitted.
 
+## The rollout admin console
+
+`/admin/prisons` controls which prisons have CSRA switched on in DPS, and the state of the two
+NOMIS screens CSRA replaces (`OCDNOQUE` — Offender Assessment Questionnaires, and `OIDCAPPR` —
+Classification Approval).
+
+Signing in as `AUTH_USER` gets you there: `local-stack/auth-seed/V901__csra_local_clients.sql`
+grants that account the `CSRA__ADMIN` user role, so the **Admin** tile appears on the landing page.
+The same seed grants the UI's system client the roles the console's API calls need
+(`ROLE_PRISONER_CSRA__ADMIN` on the CSRA API, and the prison-api splash-screen roles).
+
+> **The dockerised API must be new enough.** The console calls `/active-agencies` on the CSRA API,
+> added in MAPA-214. `ghcr.io/ministryofjustice/hmpps-cell-sharing-risk-assessment-api:latest` only
+> has it once that change is merged and published — until then the page returns a 500 with
+> `No static resource active-agencies/all` in the UI log. `docker compose pull` to pick up a newer
+> image, or run the API yourself from the sibling repo and point `CSRA_API_URL` at it.
+
+### What the NOMIS column shows locally
+
+prison-api is a WireMock stub (`local-stack/prison-api`), seeded to show every state at once:
+
+| Prison | NOMIS state | Why |
+| --- | --- | --- |
+| MDI | Blocked | blocked on both screens |
+| LEI | Warning | warning on both screens |
+| BXI | Normal | no condition on either screen |
+| WWI | Mixed | blocked on `OCDNOQUE` only — the two disagree |
+
+The stub is **read-only**, like the other stubs here. The Block / Show warning / Clear buttons
+return success and you get the banner, but a re-read still shows the seeded state above. Point
+`PRISON_API_URL` at a real prison-api to exercise the writes properly.
+
+The prison list itself comes from the prison-register stub, which marks `XXI` as non-operational so
+you can see that closed prisons are left out of the list.
+
 ## Resetting
 
 Re-running the seed adds a **new** completed review each time (the latest one wins as the

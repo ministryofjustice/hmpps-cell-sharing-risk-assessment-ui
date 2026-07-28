@@ -5,6 +5,13 @@ export enum Page {
   PRISONER_CSRA = 'PRISONER_CSRA',
   PRISONER_CSRA_HISTORY = 'PRISONER_CSRA_HISTORY',
   DUE_FOR_REVIEW = 'DUE_FOR_REVIEW',
+  ADMIN_PRISONS = 'ADMIN_PRISONS',
+}
+
+/** Auditable admin actions (as opposed to page views), recorded via logAuditEvent. */
+export enum AdminAction {
+  SET_PRISON_ACTIVE = 'SET_PRISON_ACTIVE',
+  SET_NOMIS_CSRA_SCREEN = 'SET_NOMIS_CSRA_SCREEN',
 }
 
 export interface PageViewEventDetails {

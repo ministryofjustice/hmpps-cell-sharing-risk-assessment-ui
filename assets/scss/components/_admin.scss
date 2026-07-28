@@ -1,0 +1,15 @@
+// Rollout admin console (Manage enabled prisons).
+
+// Sits the search box and its button on one line, aligned at the top so the label stays above the input.
+.csra-admin-search {
+  display: flex;
+  gap: govuk-spacing(2);
+  align-items: flex-start;
+}
+
+// Each NOMIS state change is its own form, so they need to sit side by side within the table cell
+// rather than stacking as block-level forms would.
+.csra-admin-inline-form {
+  display: inline-block;
+  margin-left: govuk-spacing(1);
+}

@@ -37,7 +37,12 @@ export default {
       },
     }),
 
-  // The DPS shared header/footer, fetched by getFrontendComponents on every authenticated page.
+  /**
+   * The DPS shared header/footer, fetched by getFrontendComponents on every authenticated page.
+   *
+   * `activeCaseLoad` also drives the CSRA rollout gate, so pass one when a spec needs the service to
+   * behave as though the user is at a particular establishment.
+   */
   stubComponents: (
     activeCaseLoad: { caseLoadId: string; description: string } | null = defaultActiveCaseLoad,
   ): SuperAgentRequest =>
