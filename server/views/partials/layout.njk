@@ -2,6 +2,8 @@
 
 {% from "../macros/breadcrumb.njk" import breadcrumb %}
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+{# Used by the backButton block below; must be imported here as that block is defined in this layout. #}
+{% from "govuk/components/back-link/macro.njk" import govukBackLink %}
 
 {% block head %}
   <link href="{{ '/assets/css/index.css' | assetMap }}" rel="stylesheet"/>

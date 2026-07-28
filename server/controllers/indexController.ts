@@ -2,6 +2,7 @@ import { type RequestHandler } from 'express'
 
 import type { Services } from '../services'
 import { Page } from '../services/auditService'
+import { canAdminister } from '../middleware/requireAdminRole'
 import logger from '../../logger'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
@@ -10,6 +11,8 @@ export default function indexController({ auditService, csraService }: Dependenc
   return async (req, res) => {
     await auditService.logPageView(Page.INDEX, { who: res.locals.user.username, correlationId: req.id })
 
+    const activeCaseloadId = res.locals.feComponents?.sharedData?.activeCaseLoad?.caseLoadId
+
     let stats: { noRating: string | number; highRisk: string | number; standardRisk: string | number } = {
       noRating: '-',
       highRisk: '-',
@@ -17,16 +20,19 @@ export default function indexController({ auditService, csraService }: Dependenc
     }
 
     try {
-      stats = await csraService.getRatingSummary(
-        res.locals.user.username,
-        res.locals.feComponents?.sharedData?.activeCaseLoad?.caseLoadId,
-      )
+      stats = await csraService.getRatingSummary(res.locals.user.username, activeCaseloadId)
     } catch (error) {
       logger.error('Error fetching prisoner ratings for index page', error)
     }
 
+    // These tiles all lead to read-only worklists, which any user may see for prisoners in their
+    // caseload — the same information already on the DPS prisoner profile. They are deliberately not
+    // gated on the establishment being switched on for CSRA in DPS: with data migrated and kept in
+    // two-way sync with NOMIS, it is accurate whichever system the prison records in. Rollout gates
+    // writes, not reads.
     return res.render('pages/index', {
       title: 'Cell sharing risk assessment (CSRA)',
+      isAdmin: canAdminister(res.locals.user.userRoles),
       cardsSections: [
         {
           subheading: 'Start and complete assessments',
@@ -62,6 +68,22 @@ export default function indexController({ auditService, csraService }: Dependenc
             },
           ],
         },
+        ...(canAdminister(res.locals.user.userRoles)
+          ? [
+              {
+                subheading: 'Admin',
+                cards: [
+                  {
+                    heading: 'Manage enabled prisons',
+                    description: 'Switch CSRA on or off for a prison and control the NOMIS CSRA screen.',
+                    href: '/admin/prisons',
+                    clickable: true,
+                    'data-qa': 'admin-card',
+                  },
+                ],
+              },
+            ]
+          : []),
       ],
       establishmentName: res.locals.feComponents?.sharedData?.activeCaseLoad?.description ?? 'Unknown establishment',
       stats: {

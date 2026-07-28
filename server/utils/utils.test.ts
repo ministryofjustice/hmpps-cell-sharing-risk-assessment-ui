@@ -12,6 +12,7 @@ import {
   isPrisonerNumber,
   parseCsraHistoryQuery,
   parseUkDate,
+  validateUkDate,
 } from './utils'
 
 describe('convert to title case', () => {
@@ -148,12 +149,34 @@ describe('parseUkDate', () => {
     ['blank', '', undefined],
     ['single digits', '5/7/2024', '2024-07-05'],
     ['padded', '17/05/2024', '2024-05-17'],
-    ['dash separators', '17-5-2024', '2024-05-17'],
+    ['dash separators', '17-5-2024', undefined],
     ['not a real date', '31/2/2024', undefined],
     ['nonsense', 'abc', undefined],
     ['wrong order', '2024/05/17', undefined],
   ])('%s parseUkDate(%s) === %s', (_: string, input: string, expected?: string) => {
     expect(parseUkDate(input)).toEqual(expected)
+  })
+})
+
+describe('validateUkDate', () => {
+  it.each([
+    ['undefined', undefined, null],
+    ['empty string', '', null],
+    ['valid date', '17/5/2024', null],
+    ['valid date with dashes', '17-5-2024', 'WRONG_FORMAT'],
+    ['no separators', 'zzxxyy', 'WRONG_FORMAT'],
+    ['no separators digits only', '17052024', 'WRONG_FORMAT'],
+    ['non-numeric year', '31/4/abcd', 'WRONG_FORMAT'],
+    ['non-numeric month', '31/ab/2024', 'WRONG_FORMAT'],
+    ['only two parts', '1/2026', 'INCOMPLETE'],
+    ['only day no separator', '17', 'WRONG_FORMAT'],
+    ['trailing separator', '1/2/', 'INCOMPLETE'],
+    ['empty middle part', '1//2024', 'INCOMPLETE'],
+    ['non-existent date', '31/4/2026', 'NON_EXISTENT'],
+    ['non-existent leap day non-leap year', '29/2/2025', 'NON_EXISTENT'],
+    ['leap day in leap year', '29/2/2024', null],
+  ])('%s validateUkDate(%s) === %s', (_: string, input: string, expected: string | null) => {
+    expect(validateUkDate(input)).toEqual(expected)
   })
 })
 
