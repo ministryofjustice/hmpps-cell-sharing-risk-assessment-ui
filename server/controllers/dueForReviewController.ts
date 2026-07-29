@@ -34,8 +34,11 @@ const toSortDirection = (value?: string): 'ASC' | 'DESC' | undefined => {
   return undefined
 }
 
-export default function dueForReviewController({ auditService, csraService }: Dependencies): RequestHandler {
-  return async (req, res, next) => {
+export default class DueForReviewController {
+  constructor(private readonly dependencies: Dependencies) {}
+
+  index: RequestHandler = async (req, res, next) => {
+    const { auditService, csraService } = this.dependencies
     await auditService.logPageView(Page.DUE_FOR_REVIEW, { who: res.locals.user.username, correlationId: req.id })
 
     try {

@@ -7,8 +7,11 @@ import logger from '../../logger'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
 
-export default function indexController({ auditService, csraService }: Dependencies): RequestHandler {
-  return async (req, res) => {
+export default class IndexController {
+  constructor(private readonly dependencies: Dependencies) {}
+
+  index: RequestHandler = async (req, res) => {
+    const { auditService, csraService } = this.dependencies
     await auditService.logPageView(Page.INDEX, { who: res.locals.user.username, correlationId: req.id })
 
     const activeCaseloadId = res.locals.feComponents?.sharedData?.activeCaseLoad?.caseLoadId

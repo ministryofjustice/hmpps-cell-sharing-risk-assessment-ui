@@ -6,11 +6,11 @@ import { buildPagination, parseCsraHistoryQuery } from '../utils/utils'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
 
-export default function prisonerCsraHistoryController({
-  auditService,
-  csraService,
-}: Dependencies): RequestHandler<{ prisonerNumber: string }> {
-  return async (req, res) => {
+export default class PrisonerCsraHistoryController {
+  constructor(private readonly dependencies: Dependencies) {}
+
+  index: RequestHandler<{ prisonerNumber: string }> = async (req, res) => {
+    const { auditService, csraService } = this.dependencies
     const { prisonerNumber } = req.params
     const { username } = res.locals.user
     const { prisoner } = res.locals

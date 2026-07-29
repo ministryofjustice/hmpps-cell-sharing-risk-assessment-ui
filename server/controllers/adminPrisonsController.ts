@@ -20,15 +20,17 @@ const backToList = (search: unknown): string => {
 }
 
 /**
- * The rollout admin console: which prisons use CSRA in DPS, and the state of the legacy NOMIS CSRA
- * screen for each. Not caseload-scoped — it is a national control, gated on the admin role.
+ * The rollout admin console actions grouped in one controller class.
  */
-export function adminPrisonsListController({
-  auditService,
-  csraService,
-  prisonApiService,
-}: Dependencies): RequestHandler {
-  return async (req, res) => {
+export default class AdminPrisonsController {
+  constructor(private readonly dependencies: Dependencies) {}
+
+  /**
+   * The rollout admin console: which prisons use CSRA in DPS, and the state of the legacy NOMIS CSRA
+   * screen for each. Not caseload-scoped - it is a national control, gated on the admin role.
+   */
+  list: RequestHandler = async (req, res) => {
+    const { auditService, csraService, prisonApiService } = this.dependencies
     const { username } = res.locals.user
     const search = typeof req.query.q === 'string' ? req.query.q.trim() : ''
 
@@ -64,15 +66,10 @@ export function adminPrisonsListController({
       errorMessage: req.flash('error')[0],
     })
   }
-}
 
-/** Switch CSRA on or off in DPS for one prison. */
-export function adminSetPrisonActiveController({
-  auditService,
-  csraService,
-  activeAgenciesService,
-}: Dependencies): RequestHandler {
-  return async (req, res) => {
+  /** Switch CSRA on or off in DPS for one prison. */
+  setActive: RequestHandler = async (req, res) => {
+    const { auditService, csraService, activeAgenciesService } = this.dependencies
     const { username } = res.locals.user
     const agencyId = String(req.params.agencyId)
     const active = req.body.active === 'true'
@@ -95,14 +92,13 @@ export function adminSetPrisonActiveController({
     req.flash('success', `CSRA is now switched ${active ? 'on' : 'off'} for ${name}.`)
     return res.redirect(backToList(req.body.q))
   }
-}
 
-/**
- * Move a prison's legacy NOMIS CSRA screen to Normal, Warning or Blocked. Deliberately independent of
- * the DPS toggle above so each rollout step stays an explicit decision.
- */
-export function adminSetNomisScreenController({ auditService, prisonApiService }: Dependencies): RequestHandler {
-  return async (req, res) => {
+  /**
+   * Move a prison's legacy NOMIS CSRA screen to Normal, Warning or Blocked. Deliberately independent of
+   * the DPS toggle above so each rollout step stays an explicit decision.
+   */
+  setNomisScreen: RequestHandler = async (req, res) => {
+    const { auditService, prisonApiService } = this.dependencies
     const { username } = res.locals.user
     const agencyId = String(req.params.agencyId)
     const name = typeof req.body.name === 'string' && req.body.name ? req.body.name : agencyId
