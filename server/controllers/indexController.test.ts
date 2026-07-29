@@ -1,4 +1,4 @@
-import indexController from './indexController'
+import IndexController from './indexController'
 import { Page } from '../services/auditService'
 import { Role } from '../utils/roles'
 
@@ -11,7 +11,7 @@ describe('indexController', () => {
     logPageView: jest.fn(),
   }
 
-  const controller = () => indexController({ auditService, csraService } as any)
+  const controller = () => new IndexController({ auditService, csraService } as any)
 
   const request = (id = 'request-id-123') => ({ id }) as any
 
@@ -44,7 +44,7 @@ describe('indexController', () => {
   it('renders the index page with expected locals', async () => {
     const res = response()
 
-    await controller()(request(), res, jest.fn())
+    await controller().index(request(), res, jest.fn())
 
     expect(auditService.logPageView).toHaveBeenCalledWith(Page.INDEX, {
       who: 'user1',
@@ -107,7 +107,7 @@ describe('indexController', () => {
   it('falls back to Unknown establishment when active case load is unavailable', async () => {
     const res = response({ username: 'user2', caseLoad: null })
 
-    await controller()(request('request-id-456'), res, jest.fn())
+    await controller().index(request('request-id-456'), res, jest.fn())
 
     expect(res.render).toHaveBeenCalledWith(
       'pages/index',
@@ -122,7 +122,7 @@ describe('indexController', () => {
     // deliberately does not gate these worklists. Rollout gates writing, which lives elsewhere.
     const res = response()
 
-    await controller()(request(), res, jest.fn())
+    await controller().index(request(), res, jest.fn())
 
     const journeyCards = res.render.mock.calls[0][1].cardsSections.flatMap(
       (section: { cards: unknown[] }) => section.cards,
@@ -137,7 +137,7 @@ describe('indexController', () => {
   it('shows the admin tile only to a user with the admin role', async () => {
     const res = response({ userRoles: [Role.CSRA__ADMIN] })
 
-    await controller()(request(), res, jest.fn())
+    await controller().index(request(), res, jest.fn())
 
     const renderLocals = res.render.mock.calls[0][1]
     expect(renderLocals.isAdmin).toBe(true)
