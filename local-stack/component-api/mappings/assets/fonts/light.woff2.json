@@ -1,0 +1,14 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/assets/fonts/light-94a07e06a1-v2.woff2"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "font/woff2",
+      "Access-Control-Allow-Origin": "*"
+    },
+    "bodyFileName": "assets/fonts/light-94a07e06a1-v2.woff2"
+  }
+}
