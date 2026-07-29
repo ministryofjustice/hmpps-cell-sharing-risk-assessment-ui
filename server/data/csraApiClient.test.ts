@@ -4,6 +4,7 @@ import CsraApiClient from './csraApiClient'
 import config from '../config'
 import { RedisClient } from './redisClient'
 import type {
+  AgencyStatus,
   CsraCurrentRating,
   CsraHighRiskDueForReview,
   CsraPrisonRatingSummary,
@@ -212,6 +213,56 @@ describe('CsraApiClient', () => {
       })
 
       expect(response.content).toEqual([])
+    })
+  })
+
+  describe('rollout admin', () => {
+    const agencies: AgencyStatus[] = [
+      { agencyId: 'LEI', name: 'Leeds (HMP)', active: false },
+      { agencyId: 'MDI', name: 'Moorland (HMP)', active: true },
+    ]
+
+    it('should GET all agencies using a system token stamped with the username', async () => {
+      nock(config.apis.csraApi.url)
+        .get('/active-agencies/all')
+        .matchHeader('authorization', 'Bearer test-system-token')
+        .reply(200, agencies)
+
+      const response = await csraApiClient.getAllAgencies('AUSER_GEN', {})
+
+      expect(response).toEqual(agencies)
+      expect(mockAuthenticationClient.getToken).toHaveBeenCalledWith('AUSER_GEN')
+    })
+
+    it('should PUT the new active state for an agency', async () => {
+      const updated: AgencyStatus = { agencyId: 'MDI', name: 'Moorland (HMP)', active: true }
+
+      nock(config.apis.csraApi.url)
+        .put('/active-agencies/MDI', { active: true })
+        .matchHeader('authorization', 'Bearer test-system-token')
+        .reply(200, updated)
+
+      const response = await csraApiClient.setAgencyActive('AUSER_GEN', { agencyId: 'MDI' }, { active: true })
+
+      expect(response).toEqual(updated)
+      expect(mockAuthenticationClient.getToken).toHaveBeenCalledWith('AUSER_GEN')
+    })
+
+    it('should read the active agency ids from the public info endpoint without a token', async () => {
+      nock(config.apis.csraApi.url)
+        .get('/info')
+        .reply(200, { build: { name: 'csra-api' }, activeAgencies: ['LEI', 'MDI'] })
+
+      expect(await csraApiClient.getActiveAgencyIds()).toEqual(['LEI', 'MDI'])
+      expect(mockAuthenticationClient.getToken).not.toHaveBeenCalled()
+    })
+
+    it('should default to no active agencies when info omits the key', async () => {
+      nock(config.apis.csraApi.url)
+        .get('/info')
+        .reply(200, { build: { name: 'csra-api' } })
+
+      expect(await csraApiClient.getActiveAgencyIds()).toEqual([])
     })
   })
 })

@@ -4,10 +4,11 @@ import type { Services } from '../services'
 
 type Dependencies = Pick<Services, 'prisonApiService'>
 
-export default function prisonerImageController({
-  prisonApiService,
-}: Dependencies): RequestHandler<{ prisonerNumber: string }> {
-  return async (req, res) => {
+export default class PrisonerImageController {
+  constructor(private readonly dependencies: Dependencies) {}
+
+  index: RequestHandler<{ prisonerNumber: string }> = async (req, res) => {
+    const { prisonApiService } = this.dependencies
     const { prisonerNumber } = req.params
     const { username } = res.locals.user
 

@@ -1,41 +1,31 @@
 import { Router } from 'express'
-import dueForReviewController from '../controllers/dueForReviewController'
-import indexController from '../controllers/indexController'
-import prisonerCsraController from '../controllers/prisonerCsraController'
-import prisonerCsraHistoryController from '../controllers/prisonerCsraHistoryController'
-import prisonerImageController from '../controllers/prisonerImageController'
+import IndexController from '../controllers/indexController'
 import type { Services } from '../services'
 import checkPrisonerAccess from '../middleware/checkPrisonerAccess'
+import dueForReviewRouter from './dueForReviewRouter'
+import prisonerRouter from './prisonerRouter'
+import adminRouter from './adminRouter'
 
-export default function routes({
-  auditService,
-  prisonerSearchService,
-  csraService,
-  prisonApiService,
-  manageUsersService,
-}: Services): Router {
+export default function routes(services: Services): Router {
+  const { prisonerSearchService, manageUsersService } = services
   const router = Router()
+  const indexController = new IndexController(services)
+
+  // NOTE: reading CSRA information is open to any user with the prisoner in their caseload, so none of
+  // the routes below are gated on rollout. Writing is what rollout gates: as each write journey is
+  // built, wrap its route in `requireActivePrison(services.activeAgenciesService)`
+  // (server/middleware/requireActivePrison.ts) *and* a check on the user holding
+  // Role.CSRA__ASSESSMENT_EDIT or Role.CSRA__REVIEW_EDIT as appropriate.
 
   // Guards all prisoner routes: enforces the caseload/role access rules and, on success, stashes
   // the looked-up prisoner on res.locals.prisoner for the handlers to reuse.
   const requirePrisonerAccess = checkPrisonerAccess(prisonerSearchService, manageUsersService)
 
-  router.get('/', indexController({ auditService, csraService }))
+  router.get('/', indexController.index)
 
-  router.get('/due-for-review', dueForReviewController({ auditService, csraService }))
-
-  router.get('/prisoner/:prisonerNumber', requirePrisonerAccess, prisonerCsraController({ auditService, csraService }))
-
-  router.get(
-    '/prisoner/:prisonerNumber/history',
-    requirePrisonerAccess,
-    prisonerCsraHistoryController({ auditService, csraService }),
-  )
-
-  // Proxy the prisoner photo through the app so the browser never needs a backend token. On any error
-  // (no image, prisoner unknown, backend down) fall back to a neutral placeholder so the banner still
-  // renders.
-  router.get('/prisoner/:prisonerNumber/image', requirePrisonerAccess, prisonerImageController({ prisonApiService }))
+  router.use('/due-for-review', dueForReviewRouter(services))
+  router.use('/prisoner/:prisonerNumber', requirePrisonerAccess, prisonerRouter(services))
+  router.use('/admin', adminRouter(services))
 
   return router
 }

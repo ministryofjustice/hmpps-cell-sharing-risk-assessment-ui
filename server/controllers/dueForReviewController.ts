@@ -3,10 +3,25 @@ import { type RequestHandler } from 'express'
 import type { Services } from '../services'
 import { Page } from '../services/auditService'
 import logger from '../../logger'
-import { csraRatingLabel, parseUkDate } from '../utils/utils'
+import { csraRatingLabel, parseUkDate, validateUkDate, type UkDateValidationError } from '../utils/utils'
 import { firstQueryValue, toArray } from '../utils/queryUtils'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
+
+const buildDateValidationMessage = (fieldLabel: string, errorType: UkDateValidationError): string => {
+  const label = `'${fieldLabel}'`
+  switch (errorType) {
+    case 'WRONG_FORMAT':
+      return `${label} must be a date in the correct format, for example, 17/5/2024`
+    case 'INCOMPLETE':
+      return `${label} must be a full date, for example 17/5/2024`
+    case 'NON_EXISTENT':
+      return `${label} must be a real date`
+    default:
+      return `${label} must be a real date`
+  }
+}
+
 const DEFAULT_SORT = 'REVIEW_DUE_BY'
 const DEFAULT_DIRECTION: 'ASC' | 'DESC' = 'DESC'
 
@@ -19,8 +34,11 @@ const toSortDirection = (value?: string): 'ASC' | 'DESC' | undefined => {
   return undefined
 }
 
-export default function dueForReviewController({ auditService, csraService }: Dependencies): RequestHandler {
-  return async (req, res, next) => {
+export default class DueForReviewController {
+  constructor(private readonly dependencies: Dependencies) {}
+
+  index: RequestHandler = async (req, res, next) => {
+    const { auditService, csraService } = this.dependencies
     await auditService.logPageView(Page.DUE_FOR_REVIEW, { who: res.locals.user.username, correlationId: req.id })
 
     try {
@@ -32,11 +50,17 @@ export default function dueForReviewController({ auditService, csraService }: De
       const hasSelectedFilters = Boolean(selectedRatingTypes.length || reviewDateFromRaw || reviewDateToRaw)
 
       const validationErrors: Record<string, { text: string }> = {}
-      if (reviewDateFromRaw && !parseUkDate(reviewDateFromRaw)) {
-        validationErrors.reviewDateFrom = { text: "'Review date from' must be a real date" }
+      const reviewDateFromErrorType = validateUkDate(reviewDateFromRaw)
+      if (reviewDateFromErrorType) {
+        validationErrors.reviewDateFrom = {
+          text: buildDateValidationMessage('Review date from', reviewDateFromErrorType),
+        }
       }
-      if (reviewDateToRaw && !parseUkDate(reviewDateToRaw)) {
-        validationErrors.reviewDateTo = { text: "'Review date to' must be a real date" }
+      const reviewDateToErrorType = validateUkDate(reviewDateToRaw)
+      if (reviewDateToErrorType) {
+        validationErrors.reviewDateTo = {
+          text: buildDateValidationMessage('Review date to', reviewDateToErrorType),
+        }
       }
       if (Object.keys(validationErrors).length) {
         res.locals.validationErrors = validationErrors

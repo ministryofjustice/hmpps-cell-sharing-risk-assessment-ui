@@ -1,5 +1,6 @@
 import { CsraApiClient } from '../data'
 import type {
+  AgencyStatus,
   CsraCurrentRating,
   CsraHighRiskDueForReview,
   CsraHighRiskDueForReviewQuery,
@@ -45,5 +46,15 @@ export default class CsraService {
    */
   getRatingSummary(username: string, prisonId: string): Promise<CsraPrisonRatingSummary> {
     return this.csraApiClient.getRatingSummary(username, { prisonId })
+  }
+
+  /** Every prison with whether CSRA is switched on in DPS, for the rollout admin console. */
+  getAllAgencies(username: string): Promise<AgencyStatus[]> {
+    return this.csraApiClient.getAllAgencies(username, {})
+  }
+
+  /** Switch CSRA on or off in DPS for a prison. Idempotent. */
+  setAgencyActive(username: string, agencyId: string, active: boolean): Promise<AgencyStatus> {
+    return this.csraApiClient.setAgencyActive(username, { agencyId }, { active })
   }
 }

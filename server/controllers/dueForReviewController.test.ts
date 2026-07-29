@@ -1,4 +1,4 @@
-import dueForReviewController from './dueForReviewController'
+import DueForReviewController from './dueForReviewController'
 import { Page } from '../services/auditService'
 
 describe('dueForReviewController', () => {
@@ -24,7 +24,7 @@ describe('dueForReviewController', () => {
   })
 
   it('renders due-for-review page with default query values', async () => {
-    const controller = dueForReviewController({ auditService, csraService } as any)
+    const controller = new DueForReviewController({ auditService, csraService } as any)
 
     const req = {
       id: 'request-id-123',
@@ -39,7 +39,7 @@ describe('dueForReviewController', () => {
       render: jest.fn(),
     } as any
 
-    await controller(req, res, jest.fn())
+    await controller.index(req, res, jest.fn())
 
     expect(auditService.logPageView).toHaveBeenCalledWith(Page.DUE_FOR_REVIEW, {
       who: 'USER1',
@@ -68,7 +68,7 @@ describe('dueForReviewController', () => {
   })
 
   it('parses and submits selected filters and sort values', async () => {
-    const controller = dueForReviewController({ auditService, csraService } as any)
+    const controller = new DueForReviewController({ auditService, csraService } as any)
 
     const req = {
       id: 'request-id-456',
@@ -89,7 +89,7 @@ describe('dueForReviewController', () => {
       render: jest.fn(),
     } as any
 
-    await controller(req, res, jest.fn())
+    await controller.index(req, res, jest.fn())
 
     expect(csraService.getHighRiskDueForReview).toHaveBeenCalledWith('USER2', 'LEI', {
       ratingTypes: ['HIGH', 'HIGH_SPECIFIC'],
@@ -116,7 +116,7 @@ describe('dueForReviewController', () => {
   })
 
   it('sets res.locals.errors and inline error props for invalid date inputs', async () => {
-    const controller = dueForReviewController({ auditService, csraService } as any)
+    const controller = new DueForReviewController({ auditService, csraService } as any)
 
     const req = {
       id: 'request-id-789',
@@ -134,11 +134,11 @@ describe('dueForReviewController', () => {
       render: jest.fn(),
     } as any
 
-    await controller(req, res, jest.fn())
+    await controller.index(req, res, jest.fn())
 
     expect(res.locals.validationErrors).toEqual({
-      reviewDateFrom: { text: "'Review date from' must be a real date" },
-      reviewDateTo: { text: "'Review date to' must be a real date" },
+      reviewDateFrom: { text: "'Review date from' must be a date in the correct format, for example, 17/5/2024" },
+      reviewDateTo: { text: "'Review date to' must be a date in the correct format, for example, 17/5/2024" },
     })
 
     expect(res.render).toHaveBeenCalledWith(

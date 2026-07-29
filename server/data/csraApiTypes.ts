@@ -167,3 +167,14 @@ export interface CsraPrisonRatingSummary {
   highRisk: number
   standardRisk: number
 }
+
+/**
+ * A prison (agency) and whether the CSRA service is switched on for it in DPS (mirrors
+ * dto.AgencyStatus). Returned by the rollout admin list and by the toggle (which resolves the name
+ * too), so one shape serves both.
+ */
+export interface AgencyStatus {
+  agencyId: string
+  name: string
+  active: boolean
+}

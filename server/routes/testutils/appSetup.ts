@@ -12,6 +12,8 @@ import setUpWebSession from '../../middleware/setUpWebSession'
 import CsraService from '../../services/csraService'
 import PrisonerSearchService from '../../services/prisonerSearchService'
 import ManageUsersService from '../../services/manageUsersService'
+import PrisonApiService from '../../services/prisonApiService'
+import ActiveAgenciesService from '../../services/activeAgenciesService'
 
 jest.mock('../../services/auditService')
 
@@ -63,6 +65,13 @@ export function appWithAllRoutes({
     csraService: new CsraService(null) as jest.Mocked<CsraService>,
     prisonerSearchService: new PrisonerSearchService(null) as jest.Mocked<PrisonerSearchService>,
     manageUsersService: new ManageUsersService(null) as jest.Mocked<ManageUsersService>,
+    prisonApiService: new PrisonApiService(null, null) as jest.Mocked<PrisonApiService>,
+    // Defaults to no prison switched on, so a test that does not care about rollout still renders.
+    activeAgenciesService: {
+      getActiveAgencyIds: jest.fn().mockResolvedValue(new Set<string>()),
+      isPrisonActive: jest.fn().mockResolvedValue(false),
+      invalidate: jest.fn(),
+    } as unknown as jest.Mocked<ActiveAgenciesService>,
   },
   userSupplier = () => user,
 }: {
