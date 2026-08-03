@@ -4,8 +4,8 @@
 # dashboard tiles and prisoner pages show real data. The CSRA database starts empty.
 #
 # Seeds two standard and two high-risk prisoners on the stubbed MDI roll. Each review is created
-# in two calls: start an initial assessment, then submit its final rating. See
-# docs/running-locally.md for the full walkthrough.
+# in two calls: start an initial assessment (which needs a prison), then submit its final rating.
+# See docs/running-locally.md for the full walkthrough.
 #
 # Usage:
 #   docker compose up          # wait until the API is healthy
@@ -38,11 +38,15 @@ fi
 
 # seed <prisoner> <final-stage-json-body>
 seed() {
-  local prisoner=$1 body=$2 id
-  id=$(curl -s -X POST "${API_URL}/csra-review/prisoner/${prisoner}/assessment" \
-        -H "Authorization: Bearer ${TOKEN}" | jq -r '.reviewId // empty')
+  local prisoner=$1 body=$2 id started
+  # The start call needs a prison: it is what puts the draft on that prison's worklist.
+  started=$(curl -s -X POST "${API_URL}/csra-review/prisoner/${prisoner}/assessment" \
+        -H "Authorization: Bearer ${TOKEN}" -H "Content-Type: application/json" \
+        -d "{\"prisonId\":\"${PRISON}\"}")
+  id=$(echo "$started" | jq -r '.assessmentId // empty')
   if [ -z "$id" ]; then
-    echo "  ${prisoner}: could not start an assessment (already in progress?)" >&2
+    echo "  ${prisoner}: could not start an assessment. The API said:" >&2
+    echo "    ${started}" >&2
     return 1
   fi
   curl -s -X PUT "${API_URL}/csra-review/prisoner/${prisoner}/assessment/${id}/final" \
