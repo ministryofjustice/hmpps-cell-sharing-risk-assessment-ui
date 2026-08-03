@@ -53,7 +53,8 @@ TOKEN=$(curl -s -u "hmpps-cell-sharing-risk-assessment-ui-system:clientsecret" \
 ### 2. Seed a few reviews
 
 Copy-paste this whole block. It seeds **two standard** and **two high-risk** prisoners on `MDI`.
-The `start` call returns a `reviewId`; the `final` call sets the rating.
+The `start` call takes the prison the assessment is being started at and returns an `assessmentId`;
+the `final` call sets the rating.
 
 ```bash
 API=http://localhost:8090
@@ -62,7 +63,8 @@ seed() {                       # seed <prisoner> <rating> <comment-json-body>
   local prisoner=$1 body=$2
   local id
   id=$(curl -s -X POST "$API/csra-review/prisoner/$prisoner/assessment" \
-        -H "Authorization: Bearer $TOKEN" | jq -r .reviewId)
+        -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+        -d '{"prisonId":"MDI"}' | jq -r .assessmentId)
   curl -s -X PUT "$API/csra-review/prisoner/$prisoner/assessment/$id/final" \
     -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
     -d "$body" | jq -c '{prisonerNumber, status, rating, nextReviewDate}'
