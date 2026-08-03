@@ -43,7 +43,7 @@
     "bunyan-format": "^0.2.1",
     "compression": "^1.8.1",
     "connect-flash": "^0.1.1",
-    "connect-redis": "^9.0.0",
+    "connect-redis": "^10.0.0",
     "csrf-sync": "^4.2.1",
     "date-fns": "4.4.0",
     "express": "^5.2.1",
@@ -63,7 +63,7 @@
   "devDependencies": {
     "@jgoz/esbuild-plugin-typecheck": "^4.0.4",
     "@ministryofjustice/eslint-config-hmpps": "^1.0.3",
-    "@ministryofjustice/frontend-types": "2.0.0",
+    "@ministryofjustice/frontend-types": "2.0.1",
     "@ministryofjustice/hmpps-npm-script-allowlist": "0.0.6",
     "@ministryofjustice/hmpps-precommit-hooks": "3.0.1",
     "@playwright/test": "1.61.1",
