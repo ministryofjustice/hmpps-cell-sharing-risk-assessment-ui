@@ -1,0 +1,10 @@
+.pagination {
+  position: relative;
+
+  .pagination-results-summary {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    margin-bottom: 10px;
+  }
+}

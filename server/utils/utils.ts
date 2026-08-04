@@ -73,6 +73,8 @@ export const csraRatingLabel = (rating?: string | null): string => {
       return 'High risk – specific'
     case 'STANDARD':
       return 'Standard'
+    case 'NO_RATING':
+      return 'No rating'
     default:
       return ''
   }
@@ -83,10 +85,11 @@ export const csraRatingTagClass = (rating?: string | null): string => {
   switch (rating) {
     case 'HIGH':
     case 'HIGH_GENERAL':
+      return 'govuk-tag--dark-red'
     case 'HIGH_SPECIFIC':
       return 'govuk-tag--red'
     case 'STANDARD':
-      return 'govuk-tag--blue'
+      return 'govuk-tag--green'
     default:
       return 'govuk-tag--grey'
   }

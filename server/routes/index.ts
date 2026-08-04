@@ -5,6 +5,7 @@ import checkPrisonerAccess from '../middleware/checkPrisonerAccess'
 import dueForReviewRouter from './dueForReviewRouter'
 import prisonerRouter from './prisonerRouter'
 import adminRouter from './adminRouter'
+import allPrisonersRouter from './allPrisonersRouter'
 
 export default function routes(services: Services): Router {
   const { prisonerSearchService, manageUsersService } = services
@@ -24,6 +25,7 @@ export default function routes(services: Services): Router {
   router.get('/', indexController.index)
 
   router.use('/due-for-review', dueForReviewRouter(services))
+  router.use('/all-prisoners', allPrisonersRouter(services))
   router.use('/prisoner/:prisonerNumber', requirePrisonerAccess, prisonerRouter(services))
   router.use('/admin', adminRouter(services))
 

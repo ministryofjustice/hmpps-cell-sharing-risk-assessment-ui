@@ -8,6 +8,8 @@ import type {
   CsraHighRiskDueForReview,
   CsraHighRiskDueForReviewQuery,
   CsraHistoryQuery,
+  CsraPrisonPrisonerList,
+  CsraPrisonPrisonersQuery,
   CsraPrisonRatingSummary,
   CsraReviewHistory,
 } from './csraApiTypes'
@@ -55,6 +57,17 @@ export default class CsraApiClient extends BaseApiClient {
     path: '/csra-review/prison/:prisonId/high-risk-due-for-review',
     requestType: 'get',
     queryParams: ['ratingTypes', 'reviewDateFrom', 'reviewDateTo', 'sort', 'direction'],
+    options: { asSystem: true },
+  })
+
+  /**
+   * Get a paged, filterable, sortable list of everyone currently in the prison with their current
+   * CSRA rating. Called `asSystem` (see getCurrentCsraRating).
+   */
+  getPrisonPrisoners = this.apiCall<CsraPrisonPrisonerList, { prisonId: string } & CsraPrisonPrisonersQuery>({
+    path: '/csra-review/prison/:prisonId/prisoners',
+    requestType: 'get',
+    queryParams: ['page', 'size', 'sort', 'direction', 'ratings', 'assessmentTypes', 'fromDate', 'toDate'],
     options: { asSystem: true },
   })
 

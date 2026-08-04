@@ -4,77 +4,81 @@
 {% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
 {% from "govuk/components/table/macro.njk" import govukTable %}
 {% from "moj/components/date-picker/macro.njk" import mojDatePicker %}
+{% from "../macros/mojFilter.njk" import mojFilter %}
 
 {% set pageTitle = applicationName + " - High risk prisoners due for review" %}
+
+{% set optionsHtml %}
+  {{ govukCheckboxes({
+    name: "ratingType",
+    classes: "govuk-checkboxes--small",
+    fieldset: {
+      legend: {
+        text: "CSRA rating type",
+        classes: "govuk-fieldset__legend--s"
+      }
+    },
+    items: ratingTypeOptions
+  }) }}
+
+  {{ mojDatePicker({
+    id: "reviewDateFrom",
+    name: "reviewDateFrom",
+    value: reviewDateFrom,
+    errorMessage: validationErrors.reviewDateFrom if validationErrors,
+    label: {
+      text: "Review date from",
+      classes: "govuk-label--s"
+    },
+    hint: {
+      text: "For example, 1/2/2026"
+    }
+  }) }}
+
+  {{ mojDatePicker({
+    id: "reviewDateTo",
+    name: "reviewDateTo",
+    value: reviewDateTo,
+    errorMessage: validationErrors.reviewDateTo if validationErrors,
+    label: {
+      text: "Review date to",
+      classes: "govuk-label--s"
+    },
+    hint: {
+      text: "For example, 1/2/2027"
+    }
+  }) }}
+
+  <input type="hidden" name="sort" value="{{ sort or '' }}" data-sort-field>
+  <input type="hidden" name="direction" value="{{ direction or '' }}" data-direction-field>
+
+{% endset %}
 
 {% block content %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-full">
       {% if prisoners.length > 0 or hasSelectedFilters %}
-        <form method="get" action="/due-for-review" data-due-for-review-form>
+        <form method="get" action="/due-for-review" data-filter-prisoners-form>
           <div class="moj-filter-layout">
             <div class="moj-filter-layout__filter">
-              <div class="moj-filter" data-module="moj-filter">
-                <div class="moj-filter__content">
-                  <div class="moj-filter__selected">
-                    <div class="moj-filter__selected-heading">
-                      <div class="moj-filter__heading-title">
-                        <h2 class="govuk-heading-m">Filter</h2>
-                      </div>
-                    </div>
-
-                    {{ govukCheckboxes({
-                      name: "ratingType",
-                      classes: "govuk-checkboxes--small",
-                      fieldset: {
-                        legend: {
-                          text: "CSRA rating type",
-                          classes: "govuk-fieldset__legend--s"
-                        }
-                      },
-                      items: ratingTypeOptions
-                    }) }}
-
-                    {{ mojDatePicker({
-                      id: "reviewDateFrom",
-                      name: "reviewDateFrom",
-                      value: reviewDateFrom,
-                      errorMessage: validationErrors.reviewDateFrom if validationErrors,
-                      label: {
-                        text: "Review date from",
-                        classes: "govuk-label--s"
-                      },
-                      hint: {
-                        text: "For example, 1/2/2026"
-                      }
-                    }) }}
-
-                    {{ mojDatePicker({
-                      id: "reviewDateTo",
-                      name: "reviewDateTo",
-                      value: reviewDateTo,
-                      errorMessage: validationErrors.reviewDateTo if validationErrors,
-                      label: {
-                        text: "Review date to",
-                        classes: "govuk-label--s"
-                      },
-                      hint: {
-                        text: "For example, 1/2/2027"
-                      }
-                    }) }}
-
-                    <input type="hidden" name="sort" value="{{ sort or '' }}" data-sort-field>
-                    <input type="hidden" name="direction" value="{{ direction or '' }}" data-direction-field>
-
-                    {{ govukButton({
-                      text: "Apply"
-                    }) }}
-                    <p>
-                      <a class="govuk-link govuk-link--no-visited-state" href="/due-for-review">Clear filters</a>
-                    </p>
-                  </div>
-                </div>
-              </div>
+              {{ mojFilter({
+                attributes: {
+                  "data-qa": "due-for-review-filter"
+                },
+                selectedFilters: {
+                  heading: {
+                    text: "Filter"
+                  },
+                  categories: selectedFilters
+                },
+                optionsHtml: optionsHtml,
+                submit: {
+                  attributes: {
+                    "data-qa": "due-for-review-filter-apply-button"
+                  }
+                },
+                clearFiltersUrl: "/due-for-review"
+              }) }}
             </div>
             <div class="moj-filter-layout__content">
               {% if prisoners.length > 0 %}

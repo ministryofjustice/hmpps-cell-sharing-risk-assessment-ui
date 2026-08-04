@@ -7,6 +7,7 @@ import type {
   AgencyStatus,
   CsraCurrentRating,
   CsraHighRiskDueForReview,
+  CsraPrisonPrisonerList,
   CsraPrisonRatingSummary,
   CsraReviewHistory,
 } from './csraApiTypes'
@@ -213,6 +214,84 @@ describe('CsraApiClient', () => {
       })
 
       expect(response.content).toEqual([])
+    })
+  })
+
+  describe('getPrisonPrisoners', () => {
+    const prisonerList: CsraPrisonPrisonerList = {
+      content: [
+        {
+          prisonerNumber: 'A1234BC',
+          firstName: 'Matthew',
+          lastName: 'Doyle',
+          rating: 'STANDARD',
+          provisional: false,
+          assessmentType: 'ASSESSMENT',
+          assessedOn: '2026-03-05',
+        },
+      ],
+      page: 0,
+      size: 25,
+      totalElements: 1,
+      totalPages: 1,
+    }
+
+    it('should GET the prisoner list using a system token stamped with the username', async () => {
+      nock(config.apis.csraApi.url)
+        .get('/csra-review/prison/MDI/prisoners')
+        .matchHeader('authorization', 'Bearer test-system-token')
+        .reply(200, prisonerList)
+
+      const response = await csraApiClient.getPrisonPrisoners('AUSER_GEN', { prisonId: 'MDI' })
+
+      expect(response).toEqual(prisonerList)
+      expect(mockAuthenticationClient.getToken).toHaveBeenCalledWith('AUSER_GEN')
+    })
+
+    it('should pass all filter and sort query params when provided', async () => {
+      nock(config.apis.csraApi.url)
+        .get('/csra-review/prison/MDI/prisoners')
+        .query({
+          page: '0',
+          size: '25',
+          sort: 'RATING',
+          direction: 'DESC',
+          ratings: ['HIGH', 'HIGH_GENERAL'],
+          assessmentTypes: ['ASSESSMENT', 'REVIEW'],
+          fromDate: '2026-01-01',
+          toDate: '2026-12-31',
+        })
+        .reply(200, prisonerList)
+
+      const response = await csraApiClient.getPrisonPrisoners('AUSER_GEN', {
+        prisonId: 'MDI',
+        page: 0,
+        size: 25,
+        sort: 'RATING',
+        direction: 'DESC',
+        ratings: ['HIGH', 'HIGH_GENERAL'],
+        assessmentTypes: ['ASSESSMENT', 'REVIEW'],
+        fromDate: '2026-01-01',
+        toDate: '2026-12-31',
+      })
+
+      expect(response).toEqual(prisonerList)
+    })
+
+    it('should omit undefined filter query params', async () => {
+      // nock only matches the exact query below, so this fails if any extra params are sent
+      nock(config.apis.csraApi.url)
+        .get('/csra-review/prison/MDI/prisoners')
+        .query({ page: '0', size: '25' })
+        .reply(200, prisonerList)
+
+      const response = await csraApiClient.getPrisonPrisoners('AUSER_GEN', {
+        prisonId: 'MDI',
+        page: 0,
+        size: 25,
+      })
+
+      expect(response).toEqual(prisonerList)
     })
   })
 
