@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import csraApi from '../mockApis/csraApi'
 import { login, resetStubs } from '../testUtils'
+import { getMatchingRequests } from '../mockApis/wiremock'
 import type { CsraPrisonPrisonerList } from '../../server/data/csraApiTypes'
 
 const MDI = { caseLoadId: 'MDI', description: 'Moorland (HMP)' }
@@ -115,6 +116,42 @@ test.describe('All prisoners', () => {
     await expect(page).toHaveURL(/assessmentType=REVIEW/)
     await expect(page).toHaveURL(/assessmentDateFrom=1%2F8%2F2026/)
     await expect(page).toHaveURL(/assessmentDateTo=31%2F8%2F2026/)
+  })
+
+  test('sort links request a freshly sorted result set from the server and preserve filters', async ({ page }) => {
+    await login(page, { activeCaseLoad: MDI })
+    await csraApi.stubGetPrisonPrisoners('MDI', twoPagePrisoners)
+
+    await page.goto('/all-prisoners?rating=HIGH&rating=STANDARD&assessmentType=REVIEW')
+
+    await expect(page.locator('[data-qa="all-prisoners-table"]')).not.toHaveAttribute(
+      'data-module',
+      'moj-sortable-table',
+    )
+    await expect(page.locator('th[aria-sort="none"]').filter({ hasText: 'Name' }).locator('svg path')).toHaveCount(2)
+
+    await page.getByRole('link', { name: 'Name' }).click()
+
+    await expect(page).toHaveURL(/sort=NAME/)
+    await expect(page).toHaveURL(/direction=ASC/)
+    await expect(page).toHaveURL(/rating=HIGH/)
+    await expect(page).toHaveURL(/rating=STANDARD/)
+    await expect(page).toHaveURL(/assessmentType=REVIEW/)
+    await expect(page.locator('th[aria-sort="ascending"]').filter({ hasText: 'Name' }).locator('svg path')).toHaveCount(
+      1,
+    )
+
+    const matchingRequests = await getMatchingRequests({
+      method: 'GET',
+      urlPath: '/csra-api/csra-review/prison/MDI/prisoners',
+    })
+    const { requests } = matchingRequests.body
+    const lastRequest = requests[requests.length - 1]
+
+    expect(lastRequest.queryParams.sort.values[0]).toBe('NAME')
+    expect(lastRequest.queryParams.direction.values[0]).toBe('ASC')
+    expect(lastRequest.queryParams.assessmentTypes.values[0]).toBe('REVIEW')
+    expect(lastRequest.queryParams.ratings.values).toEqual(expect.arrayContaining(['HIGH', 'STANDARD']))
   })
 
   test('restores checked filter values after filter submission', async ({ page }) => {

@@ -26,9 +26,9 @@
         </p>
       {% endif %}
 
-      {% set windowStart = currentPage - 2 %}
+      {% set windowStart = currentPage - 1 %}
       {% if windowStart < 1 %}{% set windowStart = 1 %}{% endif %}
-      {% set windowEnd = currentPage + 2 %}
+      {% set windowEnd = currentPage + 1 %}
       {% if windowEnd > totalPages %}{% set windowEnd = totalPages %}{% endif %}
 
       {% set paginationItems = [] %}

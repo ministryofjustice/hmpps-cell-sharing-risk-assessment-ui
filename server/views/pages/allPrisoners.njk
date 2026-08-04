@@ -11,6 +11,37 @@
 
 {% set pageTitle = applicationName + " - CSRA ratings for all prisoners" %}
 
+{% macro sortLink(label, sortKey, currentSort, currentDirection, baseHref, defaultDirection) %}
+  {% set isCurrent = currentSort == sortKey %}
+  {% set nextDirection = defaultDirection %}
+  {% if isCurrent %}
+    {% set nextDirection = 'DESC' if currentDirection == 'ASC' else 'ASC' %}
+  {% endif %}
+  {% set href = baseHref ~ ('&' if '?' in baseHref else '?') ~ 'sort=' ~ (sortKey | urlencode) ~ '&direction=' ~ (nextDirection | urlencode) %}
+  <a class="govuk-link govuk-link--no-visited-state csra-sort-link" href="{{ href }}">
+    <span>{{ label }}</span>
+    {% if isCurrent and currentDirection == 'ASC' %}
+      <svg width="22" height="22" focusable="false" aria-hidden="true" role="img" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M6.5625 15.5L11 6.63125L15.4375 15.5H6.5625Z" fill="currentColor"/>
+      </svg>
+    {% elif isCurrent and currentDirection == 'DESC' %}
+      <svg width="22" height="22" focusable="false" aria-hidden="true" role="img" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15.4375 7L11 15.8687L6.5625 7L15.4375 7Z" fill="currentColor"/>
+      </svg>
+    {% else %}
+      <svg width="22" height="22" focusable="false" aria-hidden="true" role="img" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8.1875 9.5L10.9609 3.95703L13.7344 9.5H8.1875Z" fill="currentColor"/>
+        <path d="M13.7344 12.0781L10.9609 17.6211L8.1875 12.0781H13.7344Z" fill="currentColor"/>
+      </svg>
+    {% endif %}
+    {% if isCurrent %}
+      <span class="govuk-visually-hidden">, currently sorted {{ 'descending' if currentDirection == 'DESC' else 'ascending' }}, activate to sort {{ 'ascending' if currentDirection == 'DESC' else 'descending' }}</span>
+    {% else %}
+      <span class="govuk-visually-hidden">, activate to sort {{ 'descending' if defaultDirection == 'DESC' else 'ascending' }}</span>
+    {% endif %}
+  </a>
+{% endmacro %}
+
 {% block content %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-full">
@@ -103,16 +134,16 @@
               {% if prisoners.length > 0 %}
                 {% set tableRows = [] %}
                 {% for prisoner in prisoners %}
-                  {% set name = prisoner.lastName | capitalize + ', ' + prisoner.firstName | capitalize %}
+                  {% set name = prisoner.lastName | trim | capitalize + ', ' + prisoner.firstName | trim | capitalize %}
                   {% set nameHtml %}
                     <a class="govuk-link govuk-link--no-visited-state" href="{{ '/prisoner/' + prisoner.prisonerNumber }}">{{ name }}</a>
                     <br>
                     <span class="csra-all-prisoners-table__prisoner-number govuk-body-s">{{ prisoner.prisonerNumber }}</span>
                   {% endset %}
                   {% set overdueDays = prisoner.assessedOn | daysOverdue %}
-                  {% set assessedOnHtml = prisoner.assessedOn | formatDate %}
+                  {% set assessedOnHtml = prisoner.assessedOn | formatDate or '-' %}
                   {% set ratingSourceLabel = 'Last reviewed' if prisoner.lastRatingSource == 'REVIEW' else 'Last assessed' %}
-                  {% set ratingText = prisoner.rating | csraRatingLabel %}
+                  {% set ratingText = prisoner.rating | csraRatingLabel or 'NO RATING' %}
                   {% set ratingHtml %}
                     {{ govukTag({
                       text: ratingText,
@@ -123,11 +154,11 @@
                     {
                       html: nameHtml,
                       attributes: {
-                        "data-sort-value": name
+                        "data-sort-value": name | lower | trim
                       }
                     },
                     {
-                      text: prisoner.assessmentType | capitalize
+                      text: prisoner.assessmentType | capitalize or '-'
                     },
                     {
                       html: assessedOnHtml,
@@ -156,43 +187,58 @@
                 {% if sort == "RATING" %}
                   {% set ratingSortDir = "descending" if direction == "DESC" else "ascending" %}
                 {% endif %}
-                {% set paginationBase = "/all-prisoners?sort=" ~ sort ~ "&direction=" ~ direction ~ "&rating=" ~ (selectedRatings | join(',')) ~ "&assessmentType=" ~ (selectedAssessmentTypes | join(',')) ~ "&assessmentDateFrom=" ~ (assessmentDateFrom | urlencode) ~ "&assessmentDateTo=" ~ (assessmentDateTo | urlencode) %}
+
+                {% set filterQueryParams = [] %}
+                {% for rating in selectedRatings %}
+                  {% set _ = filterQueryParams.push('rating=' ~ (rating | urlencode)) %}
+                {% endfor %}
+                {% for assessmentType in selectedAssessmentTypes %}
+                  {% set _ = filterQueryParams.push('assessmentType=' ~ (assessmentType | urlencode)) %}
+                {% endfor %}
+                {% if assessmentDateFrom %}
+                  {% set _ = filterQueryParams.push('assessmentDateFrom=' ~ (assessmentDateFrom | urlencode)) %}
+                {% endif %}
+                {% if assessmentDateTo %}
+                  {% set _ = filterQueryParams.push('assessmentDateTo=' ~ (assessmentDateTo | urlencode)) %}
+                {% endif %}
+
+                {% set sortBase = '/all-prisoners' %}
+                {% if filterQueryParams.length %}
+                  {% set sortBase = sortBase ~ '?' ~ (filterQueryParams | join('&')) %}
+                {% endif %}
+
+                {% set paginationBase = sortBase ~ ('&' if '?' in sortBase else '?') ~ 'sort=' ~ (sort | urlencode) ~ '&direction=' ~ (direction | urlencode) %}
 
                 {{ pagination(currentPage, totalPages, paginationBase, totalResults, pageSize) }}
 
                 {{ govukTable({
                   classes: "csra-all-prisoners-table",
                   attributes: {
-                    "data-module": "moj-sortable-table",
                     "data-qa": "all-prisoners-table"
                   },
                   head: [
                     {
-                      text: "Name",
+                      html: sortLink('Name', 'NAME', sort, direction, sortBase, 'ASC'),
                       attributes: {
-                        "aria-sort": nameSortDir,
-                        "data-sort-key": "NAME"
+                        "aria-sort": nameSortDir
                       }
                     },
                     {
-                      text: "Assessment type",
+                      html: sortLink('Assessment type', 'ASSESSMENT_TYPE', sort, direction, sortBase, 'ASC'),
                       attributes: {
-                        "aria-sort": assessmentTypeSortDir,
-                        "data-sort-key": "ASSESSMENT_TYPE"
+                        "aria-sort": assessmentTypeSortDir
                       }
                     },
                     {
-                      text: "Assessed on",
+                      html: sortLink('Assessed on', 'ASSESSED_ON', sort, direction, sortBase, 'DESC'),
                       attributes: {
-                        "aria-sort": assessedOnSortDir,
-                        "data-sort-key": "ASSESSED_ON"
+                        "aria-sort": assessedOnSortDir
                       }
                     },
                     {
-                      text: "Rating",
+                      html: sortLink('Rating', 'RATING', sort, direction, sortBase, 'DESC'),
                       attributes: {
-                        "aria-sort": ratingSortDir,
-                        "data-sort-key": "RATING"
+                        "aria-sort": ratingSortDir
                       }
                     }
                   ],

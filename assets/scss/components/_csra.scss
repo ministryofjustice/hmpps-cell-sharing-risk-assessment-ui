@@ -192,6 +192,35 @@
 }
 
 .csra-all-prisoners-table {
+  .csra-sort-link {
+    display: inline-flex;
+    position: relative;
+    margin: 0;
+    padding: 0;
+    border-width: 0;
+    color: #005ea5;
+    background-color: transparent;
+    box-shadow: 0 0 0 0;
+    font-family: inherit;
+    font-size: 1em;
+    font-weight: inherit;
+    text-align: inherit;
+    align-items: center;
+
+    &:hover {
+      color: #003078;
+    }
+
+    &:focus {
+      outline: none;
+      color: govuk-colour('black');
+      background-color: $govuk-focus-colour;
+      box-shadow:
+        0 -2px $govuk-focus-colour,
+        0 4px $govuk-focus-text-colour;
+    }
+  }
+
   &__prisoner-number {
     @include govuk-font($size: 16);
     color: $govuk-secondary-text-colour;
