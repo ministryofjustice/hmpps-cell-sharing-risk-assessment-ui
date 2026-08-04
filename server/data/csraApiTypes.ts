@@ -178,3 +178,41 @@ export interface AgencyStatus {
   name: string
   active: boolean
 }
+
+/** A single prisoner row in the prison prisoner list (mirrors dto.CsraPrisonPrisoner). */
+export interface CsraPrisonPrisoner {
+  prisonerNumber: string
+  firstName?: string | null
+  lastName?: string | null
+  /** The current rating (final if present, otherwise interim); null means no rating. */
+  rating?: CsraResult | null
+  provisional: boolean
+  assessmentType?: CsraAssessmentTypeBucket | null
+  /** ISO-8601 date the current rating was recorded; null when no rating. */
+  assessedOn?: string | null
+}
+
+/** A paged list of a prison's current prisoners with their CSRA rating (mirrors dto.CsraPrisonPrisonerList). */
+export interface CsraPrisonPrisonerList {
+  content: CsraPrisonPrisoner[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+}
+
+/**
+ * Optional query params for the prison prisoners endpoint.
+ * A type alias (not an interface) so it carries an implicit index signature and can be spread into the
+ * BaseApiClient parameter bag.
+ */
+export type CsraPrisonPrisonersQuery = {
+  page?: number
+  size?: number
+  sort?: string
+  direction?: string
+  ratings?: string[]
+  assessmentTypes?: string[]
+  fromDate?: string
+  toDate?: string
+}

@@ -5,6 +5,8 @@ import type {
   CsraHighRiskDueForReview,
   CsraHighRiskDueForReviewQuery,
   CsraHistoryQuery,
+  CsraPrisonPrisonerList,
+  CsraPrisonPrisonersQuery,
   CsraPrisonRatingSummary,
   CsraReviewHistory,
 } from '../data/csraApiTypes'
@@ -38,6 +40,18 @@ export default class CsraService {
     query: CsraHighRiskDueForReviewQuery = {},
   ): Promise<CsraHighRiskDueForReview> {
     return this.csraApiClient.getHighRiskDueForReview(username, { prisonId, ...query })
+  }
+
+  /**
+   * Get a paged, filterable, sortable list of the prison's current prisoners with their CSRA rating.
+   * `username` is stamped onto the system token used for the call.
+   */
+  getPrisonPrisoners(
+    username: string,
+    prisonId: string,
+    query: CsraPrisonPrisonersQuery = {},
+  ): Promise<CsraPrisonPrisonerList> {
+    return this.csraApiClient.getPrisonPrisoners(username, { prisonId, ...query })
   }
 
   /**

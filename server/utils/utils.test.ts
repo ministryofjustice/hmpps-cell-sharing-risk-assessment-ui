@@ -71,10 +71,10 @@ describe('csraRatingLabel', () => {
 
 describe('csraRatingTagClass', () => {
   it.each([
-    ['HIGH', 'govuk-tag--red'],
-    ['HIGH_GENERAL', 'govuk-tag--red'],
+    ['HIGH', 'govuk-tag--dark-red'],
+    ['HIGH_GENERAL', 'govuk-tag--dark-red'],
     ['HIGH_SPECIFIC', 'govuk-tag--red'],
-    ['STANDARD', 'govuk-tag--blue'],
+    ['STANDARD', 'govuk-tag--green'],
     [null, 'govuk-tag--grey'],
   ])('csraRatingTagClass(%s) === %s', (input: string, expected: string) => {
     expect(csraRatingTagClass(input)).toEqual(expected)

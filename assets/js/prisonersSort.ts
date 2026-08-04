@@ -3,11 +3,11 @@
 const toDirection = (ariaSort: string | null): 'ASC' | 'DESC' => (ariaSort === 'ascending' ? 'ASC' : 'DESC')
 
 /**
- * Initializes the due-for-review sort form by observing changes to the table header cells' aria-sort attributes.
+ * Initializes the prisoners filter form by observing changes to the table header cells' aria-sort attributes.
  * When a header cell is sorted, the corresponding hidden input fields for sort and direction are updated.
  * */
-const initDueForReviewSortForm = (): void => {
-  const form = document.querySelector<HTMLFormElement>('[data-due-for-review-form]')
+const initPrisonersSortForm = (): void => {
+  const form = document.querySelector<HTMLFormElement>('[data-filter-prisoners-form]')
   if (!form) return
 
   const sortField = form.querySelector<HTMLInputElement>('[data-sort-field]')
@@ -36,4 +36,4 @@ const initDueForReviewSortForm = (): void => {
   headerCells.forEach(cell => observer.observe(cell, { attributes: true, attributeFilter: ['aria-sort'] }))
 }
 
-export default initDueForReviewSortForm
+export default initPrisonersSortForm

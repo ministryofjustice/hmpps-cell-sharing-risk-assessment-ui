@@ -3,6 +3,7 @@ import { CsraApiClient } from '../data'
 import type {
   CsraCurrentRating,
   CsraHighRiskDueForReview,
+  CsraPrisonPrisonerList,
   CsraPrisonRatingSummary,
   CsraReviewHistory,
 } from '../data/csraApiTypes'
@@ -19,6 +20,7 @@ describe('CsraService', () => {
       getCsraHistory: jest.fn(),
       getRatingSummary: jest.fn(),
       getHighRiskDueForReview: jest.fn(),
+      getPrisonPrisoners: jest.fn(),
     } as unknown as jest.Mocked<CsraApiClient>
     csraService = new CsraService(csraApiClient)
   })
@@ -98,6 +100,34 @@ describe('CsraService', () => {
       await csraService.getHighRiskDueForReview('AUSER_GEN', 'MDI')
 
       expect(csraApiClient.getHighRiskDueForReview).toHaveBeenCalledWith('AUSER_GEN', { prisonId: 'MDI' })
+    })
+  })
+
+  describe('getPrisonPrisoners', () => {
+    const prisonerList: CsraPrisonPrisonerList = {
+      content: [{ prisonerNumber: 'A1234BC', provisional: false }],
+      page: 0,
+      size: 25,
+      totalElements: 1,
+      totalPages: 1,
+    }
+
+    it('delegates to the client, passing the username, prison id and query', async () => {
+      ;(csraApiClient.getPrisonPrisoners as unknown as jest.Mock).mockResolvedValue(prisonerList)
+
+      const query = { page: 0, size: 25, ratings: ['HIGH'], sort: 'RATING', direction: 'DESC' }
+      const result = await csraService.getPrisonPrisoners('AUSER_GEN', 'MDI', query)
+
+      expect(result).toEqual(prisonerList)
+      expect(csraApiClient.getPrisonPrisoners).toHaveBeenCalledWith('AUSER_GEN', { prisonId: 'MDI', ...query })
+    })
+
+    it('uses an empty query when none is passed', async () => {
+      ;(csraApiClient.getPrisonPrisoners as unknown as jest.Mock).mockResolvedValue(prisonerList)
+
+      await csraService.getPrisonPrisoners('AUSER_GEN', 'MDI')
+
+      expect(csraApiClient.getPrisonPrisoners).toHaveBeenCalledWith('AUSER_GEN', { prisonId: 'MDI' })
     })
   })
 })

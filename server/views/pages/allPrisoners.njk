@@ -1,0 +1,220 @@
+{% extends "../partials/layout.njk" %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+{% from "govuk/components/table/macro.njk" import govukTable %}
+{% from "govuk/components/fieldset/macro.njk" import govukFieldset %}
+{% from "govuk/components/tag/macro.njk" import govukTag %}
+{% from "moj/components/date-picker/macro.njk" import mojDatePicker %}
+{% from "../macros/mojFilter.njk" import mojFilter %}
+{% from "../macros/pagination.njk" import pagination %}
+
+{% set pageTitle = applicationName + " - CSRA ratings for all prisoners" %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-full">
+      {% if prisoners.length > 0 or hasSelectedFilters %}
+        <form method="get" action="/all-prisoners" data-filter-prisoners-form>
+          <div class="moj-filter-layout">
+            <div class="moj-filter-layout__filter">
+
+              {% set optionsHtml %}
+                {{ govukCheckboxes({
+                  name: "rating",
+                  classes: "govuk-checkboxes--small",
+                  fieldset: {
+                    legend: {
+                      text: "CSRA rating",
+                      classes: "govuk-fieldset__legend--s"
+                    }
+                  },
+                  items: ratingOptions
+                }) }}
+
+                {{ govukCheckboxes({
+                  name: "assessmentType",
+                  classes: "govuk-checkboxes--small",
+                  fieldset: {
+                    legend: {
+                      text: "Assessment type",
+                      classes: "govuk-fieldset__legend--s"
+                    }
+                  },
+                  items: assessmentTypeOptions
+                }) }}
+
+                {% call govukFieldset({
+                  legend: {
+                    text: "Date of assessment",
+                    classes: "govuk-fieldset__legend--s"
+                  }
+                }) %}
+
+                  {{ mojDatePicker({
+                    id: "assessmentDateFrom",
+                    name: "assessmentDateFrom",
+                    value: assessmentDateFrom,
+                    errorMessage: validationErrors.assessmentDateFrom if validationErrors,
+                    label: {
+                      text: "Date from",
+                      classes: "govuk-hint"
+                    }
+                  }) }}
+
+                  {{ mojDatePicker({
+                    id: "assessmentDateTo",
+                    name: "assessmentDateTo",
+                    value: assessmentDateTo,
+                    errorMessage: validationErrors.assessmentDateTo if validationErrors,
+                    label: {
+                      text: "Date to",
+                      classes: "govuk-hint"
+                    }
+                  }) }}
+
+                {% endcall %}
+
+                <input type="hidden" name="sort" value="{{ sort or '' }}" data-sort-field>
+                <input type="hidden" name="direction" value="{{ direction or '' }}" data-direction-field>
+
+              {% endset %}
+              
+              {{ mojFilter({
+                attributes: {
+                  "data-qa": "all-prisoners-filter"
+                },
+                selectedFilters: {
+                  heading: {
+                    text: "Filter"
+                  },
+                  categories: selectedFilters
+                },
+                optionsHtml: optionsHtml,
+                submit: {
+                  attributes: {
+                    "data-qa": "all-prisoners-filter-apply-button"
+                  }
+                },
+                clearFiltersUrl: "/all-prisoners"
+              }) }}
+            </div>
+            <div class="moj-filter-layout__content">
+              {% if prisoners.length > 0 %}
+                {% set tableRows = [] %}
+                {% for prisoner in prisoners %}
+                  {% set name = prisoner.lastName | capitalize + ', ' + prisoner.firstName | capitalize %}
+                  {% set nameHtml %}
+                    <a class="govuk-link govuk-link--no-visited-state" href="{{ '/prisoner/' + prisoner.prisonerNumber }}">{{ name }}</a>
+                    <br>
+                    <span class="csra-all-prisoners-table__prisoner-number govuk-body-s">{{ prisoner.prisonerNumber }}</span>
+                  {% endset %}
+                  {% set overdueDays = prisoner.assessedOn | daysOverdue %}
+                  {% set assessedOnHtml = prisoner.assessedOn | formatDate %}
+                  {% set ratingSourceLabel = 'Last reviewed' if prisoner.lastRatingSource == 'REVIEW' else 'Last assessed' %}
+                  {% set ratingText = prisoner.rating | csraRatingLabel %}
+                  {% set ratingHtml %}
+                    {{ govukTag({
+                      text: ratingText,
+                      classes: prisoner.rating | csraRatingTagClass
+                    }) }}
+                  {% endset %}
+                  {% set _ = tableRows.push([
+                    {
+                      html: nameHtml,
+                      attributes: {
+                        "data-sort-value": name
+                      }
+                    },
+                    {
+                      text: prisoner.assessmentType | capitalize
+                    },
+                    {
+                      html: assessedOnHtml,
+                      attributes: {
+                        "data-sort-value": prisoner.assessedOn
+                      }
+                    },
+                    {
+                      html: ratingHtml
+                    }
+                  ]) %}
+                {% endfor %}
+                {% set nameSortDir = "none" %}
+                {% if sort == "NAME" %}
+                  {% set nameSortDir = "descending" if direction == "DESC" else "ascending" %}
+                {% endif %}
+                {% set assessedOnSortDir = "none" %}
+                {% if sort == "ASSESSED_ON" %}
+                  {% set assessedOnSortDir = "descending" if direction == "DESC" else "ascending" %}
+                {% endif %}
+                {% set assessmentTypeSortDir = "none" %}
+                {% if sort == "ASSESSMENT_TYPE" %}
+                  {% set assessmentTypeSortDir = "descending" if direction == "DESC" else "ascending" %}
+                {% endif %}
+                {% set ratingSortDir = "none" %}
+                {% if sort == "RATING" %}
+                  {% set ratingSortDir = "descending" if direction == "DESC" else "ascending" %}
+                {% endif %}
+                {% set paginationBase = "/all-prisoners?sort=" ~ sort ~ "&direction=" ~ direction ~ "&rating=" ~ (selectedRatings | join(',')) ~ "&assessmentType=" ~ (selectedAssessmentTypes | join(',')) ~ "&assessmentDateFrom=" ~ (assessmentDateFrom | urlencode) ~ "&assessmentDateTo=" ~ (assessmentDateTo | urlencode) %}
+
+                {{ pagination(currentPage, totalPages, paginationBase, totalResults, pageSize) }}
+
+                {{ govukTable({
+                  classes: "csra-all-prisoners-table",
+                  attributes: {
+                    "data-module": "moj-sortable-table",
+                    "data-qa": "all-prisoners-table"
+                  },
+                  head: [
+                    {
+                      text: "Name",
+                      attributes: {
+                        "aria-sort": nameSortDir,
+                        "data-sort-key": "NAME"
+                      }
+                    },
+                    {
+                      text: "Assessment type",
+                      attributes: {
+                        "aria-sort": assessmentTypeSortDir,
+                        "data-sort-key": "ASSESSMENT_TYPE"
+                      }
+                    },
+                    {
+                      text: "Assessed on",
+                      attributes: {
+                        "aria-sort": assessedOnSortDir,
+                        "data-sort-key": "ASSESSED_ON"
+                      }
+                    },
+                    {
+                      text: "Rating",
+                      attributes: {
+                        "aria-sort": ratingSortDir,
+                        "data-sort-key": "RATING"
+                      }
+                    }
+                  ],
+                  rows: tableRows
+                }) }}
+
+                {{ pagination(currentPage, totalPages, paginationBase, totalResults, pageSize) }}
+              {% else %}
+                <p class="govuk-body">No prisoners have been found for the selected filters.</p>
+                <p class="govuk-body">You can:</p>
+                <ul class="govuk-list govuk-list--bullet">
+                  <li>select different CSRA rating types</li>
+                  <li>choose different dates</li>
+                  <li>clear filters to view all prisoners</li>
+                </ul>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+      {% else %}
+        <p class="govuk-body">There are no prisoners at this establishment.</p>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

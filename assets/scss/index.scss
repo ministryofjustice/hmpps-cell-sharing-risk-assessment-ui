@@ -7,6 +7,15 @@ $card-tint: #f3f2f1;
 $moj-page-width: 1170px;
 $govuk-page-width: $moj-page-width;
 
+$tag-dark-red: #942514;
+$tag-dark-red-text: #711a0d;
+$tag-red: #d4351c;
+$tag-red-text: #942514;
+$tag-green: #85994b;
+$tag-green-text: #485b10;
+$tag-grey: #505a5f;
+$tag-grey-text: #0b0c0c;
+
 @import "govuk-frontend/dist/govuk/index";
 @import "@ministryofjustice/frontend/moj/all";
 
@@ -18,4 +27,6 @@ $govuk-page-width: $moj-page-width;
 @import './components/card';
 @import './components/filter';
 @import './components/admin';
+@import './components/pagination';
+
 @import './overrides/local';

@@ -4,6 +4,7 @@ import type {
   AgencyStatus,
   CsraCurrentRating,
   CsraHighRiskDueForReview,
+  CsraPrisonPrisonerList,
   CsraReviewHistory,
 } from '../../server/data/csraApiTypes'
 
@@ -106,6 +107,36 @@ export default {
         status: 200,
         headers: { 'Content-Type': 'application/json;charset=UTF-8' },
         jsonBody: { prisonId, total: 10, noRating: 1, highRisk: 2, standardRisk: 7, ...summary },
+      },
+    }),
+
+  stubGetPrisonPrisoners: (prisonId = 'LEI', prisoners: Partial<CsraPrisonPrisonerList> = {}): SuperAgentRequest =>
+    stubFor({
+      request: {
+        method: 'GET',
+        urlPathPattern: `/csra-api/csra-review/prison/${prisonId}/prisoners`,
+      },
+      response: {
+        status: 200,
+        headers: { 'Content-Type': 'application/json;charset=UTF-8' },
+        jsonBody: {
+          content: [
+            {
+              prisonerNumber: 'A1049JF',
+              firstName: 'CALLUM',
+              lastName: 'REID',
+              rating: 'HIGH_GENERAL',
+              provisional: false,
+              assessmentType: 'ASSESSMENT',
+              assessedOn: '2026-03-05',
+            },
+          ],
+          page: 0,
+          size: 25,
+          totalElements: 1,
+          totalPages: 1,
+          ...prisoners,
+        },
       },
     }),
 
