@@ -7,7 +7,7 @@ import PrisonerSearchService from '../services/prisonerSearchService'
 import ManageUsersService from '../services/manageUsersService'
 import PrisonApiService from '../services/prisonApiService'
 import ActiveAgenciesService from '../services/activeAgenciesService'
-import type { CsraCurrentRating, CsraReviewHistory } from '../data/csraApiTypes'
+import type { CsraCurrentRating, CsraReviewDetail, CsraReviewHistory } from '../data/csraApiTypes'
 import type { Prisoner } from '../data/prisonerSearchApiTypes'
 import { Role } from '../utils/roles'
 import { NomisScreenNotSetUpError } from '../utils/nomisSplash'
@@ -304,6 +304,238 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
 
   it('returns 404 for an invalid prisoner number', () => {
     return request(app).get('/prisoner/not-a-number/history').expect(404)
+  })
+
+  it('keeps the originating worklist on the filter form, the links and the pagination', () => {
+    csraService.getHistory.mockResolvedValue(history)
+
+    return request(app)
+      .get('/prisoner/A1234BC/history?from=due-for-review&ratings=HIGH&page=2')
+      .expect(200)
+      .expect(res => {
+        // A GET form rebuilds the query string, so the origin has to be a field.
+        expect(res.text).toContain('name="from" value="due-for-review"')
+        expect(res.text).toContain('href="/prisoner/A1234BC/history?from=due-for-review"') // clear filters
+        expect(res.text).toContain(
+          'href="/prisoner/A1234BC/history/de91dfa7-821f-4552-a427-bf2f32eafeb0?from=due-for-review"',
+        )
+        // Pagination links come from the controller's base query params.
+        expect(res.text).toContain('from=due-for-review&amp;ratings=HIGH&amp;page=')
+      })
+  })
+})
+
+describe('breadcrumbs', () => {
+  const prisoner: Prisoner = {
+    prisonerNumber: 'A1234BC',
+    firstName: 'DANIEL',
+    lastName: 'HAVERS',
+    prisonId: 'LEI',
+  }
+
+  /** The breadcrumb nav only, so assertions cannot be satisfied by links elsewhere on the page. */
+  const trail = (html: string) => html.match(/<nav class="govuk-breadcrumbs.*?<\/nav>/s)?.[0] ?? ''
+
+  beforeEach(() => {
+    auditService.logPageView.mockResolvedValue(null)
+    prisonerSearchService.getPrisoner.mockResolvedValue(prisoner)
+    csraService.getCurrentRating.mockResolvedValue({
+      prisonerNumber: 'A1234BC',
+      status: 'NO_RATING',
+      rating: null,
+      provisional: false,
+      riskTo: [],
+      vulnerabilities: [],
+    })
+  })
+
+  it('ends at the prisoner on the current rating page, with no worklist', () => {
+    return request(app)
+      .get('/prisoner/A1234BC')
+      .expect(200)
+      .expect(res => {
+        expect(trail(res.text)).toContain('Digital Prison Services')
+        expect(trail(res.text)).toContain('CSRA')
+        expect(trail(res.text)).toContain('Daniel Havers')
+        expect(trail(res.text)).not.toContain('due-for-review')
+      })
+  })
+
+  it('includes the worklist the prisoner was reached from', () => {
+    return request(app)
+      .get('/prisoner/A1234BC?from=due-for-review')
+      .expect(200)
+      .expect(res => {
+        expect(trail(res.text)).toContain('href="/due-for-review"')
+        expect(trail(res.text)).toContain('High risk prisoners due for review')
+      })
+  })
+
+  it('links the prisoner crumb back to the current rating from the history page, keeping the worklist', () => {
+    csraService.getHistory.mockResolvedValue({
+      summary: { totalCsras: 0, highCount: 0, standardCount: 0 },
+      content: [],
+      page: 0,
+      size: 20,
+      totalElements: 0,
+      totalPages: 0,
+    })
+
+    return request(app)
+      .get('/prisoner/A1234BC/history?from=due-for-review')
+      .expect(200)
+      .expect(res => {
+        expect(trail(res.text)).toContain('href="/prisoner/A1234BC?from=due-for-review"')
+        expect(trail(res.text)).toContain('CSRA history')
+      })
+  })
+
+  it('never renders an unrecognised origin', () => {
+    return request(app)
+      .get('/prisoner/A1234BC?from=https://evil.example/phish')
+      .expect(200)
+      .expect(res => {
+        expect(res.text).not.toContain('evil.example')
+      })
+  })
+})
+
+describe('GET /prisoner/:prisonerNumber/history/:reviewId', () => {
+  const reviewId = 'de91dfa7-821f-4552-a427-bf2f32eafeb0'
+
+  const prisoner: Prisoner = {
+    prisonerNumber: 'A1234BC',
+    firstName: 'DANIEL',
+    lastName: 'HAVERS',
+    dateOfBirth: '1972-02-03',
+    prisonId: 'LEI',
+  }
+
+  const legacyReview: CsraReviewDetail = {
+    id: reviewId,
+    prisonerNumber: 'A1234BC',
+    prisonId: 'LEI',
+    prisonName: 'Leeds (HMP)',
+    assessmentDate: '2016-10-31',
+    type: 'REVIEW',
+    finalResult: 'HIGH',
+    finalResultDate: '2016-10-31',
+    createdAt: '2016-10-31T09:15:00',
+    createdBy: 'NQP56Y',
+    legacy: {
+      level: 'HI',
+      approvedResult: 'HI',
+      calculatedResult: 'STANDARD',
+      approvalCommitteeComment: 'Agreed at review board.',
+      approvalCommittee: { code: 'REVIEW', name: 'Review Board' },
+      approvalDate: '2016-11-02',
+      assessmentComment: 'Previous violence towards cellmates.',
+      assessmentCommittee: { code: 'RECP', name: 'Reception' },
+      nextReviewDate: '2017-10-31',
+      questions: [
+        { question: 'Select Risk Rating', answer: 'High', additionalAnswers: [] },
+        {
+          question: 'Who is this person a risk to?',
+          answer: 'Different ethnicity',
+          additionalAnswers: ['Transgender'],
+        },
+        { question: 'Never answered', answer: null, additionalAnswers: [] },
+      ],
+    },
+  }
+
+  beforeEach(() => {
+    auditService.logPageView.mockResolvedValue(null)
+    prisonerSearchService.getPrisoner.mockResolvedValue(prisoner)
+  })
+
+  it('renders a legacy review with its detail and questions, and audits the page view', () => {
+    csraService.getReview.mockResolvedValue(legacyReview)
+
+    return request(app)
+      .get(`/prisoner/A1234BC/history/${reviewId}`)
+      .expect('Content-Type', /html/)
+      .expect(200)
+      .expect(res => {
+        expect(res.text).toContain('CSRA review on 31 October 2016')
+        expect(res.text).toContain('Daniel Havers')
+        expect(res.text).toContain('Approved result')
+        expect(res.text).toContain('Agreed at review board.')
+        expect(res.text).toContain('Review Board')
+        expect(res.text).toContain('2 November 2016')
+        expect(res.text).toContain('Previous violence towards cellmates.')
+        expect(res.text).toContain('Leeds (HMP)')
+        expect(res.text).toContain('Reception')
+        expect(res.text).toContain('31 October 2017') // next review date
+        // Questions, including the additional answer the legacy screen drops
+        expect(res.text).toContain('Select Risk Rating')
+        expect(res.text).toContain('Who is this person a risk to?')
+        expect(res.text).toContain('Transgender')
+        expect(res.text).not.toContain('Never answered')
+        expect(csraService.getReview).toHaveBeenCalledWith(user.username, reviewId)
+        expect(auditService.logPageView).toHaveBeenCalledWith(Page.PRISONER_CSRA_REVIEW, {
+          who: user.username,
+          subjectId: 'A1234BC',
+          subjectType: 'PRISONER_ID',
+          correlationId: expect.any(String),
+          details: { reviewId },
+        })
+      })
+  })
+
+  it('never shows override rows, which are not in the migration contract', () => {
+    csraService.getReview.mockResolvedValue(legacyReview)
+
+    return request(app)
+      .get(`/prisoner/A1234BC/history/${reviewId}`)
+      .expect(200)
+      .expect(res => {
+        expect(res.text).not.toContain('Override result')
+        expect(res.text).not.toContain('Override reason')
+      })
+  })
+
+  it('tells the user the captured answers are not available for a DPS-created review', () => {
+    csraService.getReview.mockResolvedValue({
+      ...legacyReview,
+      type: 'CSRA_INITIAL_REVIEW',
+      legacy: null,
+    })
+
+    return request(app)
+      .get(`/prisoner/A1234BC/history/${reviewId}`)
+      .expect(200)
+      .expect(res => {
+        expect(res.text).toContain('CSRA initial review')
+        expect(res.text).toContain('not available in this service yet')
+        expect(res.text).not.toContain('Review questions')
+      })
+  })
+
+  it('returns 404 when the API does not know the review', () => {
+    csraService.getReview.mockRejectedValue({ responseStatus: 404 })
+
+    return request(app).get(`/prisoner/A1234BC/history/${reviewId}`).expect(404)
+  })
+
+  it('returns 404 for a review id that is not a UUID, without calling the API', () => {
+    return request(app)
+      .get('/prisoner/A1234BC/history/not-a-uuid')
+      .expect(404)
+      .expect(() => {
+        expect(csraService.getReview).not.toHaveBeenCalled()
+      })
+  })
+
+  it('returns 404 for a review belonging to a different prisoner', () => {
+    csraService.getReview.mockResolvedValue({ ...legacyReview, prisonerNumber: 'Z9999ZZ' })
+
+    return request(app)
+      .get(`/prisoner/A1234BC/history/${reviewId}`)
+      .expect(404)
+      .expect(() => {
+        expect(auditService.logPageView).not.toHaveBeenCalled()
+      })
   })
 })
 

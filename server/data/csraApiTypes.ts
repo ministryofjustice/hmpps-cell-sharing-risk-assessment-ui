@@ -5,7 +5,20 @@
  */
 
 /** The outcome of a CSRA review (mirrors jpa.CsraResult). */
-export type CsraResult = 'HIGH' | 'HIGH_GENERAL' | 'HIGH_GENERAL_INTERIM' | 'HIGH_SPECIFIC' | 'STANDARD'
+export type CsraResult = 'HIGH' | 'HIGH_GENERAL' | 'HIGH_SPECIFIC' | 'STANDARD'
+
+/**
+ * A raw NOMIS supervision level (mirrors dto.migration.CsraLevel). Distinct from CsraResult: legacy
+ * LOW and MED both collapse to STANDARD in a review's result, so these values exist only to render
+ * what the legacy record actually said. PEND is NOMIS's "pending" placeholder.
+ */
+export type CsraLevel = 'STANDARD' | 'PEND' | 'LOW' | 'MED' | 'HI'
+
+/** What became of a legacy review at approval (mirrors dto.CsraApprovalStatus). */
+export type CsraApprovalStatus = 'APPROVED' | 'NOT_APPROVED'
+
+/** A NOMIS committee code (mirrors dto.migration.CsraCommitteeCode). */
+export type CsraCommitteeCode = 'GOV' | 'MED' | 'OCA' | 'RECP' | 'REVIEW' | 'SECSTATE' | 'SECUR'
 
 /** The state of a prisoner's current CSRA rating (mirrors dto.CsraRatingStatus). */
 export type CsraRatingStatus = 'NO_RATING' | 'IN_PROGRESS' | 'PROVISIONAL' | 'COMPLETE'
@@ -56,6 +69,23 @@ export type CsraReviewType =
   | 'CSRA_INITIAL_REVIEW'
   | 'CSRA_REVIEW'
 
+/**
+ * The legacy NOMIS detail carried by a *history row* (mirrors dto.CsraLegacyDetail).
+ *
+ * NOT the same shape as CsraLegacyReviewDetail below, which is what the *detail* endpoint returns —
+ * that one carries the committees, the calculated/approved levels and the question tree as well.
+ * Presence of either identifies the record as NOMIS-sourced.
+ */
+export interface CsraLegacyDetail {
+  level?: CsraLevel | null
+  assessmentComment?: string | null
+  assessmentDate: string
+  approvalStatus?: CsraApprovalStatus | null
+  approvalComment?: string | null
+  approvalCommitteeComment?: string | null
+  approvalDate?: string | null
+}
+
 /** A single row in a prisoner's CSRA history (mirrors dto.CsraReviewSummary). */
 export interface CsraReviewSummary {
   id: string
@@ -63,7 +93,9 @@ export interface CsraReviewSummary {
   rating: CsraResult
   reviewComment?: string | null
   prisonId?: string | null
+  prisonName?: string | null
   recordedDate: string
+  legacy?: CsraLegacyDetail | null
 }
 
 /**
@@ -92,6 +124,71 @@ export interface CsraReviewHistory {
   size: number
   totalElements: number
   totalPages: number
+}
+
+/** A NOMIS committee, with the wording NOMIS displays for it (mirrors dto.CsraCommittee). */
+export interface CsraCommittee {
+  code: CsraCommitteeCode
+  name: string
+}
+
+/**
+ * A question asked in a legacy NOMIS review and the answer given (mirrors dto.CsraReviewQuestion).
+ *
+ * `additionalAnswers` holds any further answers to the same question. The API filters out null
+ * answers before picking the first, so a question that was answered never arrives with a null
+ * `answer` and populated `additionalAnswers`.
+ */
+export interface CsraReviewQuestion {
+  question: string
+  answer?: string | null
+  additionalAnswers: string[]
+}
+
+/**
+ * The full legacy NOMIS record behind a migrated review (mirrors dto.CsraLegacyReviewDetail).
+ *
+ * `approvedResult` is NOMIS's *reviewed* level, which is what it displays as the approved result —
+ * its APPROVED_SUP_LEVEL_TYPE column is never populated (MAPA-257).
+ */
+export interface CsraLegacyReviewDetail {
+  level?: CsraLevel | null
+  approvalStatus?: CsraApprovalStatus | null
+  calculatedResult?: CsraLevel | null
+  approvedResult?: CsraLevel | null
+  assessmentComment?: string | null
+  approvalCommitteeComment?: string | null
+  approvalComment?: string | null
+  approvalDate?: string | null
+  assessmentCommittee?: CsraCommittee | null
+  approvalCommittee?: CsraCommittee | null
+  nextReviewDate?: string | null
+  questions: CsraReviewQuestion[]
+}
+
+/**
+ * A single CSRA review with everything needed to render its detail page (mirrors dto.CsraReviewDetail).
+ *
+ * `legacy` is present only for a review migrated from NOMIS, and its presence is what identifies the
+ * review as legacy. A DPS-created review has no equivalent block: the answers captured during the
+ * assessment are not readable over the API yet.
+ */
+export interface CsraReviewDetail {
+  id: string
+  prisonerNumber: string
+  prisonId?: string | null
+  prisonName?: string | null
+  assessmentDate: string
+  type: CsraReviewType
+  interimResult?: CsraResult | null
+  interimResultDate?: string | null
+  finalResult?: CsraResult | null
+  finalResultDate?: string | null
+  createdAt: string
+  createdBy: string
+  lastModifiedAt?: string | null
+  lastModifiedBy?: string | null
+  legacy?: CsraLegacyReviewDetail | null
 }
 
 /**

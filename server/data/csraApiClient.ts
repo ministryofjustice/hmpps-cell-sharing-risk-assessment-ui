@@ -11,6 +11,7 @@ import type {
   CsraPrisonPrisonerList,
   CsraPrisonPrisonersQuery,
   CsraPrisonRatingSummary,
+  CsraReviewDetail,
   CsraReviewHistory,
 } from './csraApiTypes'
 
@@ -43,6 +44,20 @@ export default class CsraApiClient extends BaseApiClient {
     path: '/csra-review/prisoner/:prisonerNumber/history',
     requestType: 'get',
     queryParams: ['page', 'size', 'ratings', 'establishments', 'fromDate', 'toDate'],
+    options: { asSystem: true },
+  })
+
+  /**
+   * Get a single CSRA review by its id, with the full legacy NOMIS record where the review came from
+   * NOMIS.
+   *
+   * Called `asSystem` (see getCurrentCsraRating). Unlike the other reads this one **404s** when the id
+   * is unknown, and it is **not prisoner-scoped** — the prisoner is not in the path, so a caller
+   * showing this under a prisoner's URL must check the returned `prisonerNumber` matches.
+   */
+  getCsraReview = this.apiCall<CsraReviewDetail, { id: string }>({
+    path: '/csra-review/:id',
+    requestType: 'get',
     options: { asSystem: true },
   })
 

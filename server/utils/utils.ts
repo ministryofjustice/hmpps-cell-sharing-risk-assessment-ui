@@ -39,6 +39,20 @@ export const formatDate = (isoDate?: string | null): string => {
 }
 
 /**
+ * Format an ISO date-time as e.g. "1 July 2026 at 09:30".
+ *
+ * Deliberately not formatDate: the API's audit stamps are zoneless LocalDateTimes, which `new Date()`
+ * reads as local time. Formatting those in UTC as formatDate does would shift anything before 01:00
+ * back a day during British Summer Time. parseISO keeps the components exactly as written.
+ */
+export const formatDateTime = (isoDateTime?: string | null): string => {
+  if (!isoDateTime) return ''
+  const dateTime = parseISO(isoDateTime)
+  if (!isValid(dateTime)) return ''
+  return format(dateTime, "d MMMM yyyy 'at' HH:mm")
+}
+
+/**
  * Format an ISO date as a month and year, e.g. "June 2011". Used for the history summary date range.
  * Formats in UTC and returns '' for a missing/invalid value.
  */
@@ -75,6 +89,29 @@ export const csraRatingLabel = (rating?: string | null): string => {
       return 'Standard'
     case 'NO_RATING':
       return 'No rating'
+    default:
+      return ''
+  }
+}
+
+/**
+ * Human-readable label for a raw NOMIS supervision level (mirrors the API's CsraLevel enum).
+ *
+ * Separate from csraRatingLabel because the legacy fields are CsraLevel, not CsraResult — passing
+ * 'LOW' or 'HI' to csraRatingLabel returns an empty string.
+ */
+export const csraLevelLabel = (level?: string | null): string => {
+  switch (level) {
+    case 'HI':
+      return 'High'
+    case 'MED':
+      return 'Medium'
+    case 'LOW':
+      return 'Low'
+    case 'STANDARD':
+      return 'Standard'
+    case 'PEND':
+      return 'Pending'
     default:
       return ''
   }
@@ -119,6 +156,21 @@ export const enumLabel = (value?: string | null): string => {
   if (!value) return ''
   const sentence = value.replace(/_/g, ' ').toLowerCase()
   return sentence.charAt(0).toUpperCase() + sentence.slice(1)
+}
+
+/**
+ * Human-readable label for a CSRA record type (mirrors the API's CsraType enum). The new-model values
+ * need spelling out; enumLabel alone would render them "Csra initial review".
+ */
+export const csraTypeLabel = (type?: string | null): string => {
+  switch (type) {
+    case 'CSRA_INITIAL_REVIEW':
+      return 'CSRA initial review'
+    case 'CSRA_REVIEW':
+      return 'CSRA review'
+    default:
+      return enumLabel(type)
+  }
 }
 
 const PRISON_NUMBER_PATTERN = /^[A-Za-z]\d{4}[A-Za-z]{2}$/

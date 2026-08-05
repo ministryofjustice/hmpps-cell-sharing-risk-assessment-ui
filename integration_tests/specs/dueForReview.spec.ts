@@ -58,7 +58,8 @@ test.describe('High risk prisoners due for review', () => {
     const dueForReviewPage = await DueForReviewPage.verifyOnPage(page)
     const prisonerRow = dueForReviewPage.tableRows.filter({ hasText: 'A1049JF' }).first()
     await expect(prisonerRow.getByRole('link')).toHaveText('Reid, Callum')
-    await expect(prisonerRow.getByRole('link')).toHaveAttribute('href', '/prisoner/A1049JF')
+    // Carries the origin so the prisoner's CSRA pages can offer a way back to this list.
+    await expect(prisonerRow.getByRole('link')).toHaveAttribute('href', '/prisoner/A1049JF?from=due-for-review')
   })
 
   test('renders prison number and formatted review due date', async ({ page }) => {

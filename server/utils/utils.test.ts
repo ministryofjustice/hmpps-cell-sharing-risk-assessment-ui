@@ -1,12 +1,15 @@
 import {
   buildPagination,
   convertToTitleCase,
+  csraLevelLabel,
   csraRatingLabel,
   csraRatingTagClass,
   csraStatusLabel,
+  csraTypeLabel,
   daysOverdue,
   enumLabel,
   formatDate,
+  formatDateTime,
   formatMonthYear,
   initialiseName,
   isPrisonerNumber,
@@ -53,6 +56,53 @@ describe('formatDate', () => {
     ['date-time', '2026-06-26T11:20:00', '26 June 2026'],
   ])('%s formatDate(%s) === %s', (_: string, input: string, expected: string) => {
     expect(formatDate(input)).toEqual(expected)
+  })
+})
+
+describe('formatDateTime', () => {
+  it.each([
+    ['missing', undefined, ''],
+    ['null', null, ''],
+    ['invalid', 'not-a-date', ''],
+    ['date-time', '2026-06-26T11:20:00', '26 June 2026 at 11:20'],
+    // The API's stamps are zoneless LocalDateTimes. formatDate reads these as local and prints them
+    // in UTC, so during BST it renders 31 May. Keeping the components as written is the whole point
+    // of having a separate filter.
+    ['just after midnight during BST', '2026-06-01T00:30:00', '1 June 2026 at 00:30'],
+  ])('%s formatDateTime(%s) === %s', (_: string, input: string, expected: string) => {
+    expect(formatDateTime(input)).toEqual(expected)
+  })
+})
+
+describe('csraLevelLabel', () => {
+  it.each([
+    ['HI', 'High'],
+    ['MED', 'Medium'],
+    ['LOW', 'Low'],
+    ['STANDARD', 'Standard'],
+    ['PEND', 'Pending'],
+    ['UNKNOWN', ''],
+    [null, ''],
+    [undefined, ''],
+  ])('csraLevelLabel(%s) === %s', (input: string, expected: string) => {
+    expect(csraLevelLabel(input)).toEqual(expected)
+  })
+
+  it('labels the raw NOMIS levels that the CSRA result labels cannot', () => {
+    expect(csraRatingLabel('LOW')).toBe('')
+    expect(csraLevelLabel('LOW')).toBe('Low')
+  })
+})
+
+describe('csraTypeLabel', () => {
+  it.each([
+    ['CSRA_INITIAL_REVIEW', 'CSRA initial review'],
+    ['CSRA_REVIEW', 'CSRA review'],
+    ['RECEPTION', 'Reception'],
+    ['REVIEW', 'Review'],
+    [null, ''],
+  ])('csraTypeLabel(%s) === %s', (input: string, expected: string) => {
+    expect(csraTypeLabel(input)).toEqual(expected)
   })
 })
 

@@ -136,7 +136,8 @@
                 {% for prisoner in prisoners %}
                   {% set name = prisoner.lastName | trim | capitalize + ', ' + prisoner.firstName | trim | capitalize %}
                   {% set nameHtml %}
-                    <a class="govuk-link govuk-link--no-visited-state" href="{{ '/prisoner/' + prisoner.prisonerNumber }}">{{ name }}</a>
+                    {# ?from tells the prisoner's CSRA pages which worklist to put in their breadcrumb trail. #}
+                    <a class="govuk-link govuk-link--no-visited-state" href="{{ '/prisoner/' + prisoner.prisonerNumber + '?from=all-prisoners' }}">{{ name }}</a>
                     <br>
                     <span class="csra-all-prisoners-table__prisoner-number govuk-body-s">{{ prisoner.prisonerNumber }}</span>
                   {% endset %}

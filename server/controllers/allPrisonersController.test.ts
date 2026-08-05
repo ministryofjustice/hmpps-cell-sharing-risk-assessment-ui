@@ -1,10 +1,6 @@
 import AllPrisonersController from './allPrisonersController'
 import { Page } from '../services/auditService'
 
-jest.mock('lodash-es', () => ({
-  capitalize: (value: string) => value.charAt(0).toUpperCase() + value.slice(1).toLowerCase(),
-}))
-
 describe('allPrisonersController', () => {
   let auditService: { logPageView: jest.Mock }
   let csraService: { getPrisonPrisoners: jest.Mock }

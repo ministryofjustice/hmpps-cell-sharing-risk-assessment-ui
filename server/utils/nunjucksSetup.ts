@@ -5,12 +5,15 @@ import express from 'express'
 import fs from 'fs'
 import {
   convertToTitleCase,
+  csraLevelLabel,
   csraRatingLabel,
   csraRatingTagClass,
   csraStatusLabel,
+  csraTypeLabel,
   daysOverdue,
   enumLabel,
   formatDate,
+  formatDateTime,
   formatMonthYear,
   initialiseName,
 } from './utils'
@@ -59,10 +62,13 @@ export default function nunjucksSetup(app: express.Express): void {
   njkEnv.addFilter('assetMap', (url: string) => assetManifest[url] || url)
   njkEnv.addFilter('convertToTitleCase', convertToTitleCase)
   njkEnv.addFilter('formatDate', formatDate)
+  njkEnv.addFilter('formatDateTime', formatDateTime)
   njkEnv.addFilter('formatMonthYear', formatMonthYear)
   njkEnv.addFilter('daysOverdue', daysOverdue)
   njkEnv.addFilter('csraRatingLabel', csraRatingLabel)
+  njkEnv.addFilter('csraLevelLabel', csraLevelLabel)
   njkEnv.addFilter('csraRatingTagClass', csraRatingTagClass)
   njkEnv.addFilter('csraStatusLabel', csraStatusLabel)
+  njkEnv.addFilter('csraTypeLabel', csraTypeLabel)
   njkEnv.addFilter('enumLabel', enumLabel)
 }

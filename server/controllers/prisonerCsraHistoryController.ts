@@ -27,6 +27,9 @@ export default class PrisonerCsraHistoryController {
     })
 
     const baseQueryParams = new URLSearchParams()
+    // Pagination links are built from these, so the worklist the prisoner was reached from has to be
+    // among them or paging would drop it out of the breadcrumb trail.
+    if (res.locals.fromKey) baseQueryParams.set('from', res.locals.fromKey)
     ratings.forEach(rating => baseQueryParams.append('ratings', rating))
     establishments.forEach(establishment => baseQueryParams.append('establishments', establishment))
     if (fromDateRaw) baseQueryParams.set('fromDate', fromDateRaw)
