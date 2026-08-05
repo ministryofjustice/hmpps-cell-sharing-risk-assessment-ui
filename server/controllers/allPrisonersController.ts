@@ -1,9 +1,8 @@
 import { type RequestHandler } from 'express'
-import { capitalize } from 'lodash-es'
 import type { Services } from '../services'
 import { Page } from '../services/auditService'
 import logger from '../../logger'
-import { csraRatingLabel, parseUkDate, validateUkDate, type UkDateValidationError } from '../utils/utils'
+import { csraRatingLabel, enumLabel, parseUkDate, validateUkDate, type UkDateValidationError } from '../utils/utils'
 import { firstQueryValue, toArray } from '../utils/queryUtils'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
@@ -53,7 +52,7 @@ const getRatingOptions = (selectedRatings: string[]) =>
   RATING_OPTIONS.map(option => ({ ...option, checked: selectedRatings.includes(option.value) }))
 
 const ASSESSMENT_TYPE_VALUES = ['ASSESSMENT', 'REVIEW'] as const
-const ASSESSMENT_TYPE_OPTIONS = ASSESSMENT_TYPE_VALUES.map(type => ({ value: type, text: capitalize(type) }))
+const ASSESSMENT_TYPE_OPTIONS = ASSESSMENT_TYPE_VALUES.map(type => ({ value: type, text: enumLabel(type) }))
 const getAssessmentTypeOptions = (selectedTypes: string[]) =>
   ASSESSMENT_TYPE_OPTIONS.map(option => ({ ...option, checked: selectedTypes.includes(option.value) }))
 

@@ -86,7 +86,8 @@
                 {% for prisoner in prisoners %}
                   {% set name = prisoner.lastName | capitalize + ', ' + prisoner.firstName | capitalize %}
                   {% set nameHtml %}
-                    <a class="govuk-link govuk-link--no-visited-state" href="{{ '/prisoner/' + prisoner.prisonerNumber }}">{{ name }}</a>
+                    {# ?from tells the prisoner's CSRA pages which worklist to put in their breadcrumb trail. #}
+                    <a class="govuk-link govuk-link--no-visited-state" href="{{ '/prisoner/' + prisoner.prisonerNumber + '?from=due-for-review' }}">{{ name }}</a>
                   {% endset %}
                   {% set overdueDays = prisoner.reviewDueBy | daysOverdue %}
                   {% set reviewDueByHtml = prisoner.reviewDueBy | formatDate %}

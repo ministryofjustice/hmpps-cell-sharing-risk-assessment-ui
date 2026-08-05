@@ -14,6 +14,7 @@ import PrisonerSearchService from '../../services/prisonerSearchService'
 import ManageUsersService from '../../services/manageUsersService'
 import PrisonApiService from '../../services/prisonApiService'
 import ActiveAgenciesService from '../../services/activeAgenciesService'
+import addBreadcrumb from '../../middleware/addBreadcrumb'
 
 jest.mock('../../services/auditService')
 
@@ -51,6 +52,9 @@ function appSetup(services: Services, production: boolean, userSupplier: () => H
   })
   app.use(express.json())
   app.use(express.urlencoded({ extended: true }))
+  // Mirrors app.ts. Must come after the middleware above, which replaces res.locals wholesale and
+  // would otherwise discard the crumb.
+  app.use(addBreadcrumb({ title: 'Digital Prison Services', href: app.locals.dpsUrl }))
   app.use(routes(services))
   app.use((req, res, next) => next(new NotFound()))
   app.use(errorHandler(production))

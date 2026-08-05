@@ -8,6 +8,7 @@ import type {
   CsraPrisonPrisonerList,
   CsraPrisonPrisonersQuery,
   CsraPrisonRatingSummary,
+  CsraReviewDetail,
   CsraReviewHistory,
 } from '../data/csraApiTypes'
 
@@ -28,6 +29,14 @@ export default class CsraService {
    */
   getHistory(username: string, prisonerNumber: string, query: CsraHistoryQuery): Promise<CsraReviewHistory> {
     return this.csraApiClient.getCsraHistory(username, { prisonerNumber, ...query })
+  }
+
+  /**
+   * Get a single CSRA review by id. Rejects with a 404 when the id is unknown, and the review is not
+   * guaranteed to belong to any particular prisoner (see CsraApiClient.getCsraReview).
+   */
+  getReview(username: string, reviewId: string): Promise<CsraReviewDetail> {
+    return this.csraApiClient.getCsraReview(username, { id: reviewId })
   }
 
   /**

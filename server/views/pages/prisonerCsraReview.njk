@@ -1,0 +1,93 @@
+{% extends "../partials/layout.njk" %}
+
+{% from "govuk/components/tag/macro.njk" import govukTag %}
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
+
+{% set prisonerName = (prisoner.firstName + " " + prisoner.lastName) | convertToTitleCase %}
+{% set pageTitle = applicationName + " - CSRA review for " + prisonerName %}
+{% set mainClasses = "govuk-body" %}
+
+{% set currentTab = "history" %}
+
+{% set rating = review.finalResult or review.interimResult %}
+
+{% block content %}
+  {% include "../partials/prisonerBanner.njk" %}
+  {% include "../partials/csraSubNav.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <h1 class="govuk-heading-xl govuk-!-margin-bottom-2" data-qa="page-heading">
+        CSRA review on {{ review.assessmentDate | formatDate }}
+      </h1>
+
+      <p class="govuk-body">
+        {% if rating %}
+          {{ govukTag({
+            text: rating | csraRatingLabel,
+            classes: rating | csraRatingTagClass,
+            attributes: { "data-qa": "review-rating" }
+          }) }}
+        {% endif %}
+        {# A rating with no final result is still provisional, whatever the review's status says. #}
+        {% if review.interimResult and not review.finalResult %}
+          {{ govukTag({ text: "Provisional", classes: "govuk-tag--yellow", attributes: { "data-qa": "review-provisional" } }) }}
+        {% endif %}
+        {# Kept short: govuk-tag is capped at 160px and wraps beyond it, which misaligns the row. #}
+        {% if isLegacy %}
+          {{ govukTag({ text: "NOMIS record", classes: "govuk-tag--grey", attributes: { "data-qa": "review-legacy" } }) }}
+        {% endif %}
+      </p>
+
+      {{ govukSummaryList({
+        classes: "govuk-summary-list--no-border",
+        rows: rows,
+        attributes: { "data-qa": "review-details" }
+      }) }}
+
+      {% if isLegacy %}
+
+        <h2 class="govuk-heading-m govuk-!-margin-top-6">Review questions</h2>
+
+        {% if questions.length %}
+          {% set questionRows = [] %}
+          {% for question in questions %}
+            {#
+              The only html value on the page. Built as a capture block so nunjucks still autoescapes
+              each answer — joining them into a string in TypeScript and passing that as html would
+              hand NOMIS free text straight into the page.
+            #}
+            {% set answerHtml %}
+              {%- for answer in question.answers -%}
+                {{ answer }}{% if not loop.last %}<br>{% endif %}
+              {%- endfor -%}
+            {% endset %}
+            {% set questionRows = (questionRows.push({
+              key: { text: question.question, classes: "govuk-!-font-weight-regular" },
+              value: { html: answerHtml }
+            }), questionRows) %}
+          {% endfor %}
+
+          {{ govukSummaryList({
+            classes: "govuk-summary-list--no-border",
+            rows: questionRows,
+            attributes: { "data-qa": "review-questions" }
+          }) }}
+        {% else %}
+          <p class="govuk-body" data-qa="no-questions">No questions and answers were recorded for this review.</p>
+        {% endif %}
+
+      {% else %}
+
+        {{ govukInsetText({
+          attributes: { "data-qa": "dps-answers-note" },
+          text: "The answers recorded during this assessment are not available in this service yet."
+        }) }}
+
+      {% endif %}
+
+    </div>
+  </div>
+{% endblock %}
