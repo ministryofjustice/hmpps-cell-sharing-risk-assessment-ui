@@ -313,3 +313,55 @@ export type CsraPrisonPrisonersQuery = {
   fromDate?: string
   toDate?: string
 }
+
+/** All arrival types as a runtime array — the single source of truth for the union type below. */
+export const csraArrivalTypes = ['NEW_ADMISSION', 'TRANSFER_IN', 'COURT_RETURN', 'TEMPORARY_ABSENCE_RETURN'] as const
+
+/** The type of arrival into a prison. */
+export type CsraArrivalType = (typeof csraArrivalTypes)[number]
+
+/** A single prisoner who recently arrived at a prison (mirrors dto.CsraArrivalRow). */
+export interface CsraArrivalRow {
+  prisonerNumber: string
+  firstName?: string | null
+  lastName?: string | null
+  /** ISO-8601 date. */
+  dateOfBirth?: string | null
+  arrivalType: CsraArrivalType
+  /** ISO-8601 date-time. */
+  arrivedAt: string
+  /** The prisoner's current location — a cell, or a location code such as RECP for reception. */
+  location?: string | null
+}
+
+/** One calendar day of the window, with the arrivals on that day (mirrors dto.CsraArrivalDay). */
+export interface CsraArrivalDay {
+  /** ISO-8601 date. */
+  date: string
+  /** Arrivals on this day matching the filter, latest first; empty when nobody arrived. */
+  arrivals: CsraArrivalRow[]
+}
+
+/** Recent arrivals at a prison who are still in the establishment (mirrors dto.CsraRecentArrivals). */
+export interface CsraRecentArrivals {
+  /** One section per calendar day in the window, most recent day first. Every day is present even when empty. */
+  days: CsraArrivalDay[]
+  totalResults: number
+  /** Count of arrivals per type across the whole window (every type always present, zero when none). */
+  arrivalTypeCounts: Record<string, number>
+  /** ISO-8601 date — the first day of the window (inclusive). */
+  fromDate: string
+  /** ISO-8601 date — the last day of the window (inclusive, today). */
+  toDate: string
+}
+
+/**
+ * Optional query params for the recent-arrivals endpoint.
+ * A type alias (not an interface) so it carries an implicit index signature and can be spread into the
+ * BaseApiClient parameter bag.
+ */
+export type CsraRecentArrivalsQuery = {
+  /** Number of days back to include (inclusive of today). Defaults to 3 on the API side. */
+  days?: number
+  arrivalTypes?: CsraArrivalType[]
+}

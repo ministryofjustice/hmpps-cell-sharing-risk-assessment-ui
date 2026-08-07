@@ -1,0 +1,91 @@
+{% extends "../partials/layout.njk" %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+{% from "govuk/components/table/macro.njk" import govukTable %}
+{% from "../macros/mojFilter.njk" import mojFilter %}
+
+{% set pageTitle = applicationName + " - People who have arrived in the last 3 days" %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-full">
+      <form method="get" action="/recent-arrivals">
+        <div class="csra-filter-top govuk-!-margin-top-5">
+          {% set optionsHtml %}
+            {{ govukCheckboxes({
+              name: "arrivalType",
+              classes: "govuk-checkboxes--small csra-checkboxes--inline",
+              formGroup: {
+                classes: "govuk-!-margin-bottom-3"
+              },
+              items: arrivalTypeOptions
+            }) }}
+          {% endset %}
+
+          {{ mojFilter({
+            attributes: {
+              "data-qa": "recent-arrivals-filter"
+            },
+            selectedFilters: {
+              heading: {
+                text: "Filter by arrival type"
+              }
+            },
+            optionsHtml: optionsHtml,
+            submit: {
+              classes: "govuk-!-margin-bottom-1",
+              attributes: {
+                "data-qa": "recent-arrivals-filter-apply-button"
+              }
+            }
+          }) }}
+        </div>
+
+        <div class="csra-recent-arrivals">
+          {% for day in recentArrivals.days %}
+            <h2 class="govuk-heading-m govuk-!-margin-top-7">{{ day.date | formatDayMonth }}</h2>
+            {% if day.arrivals.length > 0 %}
+              {% set rows = [] %}
+              {% for arrival in day.arrivals %}
+                {% set name = arrival.lastName | capitalize ~ ', ' ~ arrival.firstName | capitalize %}
+                {% set imageHtml %}
+                  <img src="/prisoner/{{ arrival.prisonerNumber }}/image" alt="Image of {{ name }}" class="csra-prisoner-image" />
+                {% endset %}
+                {% set nameHtml %}
+                  <a class="govuk-link" href="/prisoner/{{ arrival.prisonerNumber }}">{{ name }}</a>
+                  <br>
+                  <span class="csra-recent-arrivals__prisoner-number">{{ arrival.prisonerNumber }}</span>
+                {% endset %}
+                {% set row = [
+                  { html: imageHtml },
+                  { html: nameHtml },
+                  { text: arrival.dateOfBirth | formatDate },
+                  { text: arrival.arrivalType | arrivalTypeLabel },
+                  { text: arrival.arrivedAt | formatTime },
+                  { text: arrival.location | formatLocation }
+                ] %}
+                {% set _ = rows.push(row) %}
+              {% endfor %}
+
+              {{ govukTable({
+                head: [
+                  { text: "" , classes: "prisoner-image-column-header" },
+                  { text: "Name" },
+                  { text: "Date of birth" },
+                  { text: "Arrival type" },
+                  { text: "Time arrived" },
+                  { text: "Location" }
+                ],
+                classes: "csra-recent-arrivals-table",
+                rows: rows
+              }) }}
+            {% else %}
+              <p class="govuk-body">No prisoners arrived on this day.</p>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

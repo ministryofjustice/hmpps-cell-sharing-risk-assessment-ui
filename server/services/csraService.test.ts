@@ -5,6 +5,7 @@ import type {
   CsraHighRiskDueForReview,
   CsraPrisonPrisonerList,
   CsraPrisonRatingSummary,
+  CsraRecentArrivals,
   CsraReviewHistory,
 } from '../data/csraApiTypes'
 
@@ -21,6 +22,7 @@ describe('CsraService', () => {
       getRatingSummary: jest.fn(),
       getHighRiskDueForReview: jest.fn(),
       getPrisonPrisoners: jest.fn(),
+      getRecentArrivals: jest.fn(),
     } as unknown as jest.Mocked<CsraApiClient>
     csraService = new CsraService(csraApiClient)
   })
@@ -128,6 +130,54 @@ describe('CsraService', () => {
       await csraService.getPrisonPrisoners('AUSER_GEN', 'MDI')
 
       expect(csraApiClient.getPrisonPrisoners).toHaveBeenCalledWith('AUSER_GEN', { prisonId: 'MDI' })
+    })
+  })
+
+  describe('getRecentArrivals', () => {
+    const recentArrivals: CsraRecentArrivals = {
+      days: [
+        {
+          date: '2026-08-06',
+          arrivals: [
+            {
+              prisonerNumber: 'A5197BD',
+              firstName: 'DANIEL',
+              lastName: 'HAVERS',
+              arrivalType: 'NEW_ADMISSION',
+              arrivedAt: '2026-08-06T14:03:00',
+            },
+          ],
+        },
+        { date: '2026-08-05', arrivals: [] },
+      ],
+      totalResults: 1,
+      arrivalTypeCounts: { NEW_ADMISSION: 1, TRANSFER_IN: 0, COURT_RETURN: 0, TEMPORARY_ABSENCE_RETURN: 0 },
+      fromDate: '2026-08-04',
+      toDate: '2026-08-06',
+    }
+
+    it('delegates to the client, passing the username, prison id and query', async () => {
+      ;(csraApiClient.getRecentArrivals as unknown as jest.Mock).mockResolvedValue(recentArrivals)
+
+      const result = await csraService.getRecentArrivals('AUSER_GEN', 'LEI', {
+        days: 3,
+        arrivalTypes: ['NEW_ADMISSION'],
+      })
+
+      expect(result).toEqual(recentArrivals)
+      expect(csraApiClient.getRecentArrivals).toHaveBeenCalledWith('AUSER_GEN', {
+        prisonId: 'LEI',
+        days: 3,
+        arrivalTypes: ['NEW_ADMISSION'],
+      })
+    })
+
+    it('uses an empty query when none is passed', async () => {
+      ;(csraApiClient.getRecentArrivals as unknown as jest.Mock).mockResolvedValue(recentArrivals)
+
+      await csraService.getRecentArrivals('AUSER_GEN', 'LEI')
+
+      expect(csraApiClient.getRecentArrivals).toHaveBeenCalledWith('AUSER_GEN', { prisonId: 'LEI' })
     })
   })
 })

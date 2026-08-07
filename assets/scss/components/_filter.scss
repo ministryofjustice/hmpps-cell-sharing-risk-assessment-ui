@@ -13,3 +13,9 @@
 .moj-filter-layout__filter {
   width: 270px;
 }
+
+.csra-checkboxes--inline {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: govuk-spacing(4);
+}

@@ -4,6 +4,8 @@ import nunjucks from 'nunjucks'
 import express from 'express'
 import fs from 'fs'
 import {
+  arrivalTypeLabel,
+  formatLocation,
   convertToTitleCase,
   csraLevelLabel,
   csraRatingLabel,
@@ -14,8 +16,10 @@ import {
   enumLabel,
   formatDate,
   formatDateTime,
+  formatTime,
   formatMonthYear,
   initialiseName,
+  formatDayMonth,
 } from './utils'
 import config from '../config'
 import logger from '../../logger'
@@ -63,12 +67,16 @@ export default function nunjucksSetup(app: express.Express): void {
   njkEnv.addFilter('convertToTitleCase', convertToTitleCase)
   njkEnv.addFilter('formatDate', formatDate)
   njkEnv.addFilter('formatDateTime', formatDateTime)
+  njkEnv.addFilter('formatTime', formatTime)
   njkEnv.addFilter('formatMonthYear', formatMonthYear)
+  njkEnv.addFilter('formatDayMonth', formatDayMonth)
+  njkEnv.addFilter('formatLocation', formatLocation)
   njkEnv.addFilter('daysOverdue', daysOverdue)
   njkEnv.addFilter('csraRatingLabel', csraRatingLabel)
   njkEnv.addFilter('csraLevelLabel', csraLevelLabel)
   njkEnv.addFilter('csraRatingTagClass', csraRatingTagClass)
   njkEnv.addFilter('csraStatusLabel', csraStatusLabel)
   njkEnv.addFilter('csraTypeLabel', csraTypeLabel)
+  njkEnv.addFilter('arrivalTypeLabel', arrivalTypeLabel)
   njkEnv.addFilter('enumLabel', enumLabel)
 }

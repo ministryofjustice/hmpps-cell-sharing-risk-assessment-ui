@@ -1,4 +1,5 @@
 import {
+  arrivalTypeLabel,
   buildPagination,
   convertToTitleCase,
   csraLevelLabel,
@@ -10,13 +11,30 @@ import {
   enumLabel,
   formatDate,
   formatDateTime,
+  formatDayMonth,
+  formatLocation,
   formatMonthYear,
+  formatTime,
   initialiseName,
   isPrisonerNumber,
   parseCsraHistoryQuery,
   parseUkDate,
   validateUkDate,
 } from './utils'
+
+describe('arrivalTypeLabel', () => {
+  it.each([
+    ['NEW_ADMISSION', 'New admission'],
+    ['TRANSFER_IN', 'Transfer in'],
+    ['COURT_RETURN', 'Court return'],
+    ['TEMPORARY_ABSENCE_RETURN', 'Temporary absence return'],
+    ['UNKNOWN', ''],
+    [null, ''],
+    [undefined, ''],
+  ])('arrivalTypeLabel(%s) === %s', (input: string, expected: string) => {
+    expect(arrivalTypeLabel(input as any)).toEqual(expected)
+  })
+})
 
 describe('convert to title case', () => {
   it.each([
@@ -164,6 +182,44 @@ describe('formatMonthYear', () => {
     ['date-time', '2025-10-11T09:00:00', 'October 2025'],
   ])('%s formatMonthYear(%s) === %s', (_: string, input: string, expected: string) => {
     expect(formatMonthYear(input)).toEqual(expected)
+  })
+})
+
+describe('formatDayMonth', () => {
+  it.each([
+    ['missing', undefined, ''],
+    ['null', null, ''],
+    ['invalid', 'not-a-date', ''],
+    ['wednesday', '2026-08-05', 'Wednesday 5 August'],
+    ['thursday', '2026-08-06', 'Thursday 6 August'],
+  ])('%s formatDayMonth(%s) === %s', (_: string, input: string, expected: string) => {
+    expect(formatDayMonth(input)).toEqual(expected)
+  })
+})
+
+describe('formatTime', () => {
+  it.each([
+    ['missing', undefined, ''],
+    ['null', null, ''],
+    ['invalid', 'not-a-datetime', ''],
+    ['midnight', '2026-08-06T00:00:00', '00:00'],
+    ['afternoon', '2026-08-06T14:03:00', '14:03'],
+  ])('%s formatTime(%s) === %s', (_: string, input: string, expected: string) => {
+    expect(formatTime(input)).toEqual(expected)
+  })
+})
+
+describe('formatLocation', () => {
+  it.each([
+    ['empty string', '', ''],
+    ['RECP', 'RECP', 'Reception'],
+    ['CSWAP', 'CSWAP', 'No cell allocated'],
+    ['COURT', 'COURT', 'Court'],
+    ['cell reference', 'C-2-005', 'C-2-005'],
+    ['null', null, ''],
+    ['undefined', undefined, ''],
+  ])('%s formatLocation(%s) === %s', (_: string, input: string, expected: string) => {
+    expect(formatLocation(input as any)).toEqual(expected)
   })
 })
 

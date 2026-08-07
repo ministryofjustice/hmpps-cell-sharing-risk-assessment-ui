@@ -8,6 +8,7 @@ export enum Page {
   DUE_FOR_REVIEW = 'DUE_FOR_REVIEW',
   ALL_PRISONERS = 'ALL_PRISONERS',
   ADMIN_PRISONS = 'ADMIN_PRISONS',
+  RECENT_ARRIVALS = 'RECENT_ARRIVALS',
 }
 
 /** Auditable admin actions (as opposed to page views), recorded via logAuditEvent. */

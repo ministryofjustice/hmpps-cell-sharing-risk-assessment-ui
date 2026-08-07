@@ -6,6 +6,7 @@ import dueForReviewRouter from './dueForReviewRouter'
 import prisonerRouter from './prisonerRouter'
 import adminRouter from './adminRouter'
 import allPrisonersRouter from './allPrisonersRouter'
+import recentArrivalsRouter from './recentArrivalsRouter'
 
 export default function routes(services: Services): Router {
   const { prisonerSearchService, manageUsersService } = services
@@ -26,6 +27,7 @@ export default function routes(services: Services): Router {
 
   router.use('/due-for-review', dueForReviewRouter(services))
   router.use('/all-prisoners', allPrisonersRouter(services))
+  router.use('/recent-arrivals', recentArrivalsRouter(services))
   router.use('/prisoner/:prisonerNumber', requirePrisonerAccess, prisonerRouter(services))
   router.use('/admin', adminRouter(services))
 

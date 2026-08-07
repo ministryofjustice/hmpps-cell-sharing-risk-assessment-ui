@@ -170,15 +170,17 @@
   }
 }
 
-.csra-due-for-review-table, .csra-all-prisoners-table {
+.csra-due-for-review-table, .csra-all-prisoners-table, .csra-recent-arrivals-table {
   .govuk-table__body {
-    .govuk-table__row {
-      height: 75px;
-    }
-
     .govuk-table__cell {
       vertical-align: middle;
     }
+  }
+}
+
+.csra-due-for-review-table, .csra-all-prisoners-table {
+  .govuk-table__row {
+    height: 75px;
   }
 }
 
@@ -249,5 +251,29 @@
       border-color: $tag-grey;
       color: $tag-grey-text;
     }
+  }
+}
+
+.csra-recent-arrivals {
+  &__prisoner-number {
+    @include govuk-font($size: 19);
+    color: $govuk-secondary-text-colour;
+    vertical-align: top;
+  }
+}
+
+.csra-recent-arrivals-table {
+  .govuk-table__body {
+    .govuk-table__row {
+      height: 138px;
+    }
+  }
+
+  .prisoner-image-column-header {
+    width: 104px;
+  }
+
+  .csra-prisoner-image {
+    vertical-align: middle;
   }
 }

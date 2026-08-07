@@ -1,5 +1,20 @@
 {% from "govuk/components/button/macro.njk" import govukButton %}
 
+{#
+  Renders a filter component with a heading, selected filters, and an apply button.
+
+  Params:
+    attributes {object} - Optional: Additional HTML attributes for the filter container
+    selectedFilters {object} - The selected filters to display
+      heading {object} - The heading for the selected filters section
+        text {string} - The text for the heading
+        html {string} - Optional: HTML for the heading (if provided, takes precedence over text)
+    optionsHtml {string} - Optional: HTML for additional filter options (e.g., checkboxes)
+    submit {object} - The submit button configuration
+      text {string} - Optional: The text for the submit button (default: "Apply")
+      attributes {object} - Optional: Additional HTML attributes for the submit button
+    clearFiltersUrl {string} - The URL to clear all filters
+#}
 {% macro mojFilter(params) %}
 
   <div class="moj-filter" data-module="moj-filter" {%- for attribute, value in params.attributes %} {{ attribute }}="{{ value }}"{% endfor %}>
@@ -17,12 +32,15 @@
 
         {{ govukButton({
           text: params.submit.text if params.submit.text else "Apply",
+          classes: params.submit.classes if params.submit.classes else "",
           attributes: params.submit.attributes
         }) }}
 
-        <p>
-          <a class="govuk-link govuk-link--no-visited-state" href="{{ params.clearFiltersUrl }}">Clear filters</a>
-        </p>
+        {% if params.clearFiltersUrl %}
+          <p>
+            <a class="govuk-link govuk-link--no-visited-state" href="{{ params.clearFiltersUrl }}">Clear filters</a>
+          </p>
+        {% endif %}
 
       </div>
     </div>
