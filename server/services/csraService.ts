@@ -8,6 +8,8 @@ import type {
   CsraPrisonPrisonerList,
   CsraPrisonPrisonersQuery,
   CsraPrisonRatingSummary,
+  CsraRecentArrivals,
+  CsraRecentArrivalsQuery,
   CsraReviewDetail,
   CsraReviewHistory,
 } from '../data/csraApiTypes'
@@ -69,6 +71,18 @@ export default class CsraService {
    */
   getRatingSummary(username: string, prisonId: string): Promise<CsraPrisonRatingSummary> {
     return this.csraApiClient.getRatingSummary(username, { prisonId })
+  }
+
+  /**
+   * Get prisoners who recently arrived at a prison and are still in the establishment.
+   * `username` is stamped onto the system token used for the call.
+   */
+  getRecentArrivals(
+    username: string,
+    prisonId: string,
+    query: CsraRecentArrivalsQuery = {},
+  ): Promise<CsraRecentArrivals> {
+    return this.csraApiClient.getRecentArrivals(username, { prisonId, ...query })
   }
 
   /** Every prison with whether CSRA is switched on in DPS, for the rollout admin console. */

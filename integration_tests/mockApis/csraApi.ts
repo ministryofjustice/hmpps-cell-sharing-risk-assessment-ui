@@ -5,6 +5,7 @@ import type {
   CsraCurrentRating,
   CsraHighRiskDueForReview,
   CsraPrisonPrisonerList,
+  CsraRecentArrivals,
   CsraReviewDetail,
   CsraReviewHistory,
 } from '../../server/data/csraApiTypes'
@@ -215,6 +216,43 @@ export default {
         status: 200,
         headers: { 'Content-Type': 'application/json;charset=UTF-8' },
         jsonBody: agency,
+      },
+    }),
+
+  stubGetRecentArrivals: (prisonId = 'LEI', recentArrivals: Partial<CsraRecentArrivals> = {}): SuperAgentRequest =>
+    stubFor({
+      request: {
+        method: 'GET',
+        urlPathPattern: `/csra-api/csra-review/prison/${prisonId}/recent-arrivals`,
+      },
+      response: {
+        status: 200,
+        headers: { 'Content-Type': 'application/json;charset=UTF-8' },
+        jsonBody: {
+          days: [
+            {
+              date: '2026-08-06',
+              arrivals: [
+                {
+                  prisonerNumber: 'A5197BD',
+                  firstName: 'DANIEL',
+                  lastName: 'HAVERS',
+                  dateOfBirth: '1972-02-03',
+                  arrivalType: 'NEW_ADMISSION',
+                  arrivedAt: '2026-08-06T14:03:00',
+                  location: 'RECP',
+                },
+              ],
+            },
+            { date: '2026-08-05', arrivals: [] },
+            { date: '2026-08-04', arrivals: [] },
+          ],
+          totalResults: 1,
+          arrivalTypeCounts: { NEW_ADMISSION: 1, TRANSFER_IN: 0, COURT_RETURN: 0, TEMPORARY_ABSENCE_RETURN: 0 },
+          fromDate: '2026-08-04',
+          toDate: '2026-08-06',
+          ...recentArrivals,
+        },
       },
     }),
 }

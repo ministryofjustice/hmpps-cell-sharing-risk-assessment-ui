@@ -11,6 +11,8 @@ import type {
   CsraPrisonPrisonerList,
   CsraPrisonPrisonersQuery,
   CsraPrisonRatingSummary,
+  CsraRecentArrivals,
+  CsraRecentArrivalsQuery,
   CsraReviewDetail,
   CsraReviewHistory,
 } from './csraApiTypes'
@@ -83,6 +85,18 @@ export default class CsraApiClient extends BaseApiClient {
     path: '/csra-review/prison/:prisonId/prisoners',
     requestType: 'get',
     queryParams: ['page', 'size', 'sort', 'direction', 'ratings', 'assessmentTypes', 'fromDate', 'toDate'],
+    options: { asSystem: true },
+  })
+
+  /**
+   * Get prisoners who recently arrived at a prison and are still in the establishment.
+   * Arrivals come from prison-api movements; anyone no longer in the establishment is excluded via the
+   * prisoner-search roll. One row per prisoner (their most recent arrival). Called `asSystem`.
+   */
+  getRecentArrivals = this.apiCall<CsraRecentArrivals, { prisonId: string } & CsraRecentArrivalsQuery>({
+    path: '/csra-review/prison/:prisonId/recent-arrivals',
+    requestType: 'get',
+    queryParams: ['days', 'arrivalTypes'],
     options: { asSystem: true },
   })
 

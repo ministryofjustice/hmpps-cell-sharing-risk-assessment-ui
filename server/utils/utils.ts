@@ -1,6 +1,6 @@
 import type { ParsedQs } from 'qs'
 import { differenceInCalendarDays, format, isValid, parse, parseISO, startOfDay } from 'date-fns'
-import type { CsraHistoryQuery } from '../data/csraApiTypes'
+import { type CsraArrivalType, type CsraHistoryQuery } from '../data/csraApiTypes'
 
 const properCase = (word: string): string =>
   word.length >= 1 ? word[0].toUpperCase() + word.toLowerCase().slice(1) : word
@@ -61,6 +61,27 @@ export const formatMonthYear = (isoDate?: string | null): string => {
   const date = new Date(isoDate)
   if (Number.isNaN(date.getTime())) return ''
   return date.toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+}
+
+/**
+ * Format an ISO date as a day of the week, day of the month and month, e.g. "Monday 1 June". Used for
+ * the recent arrivals list. Formats in UTC and returns '' for a missing/invalid value.
+ */
+export const formatDayMonth = (isoDate?: string | null): string => {
+  if (!isoDate) return ''
+  const date = new Date(isoDate)
+  if (!isValid(date)) return ''
+  return format(date, 'EEEE d MMMM')
+}
+
+/**
+ * Format an ISO date-time as a time, e.g. "09:30". Returns '' for a missing/invalid value.
+ */
+export const formatTime = (isoDateTime?: string | null): string => {
+  if (!isoDateTime) return ''
+  const dateTime = parseISO(isoDateTime)
+  if (!isValid(dateTime)) return ''
+  return format(dateTime, 'HH:mm')
 }
 
 /**
@@ -148,6 +169,22 @@ export const csraStatusLabel = (status?: string | null): string => {
   }
 }
 
+/** Human-readable label for an arrival type (mirrors the API's CsraArrivalType enum). */
+export const arrivalTypeLabel = (arrivalType?: CsraArrivalType | null): string => {
+  switch (arrivalType) {
+    case 'NEW_ADMISSION':
+      return 'New admission'
+    case 'TRANSFER_IN':
+      return 'Transfer in'
+    case 'COURT_RETURN':
+      return 'Court return'
+    case 'TEMPORARY_ABSENCE_RETURN':
+      return 'Temporary absence return'
+    default:
+      return ''
+  }
+}
+
 /**
  * Turn a SCREAMING_SNAKE_CASE enum value (e.g. a risk-to or vulnerability category) into a readable
  * sentence-case label, e.g. "DIFFERENT_ETHNICITY" -> "Different ethnicity".
@@ -171,6 +208,17 @@ export const csraTypeLabel = (type?: string | null): string => {
     default:
       return enumLabel(type)
   }
+}
+
+/**
+ * Human-readable label for a location. The API returns the raw NOMIS location name, which is often a code (e.g. "RECP" for reception).
+ */
+export const formatLocation = (locationName: string): string => {
+  if (!locationName) return ''
+  if (locationName.includes('RECP')) return 'Reception'
+  if (locationName.includes('CSWAP')) return 'No cell allocated'
+  if (locationName.includes('COURT')) return 'Court'
+  return locationName
 }
 
 const PRISON_NUMBER_PATTERN = /^[A-Za-z]\d{4}[A-Za-z]{2}$/
