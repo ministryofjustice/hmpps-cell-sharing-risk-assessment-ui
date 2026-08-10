@@ -115,6 +115,20 @@ export const csraRatingLabel = (rating?: string | null): string => {
   }
 }
 
+export const RATING_VALUES = ['HIGH_GENERAL', 'HIGH_SPECIFIC', 'HIGH', 'STANDARD', 'NO_RATING'] as const
+export type RatingValue = (typeof RATING_VALUES)[number]
+
+const RATING_OPTIONS = RATING_VALUES.map(rating => ({
+  value: rating,
+  text: csraRatingLabel(rating).replace('risk ', ''),
+}))
+
+export const getRatingOptions = (selectedRatings: string[], allowedRatings: readonly string[] = RATING_VALUES) =>
+  RATING_OPTIONS.filter(option => allowedRatings.includes(option.value)).map(option => ({
+    ...option,
+    checked: selectedRatings.includes(option.value),
+  }))
+
 /**
  * Human-readable label for a raw NOMIS supervision level (mirrors the API's CsraLevel enum).
  *

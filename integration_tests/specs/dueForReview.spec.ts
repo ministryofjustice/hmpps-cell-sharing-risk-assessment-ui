@@ -122,8 +122,8 @@ test.describe('High risk prisoners due for review', () => {
 
     const dueForReviewPage = await DueForReviewPage.verifyOnPage(page)
     await expect(dueForReviewPage.filterPanel).toBeVisible()
-    await expect(page.getByLabel('High risk – general')).toBeVisible()
-    await expect(page.getByLabel('High risk – specific')).toBeVisible()
+    await expect(page.getByLabel('High – general')).toBeVisible()
+    await expect(page.getByLabel('High – specific')).toBeVisible()
   })
 
   test('submits selected filter values in the URL when Apply is clicked', async ({ page }) => {
@@ -133,7 +133,7 @@ test.describe('High risk prisoners due for review', () => {
     await page.goto('/due-for-review')
     await DueForReviewPage.verifyOnPage(page)
 
-    await page.getByLabel('High risk – general').check()
+    await page.getByLabel('High – general').check()
     await page.getByLabel('Review date from').fill('1/8/2026')
     await page.getByRole('button', { name: 'Apply' }).click()
 
@@ -148,8 +148,8 @@ test.describe('High risk prisoners due for review', () => {
     await page.goto('/due-for-review?ratingType=HIGH_GENERAL')
 
     await DueForReviewPage.verifyOnPage(page)
-    await expect(page.getByLabel('High risk – general')).toBeChecked()
-    await expect(page.getByLabel('High risk – specific')).not.toBeChecked()
+    await expect(page.getByLabel('High – general')).toBeChecked()
+    await expect(page.getByLabel('High – specific')).not.toBeChecked()
   })
 
   test('shows no-results message with filter guidance when filtered results are empty', async ({ page }) => {

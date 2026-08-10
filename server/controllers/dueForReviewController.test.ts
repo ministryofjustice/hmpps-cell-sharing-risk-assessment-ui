@@ -108,8 +108,8 @@ describe('dueForReviewController', () => {
         direction: 'DESC',
         hasSelectedFilters: true,
         ratingTypeOptions: [
+          { value: 'HIGH_SPECIFIC', text: 'High – specific', checked: true },
           { value: 'HIGH', text: 'High', checked: true },
-          { value: 'HIGH_SPECIFIC', text: 'High risk – specific', checked: true },
         ],
       }),
     )

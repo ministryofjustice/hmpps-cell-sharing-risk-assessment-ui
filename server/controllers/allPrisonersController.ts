@@ -2,7 +2,14 @@ import { type RequestHandler } from 'express'
 import type { Services } from '../services'
 import { Page } from '../services/auditService'
 import logger from '../../logger'
-import { csraRatingLabel, enumLabel, parseUkDate, validateUkDate, type UkDateValidationError } from '../utils/utils'
+import {
+  enumLabel,
+  getRatingOptions,
+  parseUkDate,
+  RATING_VALUES,
+  validateUkDate,
+  type UkDateValidationError,
+} from '../utils/utils'
 import { firstQueryValue, toArray } from '../utils/queryUtils'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
@@ -42,14 +49,6 @@ const toSort = (value?: string): string => {
 
 const toAllowedValues = (values: string[], allowed: readonly string[]): string[] =>
   values.map(value => value.toUpperCase()).filter(value => allowed.includes(value))
-
-const RATING_VALUES = ['HIGH', 'HIGH_GENERAL', 'HIGH_SPECIFIC', 'STANDARD', 'NO_RATING'] as const
-const RATING_OPTIONS = RATING_VALUES.map(rating => ({
-  value: rating,
-  text: csraRatingLabel(rating).replace('risk ', ''),
-}))
-const getRatingOptions = (selectedRatings: string[]) =>
-  RATING_OPTIONS.map(option => ({ ...option, checked: selectedRatings.includes(option.value) }))
 
 const ASSESSMENT_TYPE_VALUES = ['ASSESSMENT', 'REVIEW'] as const
 const ASSESSMENT_TYPE_OPTIONS = ASSESSMENT_TYPE_VALUES.map(type => ({ value: type, text: enumLabel(type) }))
