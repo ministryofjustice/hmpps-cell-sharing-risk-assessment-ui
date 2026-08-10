@@ -51,6 +51,24 @@ const twoPagePrisoners: CsraPrisonPrisonerList = {
   totalPages: 2,
 }
 
+const noRatingPrisoners: CsraPrisonPrisonerList = {
+  content: [
+    {
+      prisonerNumber: 'A0001AA',
+      firstName: 'JORDAN',
+      lastName: 'SMITH',
+      rating: null,
+      provisional: false,
+      assessmentType: null,
+      assessedOn: null,
+    },
+  ],
+  page: 0,
+  size: 25,
+  totalElements: 1,
+  totalPages: 1,
+}
+
 test.describe('All prisoners', () => {
   test.afterEach(async () => {
     await resetStubs()
@@ -98,6 +116,18 @@ test.describe('All prisoners', () => {
     await expect(page.getByLabel('Review')).toBeVisible()
     await expect(page.getByLabel('Date from')).toBeVisible()
     await expect(page.getByLabel('Date to')).toBeVisible()
+  })
+
+  test('shows a NO RATING badge when prisoner rating is missing', async ({ page }) => {
+    await login(page, { activeCaseLoad: MDI })
+    await csraApi.stubGetPrisonPrisoners('MDI', noRatingPrisoners)
+
+    await page.goto('/all-prisoners')
+
+    const prisonerRow = page.locator('[data-qa="all-prisoners-table"] tbody tr').first()
+
+    await expect(prisonerRow).toContainText('Smith, Jordan')
+    await expect(prisonerRow.locator('.risk-badge')).toContainText('NO RATING')
   })
 
   test('submits selected filter values in the URL when Apply is clicked', async ({ page }) => {

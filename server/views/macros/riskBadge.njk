@@ -15,7 +15,7 @@
     "STANDARD": "risk-badge--low"
   } %}
 
-  {% set badgeLabel = badgeLabelHtml[params.rating] %}
+  {% set badgeLabel = badgeLabelHtml[params.rating] if params.rating else "<strong>NO RATING</strong>" %}
   {% if params.provisional %}
     {% set badgeLabel = badgeLabel + "<br>(PROVISIONAL)" %}
   {% endif %}
