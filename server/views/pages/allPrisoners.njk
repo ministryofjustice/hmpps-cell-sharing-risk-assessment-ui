@@ -8,6 +8,7 @@
 {% from "moj/components/date-picker/macro.njk" import mojDatePicker %}
 {% from "../macros/mojFilter.njk" import mojFilter %}
 {% from "../macros/pagination.njk" import pagination %}
+{% from "../macros/riskBadge.njk" import riskBadge %}
 
 {% set pageTitle = applicationName + " - CSRA ratings for all prisoners" %}
 
@@ -145,10 +146,7 @@
                   {% set ratingSourceLabel = 'Last reviewed' if prisoner.lastRatingSource == 'REVIEW' else 'Last assessed' %}
                   {% set ratingText = prisoner.rating | csraRatingLabel or 'NO RATING' %}
                   {% set ratingHtml %}
-                    {{ govukTag({
-                      text: ratingText,
-                      classes: prisoner.rating | csraRatingTagClass
-                    }) }}
+                    {{ riskBadge(prisoner) }}
                   {% endset %}
                   {% set _ = tableRows.push([
                     {

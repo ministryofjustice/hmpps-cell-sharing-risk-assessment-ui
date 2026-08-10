@@ -46,7 +46,7 @@ const toAllowedValues = (values: string[], allowed: readonly string[]): string[]
 const RATING_VALUES = ['HIGH', 'HIGH_GENERAL', 'HIGH_SPECIFIC', 'STANDARD', 'NO_RATING'] as const
 const RATING_OPTIONS = RATING_VALUES.map(rating => ({
   value: rating,
-  text: csraRatingLabel(rating),
+  text: csraRatingLabel(rating).replace('risk ', ''),
 }))
 const getRatingOptions = (selectedRatings: string[]) =>
   RATING_OPTIONS.map(option => ({ ...option, checked: selectedRatings.includes(option.value) }))

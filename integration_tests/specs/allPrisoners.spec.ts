@@ -90,8 +90,8 @@ test.describe('All prisoners', () => {
     await page.goto('/all-prisoners')
 
     await expect(page.locator('[data-qa="all-prisoners-filter"]')).toBeVisible()
-    await expect(page.getByLabel('High risk – general')).toBeVisible()
-    await expect(page.getByLabel('High risk – specific')).toBeVisible()
+    await expect(page.getByLabel('High – general')).toBeVisible()
+    await expect(page.getByLabel('High – specific')).toBeVisible()
     await expect(page.getByLabel('Standard')).toBeVisible()
     await expect(page.getByLabel('No rating')).toBeVisible()
     await expect(page.getByLabel('Assessment')).toBeVisible()
@@ -106,7 +106,7 @@ test.describe('All prisoners', () => {
 
     await page.goto('/all-prisoners')
 
-    await page.getByLabel('High risk – general').check()
+    await page.getByLabel('High – general').check()
     await page.getByLabel('Review').check()
     await page.getByLabel('Date from').fill('1/8/2026')
     await page.getByLabel('Date to').fill('31/8/2026')
@@ -162,9 +162,9 @@ test.describe('All prisoners', () => {
       '/all-prisoners?rating=HIGH_GENERAL&assessmentType=REVIEW&assessmentDateFrom=1%2F8%2F2026&assessmentDateTo=31%2F8%2F2026',
     )
 
-    await expect(page.getByLabel('High risk – general')).toBeChecked()
+    await expect(page.getByLabel('High – general')).toBeChecked()
     await expect(page.getByLabel('Review')).toBeChecked()
-    await expect(page.getByLabel('High risk – specific')).not.toBeChecked()
+    await expect(page.getByLabel('High – specific')).not.toBeChecked()
     await expect(page.getByLabel('Assessment')).not.toBeChecked()
     await expect(page.getByLabel('Date from')).toHaveValue('1/8/2026')
     await expect(page.getByLabel('Date to')).toHaveValue('31/8/2026')
