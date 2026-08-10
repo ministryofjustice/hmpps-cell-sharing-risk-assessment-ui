@@ -1,0 +1,27 @@
+{% from "moj/components/badge/macro.njk" import mojBadge %}
+
+{% macro riskBadge(params) %}
+  {% set badgeLabelHtml = {
+    "HIGH": "<strong>HIGH RISK</strong>",
+    "HIGH_GENERAL": "<strong>HIGH RISK</strong> GENERAL",
+    "HIGH_SPECIFIC": "<strong>HIGH RISK</strong> SPECIFIC",
+    "STANDARD": "<strong>STANDARD RISK</strong>"
+  } %}
+
+  {% set badgeClasses = {
+    "HIGH": "risk-badge--very-high",
+    "HIGH_GENERAL": "risk-badge--very-high",
+    "HIGH_SPECIFIC": "risk-badge--high",
+    "STANDARD": "risk-badge--low"
+  } %}
+
+  {% set badgeLabel = badgeLabelHtml[params.rating] %}
+  {% if params.provisional %}
+    {% set badgeLabel = badgeLabel + "<br>(PROVISIONAL)" %}
+  {% endif %}
+
+  {{ mojBadge({
+    html: badgeLabel | safe,
+    classes: "risk-badge " ~ badgeClasses[params.rating]
+  }) }}
+{% endmacro %}

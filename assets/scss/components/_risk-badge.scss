@@ -1,0 +1,25 @@
+.moj-badge.risk-badge {
+  display: inline-block;
+  box-sizing: border-box;
+  border: 2px solid;
+  padding: 1px 5px;
+  background-color: transparent;
+  text-transform: uppercase;
+  @include govuk-font($size: 19);
+  font-weight: normal;
+  border-color: $risk-badge-grey;
+  color: $risk-badge-grey-text;
+
+  &--very-high {
+    border-color: $risk-badge-dark-red;
+    color: $risk-badge-dark-red-text;
+  }
+  &--high {
+    border-color: $risk-badge-red;
+    color: $risk-badge-red-text;
+  }
+  &--low {
+    border-color: $risk-badge-green;
+    color: $risk-badge-green-text;
+  }
+}

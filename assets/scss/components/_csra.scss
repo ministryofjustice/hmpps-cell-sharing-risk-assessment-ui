@@ -179,8 +179,10 @@
 }
 
 .csra-due-for-review-table, .csra-all-prisoners-table {
-  .govuk-table__row {
-    height: 75px;
+  .govuk-table__body {
+    .govuk-table__row {
+      height: 75px;
+    }
   }
 }
 
@@ -227,30 +229,6 @@
     @include govuk-font($size: 16);
     color: $govuk-secondary-text-colour;
     vertical-align: top;
-  }
-
-  .govuk-tag {
-    border: 2px solid;
-    background-color: transparent;
-    text-transform: uppercase;
-    font-weight: bold;
-
-    &--dark-red {
-      border-color: $tag-dark-red;
-      color: $tag-dark-red-text;
-    }
-    &--red {
-      border-color: $tag-red;
-      color: $tag-red-text;
-    }
-    &--green {
-      border-color: $tag-green;
-      color: $tag-green-text;
-    }
-    &--blue {
-      border-color: $tag-grey;
-      color: $tag-grey-text;
-    }
   }
 }
 
