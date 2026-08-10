@@ -1,9 +1,10 @@
 import { type RequestHandler } from 'express'
+import { getRatingOptions } from '../utils/utils'
 
 import type { Services } from '../services'
 import { Page } from '../services/auditService'
 import logger from '../../logger'
-import { csraRatingLabel, parseUkDate, validateUkDate, type UkDateValidationError } from '../utils/utils'
+import { parseUkDate, validateUkDate, type UkDateValidationError } from '../utils/utils'
 import { firstQueryValue, toArray } from '../utils/queryUtils'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
@@ -78,15 +79,13 @@ export default class DueForReviewController {
         },
       )
 
+      const ratingTypeOptions = getRatingOptions(selectedRatingTypes, prisonersResult.availableRatingTypes)
+
       return res.render('pages/dueForReview', {
         title: 'High risk prisoners due for review',
         prisoners: prisonersResult.content,
         totalResults: prisonersResult.totalResults,
-        ratingTypeOptions: prisonersResult.availableRatingTypes.map(ratingType => ({
-          value: ratingType,
-          text: csraRatingLabel(ratingType),
-          checked: selectedRatingTypes.includes(ratingType),
-        })),
+        ratingTypeOptions,
         reviewDateFrom: reviewDateFromRaw,
         reviewDateTo: reviewDateToRaw,
         sort,
