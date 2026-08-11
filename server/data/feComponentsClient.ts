@@ -40,7 +40,7 @@ export interface FeComponentsResponse {
 
 export default class FeComponentsClient extends RestClient {
   constructor(authenticationClient: AuthenticationClient) {
-    super('FeComponentsClient', config.apis.frontendComponents, logger, authenticationClient)
+    super('FeComponentsClient', config.apis.componentApi, logger, authenticationClient)
   }
 
   getComponents<T extends AvailableComponent[]>(components: T, userToken: string): Promise<FeComponentsResponse> {

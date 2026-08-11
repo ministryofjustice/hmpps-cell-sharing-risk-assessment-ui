@@ -10,7 +10,7 @@ describe('feComponentsClient', () => {
   let componentsClient: FeComponentsClient
 
   beforeEach(() => {
-    fakeComponentsApi = nock(config.apis.frontendComponents.url)
+    fakeComponentsApi = nock(config.apis.componentApi.url)
     componentsClient = new FeComponentsClient(null)
   })
 

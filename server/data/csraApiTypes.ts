@@ -254,7 +254,7 @@ export interface CsraAssessmentsInProgress {
 /** The coarse type of assessment that produced the current rating. */
 export type CsraAssessmentTypeBucket = 'ASSESSMENT' | 'REVIEW'
 
-export type EvidenceSource = 'PNC' | 'PER' | 'WARRANT' | 'DPS'
+export type EvidenceSource = 'PNC' | 'PER' | 'WARRANT' | 'DPS' | 'OTHER'
 
 export type OffenceType =
   | 'MURDER_MANSLAUGHTER'
