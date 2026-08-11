@@ -137,8 +137,8 @@ describe('dueForReviewController', () => {
     await controller.index(req, res, jest.fn())
 
     expect(res.locals.validationErrors).toEqual({
-      reviewDateFrom: { text: "'Review date from' must be a date in the correct format, for example, 17/5/2024" },
-      reviewDateTo: { text: "'Review date to' must be a date in the correct format, for example, 17/5/2024" },
+      reviewDateFrom: { text: "'Date from' must be a date in the correct format, for example, 17/5/2024" },
+      reviewDateTo: { text: "'Date to' must be a date in the correct format, for example, 17/5/2024" },
     })
 
     expect(res.render).toHaveBeenCalledWith(
