@@ -46,7 +46,7 @@ export default class OtherOffenceInputQuestion extends Question {
   }
 
   private getEvidenceData(assessment: CsraAssessment) {
-    return assessment.offenceEvidence.find(e => e.offence === this.offenceType)
+    return assessment.offenceEvidence?.find(e => e.offence === this.offenceType)
   }
 
   override getFormValues(assessment: CsraAssessment): FormValues {
