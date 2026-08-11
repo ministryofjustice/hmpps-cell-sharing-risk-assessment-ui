@@ -9,7 +9,6 @@ import prisonerRouter from './prisonerRouter'
 import adminRouter from './adminRouter'
 import allPrisonersRouter from './allPrisonersRouter'
 import recentArrivalsRouter from './recentArrivalsRouter'
-import csraQuestionController from '../controllers/csraQuestionController'
 
 export default function routes(services: Services): Router {
   const { prisonerSearchService, manageUsersService } = services
@@ -35,17 +34,6 @@ export default function routes(services: Services): Router {
   router.use('/reviews-in-progress', reviewsInProgressRouter(services))
   router.use('/prisoner/:prisonerNumber', requirePrisonerAccess, prisonerRouter(services))
   router.use('/admin', adminRouter(services))
-
-  router.get(
-    '/prisoner/:prisonerNumber/csra/:assessmentId/section/:sectionId{/:stepId}',
-    requirePrisonerAccess,
-    csraQuestionController({ auditService, csraService }),
-  )
-  router.post(
-    '/prisoner/:prisonerNumber/csra/:assessmentId/section/:sectionId{/:stepId}',
-    requirePrisonerAccess,
-    csraQuestionController({ auditService, csraService }),
-  )
 
   return router
 }
