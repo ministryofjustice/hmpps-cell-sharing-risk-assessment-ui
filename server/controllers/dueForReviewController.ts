@@ -54,13 +54,13 @@ export default class DueForReviewController {
       const reviewDateFromErrorType = validateUkDate(reviewDateFromRaw)
       if (reviewDateFromErrorType) {
         validationErrors.reviewDateFrom = {
-          text: buildDateValidationMessage('Review date from', reviewDateFromErrorType),
+          text: buildDateValidationMessage('Date from', reviewDateFromErrorType),
         }
       }
       const reviewDateToErrorType = validateUkDate(reviewDateToRaw)
       if (reviewDateToErrorType) {
         validationErrors.reviewDateTo = {
-          text: buildDateValidationMessage('Review date to', reviewDateToErrorType),
+          text: buildDateValidationMessage('Date to', reviewDateToErrorType),
         }
       }
       if (Object.keys(validationErrors).length) {

@@ -134,7 +134,7 @@ test.describe('High risk prisoners due for review', () => {
     await DueForReviewPage.verifyOnPage(page)
 
     await page.getByLabel('High – general').check()
-    await page.getByLabel('Review date from').fill('1/8/2026')
+    await page.getByLabel('Date from').fill('1/8/2026')
     await page.getByRole('button', { name: 'Apply' }).click()
 
     await expect(page).toHaveURL(/ratingType=HIGH_GENERAL/)
@@ -190,20 +190,20 @@ test.describe('High risk prisoners due for review', () => {
     await expect(dueForReviewPage.errorSummary).toContainText('There is a problem')
     await expect(
       dueForReviewPage.errorSummary.getByRole('link', {
-        name: "'Review date from' must be a date in the correct format, for example, 17/5/2024",
+        name: "'Date from' must be a date in the correct format, for example, 17/5/2024",
       }),
     ).toBeVisible()
     await expect(
       dueForReviewPage.errorSummary.getByRole('link', {
-        name: "'Review date to' must be a date in the correct format, for example, 17/5/2024",
+        name: "'Date to' must be a date in the correct format, for example, 17/5/2024",
       }),
     ).toBeVisible()
     await expect(
       page.locator('#reviewDateFrom').locator('xpath=ancestor::*[contains(@class,"govuk-form-group")][1]'),
-    ).toContainText("'Review date from' must be a date in the correct format, for example, 17/5/2024")
+    ).toContainText("'Date from' must be a date in the correct format, for example, 17/5/2024")
     await expect(
       page.locator('#reviewDateTo').locator('xpath=ancestor::*[contains(@class,"govuk-form-group")][1]'),
-    ).toContainText("'Review date to' must be a date in the correct format, for example, 17/5/2024")
+    ).toContainText("'Date to' must be a date in the correct format, for example, 17/5/2024")
   })
 
   test('page title is prefixed with "Error:" when there are validation errors', async ({ page }) => {

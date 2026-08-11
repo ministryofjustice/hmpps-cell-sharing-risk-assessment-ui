@@ -3,6 +3,7 @@
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
 {% from "govuk/components/table/macro.njk" import govukTable %}
+{% from "govuk/components/fieldset/macro.njk" import govukFieldset %}
 {% from "moj/components/date-picker/macro.njk" import mojDatePicker %}
 {% from "../macros/mojFilter.njk" import mojFilter %}
 
@@ -14,40 +15,49 @@
     classes: "govuk-checkboxes--small",
     fieldset: {
       legend: {
-        text: "CSRA rating type",
+        text: "CSRA rating",
         classes: "govuk-fieldset__legend--s"
       }
     },
     items: ratingTypeOptions
   }) }}
 
-  {{ mojDatePicker({
-    id: "reviewDateFrom",
-    name: "reviewDateFrom",
-    value: reviewDateFrom,
-    errorMessage: validationErrors.reviewDateFrom if validationErrors,
-    label: {
-      text: "Review date from",
-      classes: "govuk-label--s"
-    },
-    hint: {
-      text: "For example, 1/2/2026"
+  {% call govukFieldset({
+    legend: {
+      text: "Review due by",
+      classes: "govuk-fieldset__legend--s"
     }
-  }) }}
+  }) %}
 
-  {{ mojDatePicker({
-    id: "reviewDateTo",
-    name: "reviewDateTo",
-    value: reviewDateTo,
-    errorMessage: validationErrors.reviewDateTo if validationErrors,
-    label: {
-      text: "Review date to",
-      classes: "govuk-label--s"
-    },
-    hint: {
-      text: "For example, 1/2/2027"
-    }
-  }) }}
+   {{ mojDatePicker({
+      id: "reviewDateFrom",
+      name: "reviewDateFrom",
+      value: reviewDateFrom,
+      errorMessage: validationErrors.reviewDateFrom if validationErrors,
+      label: {
+        text: "Date from",
+        classes: "govuk-hint"
+      },
+      hint: {
+        text: "For example, 1/2/2026"
+      }
+    }) }}
+
+    {{ mojDatePicker({
+      id: "reviewDateTo",
+      name: "reviewDateTo",
+      value: reviewDateTo,
+      errorMessage: validationErrors.reviewDateTo if validationErrors,
+      label: {
+        text: "Date to",
+        classes: "govuk-hint"
+      },
+      hint: {
+        text: "For example, 1/2/2027"
+      }
+    }) }}
+
+  {% endcall %}
 
   <input type="hidden" name="sort" value="{{ sort or '' }}" data-sort-field>
   <input type="hidden" name="direction" value="{{ direction or '' }}" data-direction-field>
