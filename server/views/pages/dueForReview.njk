@@ -135,7 +135,7 @@
                   {% set reviewDueBySortDir = "descending" if direction == "DESC" else "ascending" %}
                 {% endif %}
                 {{ govukTable({
-                  classes: "csra-due-for-review-table",
+                  classes: "csra-table csra-due-for-review-table",
                   attributes: {
                     "data-module": "moj-sortable-table",
                     "data-qa": "due-for-review-table"

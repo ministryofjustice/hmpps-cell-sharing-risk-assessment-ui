@@ -5,6 +5,7 @@ import config from '../config'
 import { RedisClient } from './redisClient'
 import type {
   AgencyStatus,
+  CsraAssessmentsInProgress,
   CsraCurrentRating,
   CsraHighRiskDueForReview,
   CsraPrisonPrisonerList,
@@ -70,6 +71,44 @@ describe('CsraApiClient', () => {
 
       expect(response.status).toBe('NO_RATING')
       expect(response.rating).toBeNull()
+    })
+  })
+
+  describe('getAssessmentsInProgress', () => {
+    it('should GET in-progress assessments using a system token stamped with the username', async () => {
+      const assessmentsInProgress: CsraAssessmentsInProgress = {
+        assessmentStarted: [
+          {
+            reviewId: 'de91dfa7-821f-4552-a427-bf2f32eafeb0',
+            prisonerNumber: 'A9354JF',
+            firstName: 'Simon',
+            lastName: 'Kettleby',
+            startedOn: '2026-07-06',
+            startedBy: 'JBLOGGS',
+          },
+        ],
+        provisionalRatingEntered: [
+          {
+            reviewId: '6a4fa388-3aae-4c9f-8fc7-fb85ac2ed27f',
+            prisonerNumber: 'A5197BD',
+            firstName: 'Daniel',
+            lastName: 'Havers',
+            assessedOn: '2026-07-06',
+            assessedBy: 'MSTANLEY',
+            rating: 'HIGH_SPECIFIC',
+          },
+        ],
+      }
+
+      nock(config.apis.csraApi.url)
+        .get('/csra-review/prison/MDI/assessments-in-progress')
+        .matchHeader('authorization', 'Bearer test-system-token')
+        .reply(200, assessmentsInProgress)
+
+      const response = await csraApiClient.getAssessmentsInProgress('AUSER_GEN', { prisonId: 'MDI' })
+
+      expect(response).toEqual(assessmentsInProgress)
+      expect(mockAuthenticationClient.getToken).toHaveBeenCalledWith('AUSER_GEN')
     })
   })
 

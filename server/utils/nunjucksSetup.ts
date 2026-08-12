@@ -20,7 +20,9 @@ import {
   formatMonthYear,
   initialiseName,
   formatDayMonth,
+  formatDayMonthYear,
 } from './utils'
+import { userDisplayName } from './populateUserDisplayNames'
 import config from '../config'
 import logger from '../../logger'
 
@@ -70,6 +72,7 @@ export default function nunjucksSetup(app: express.Express): void {
   njkEnv.addFilter('formatTime', formatTime)
   njkEnv.addFilter('formatMonthYear', formatMonthYear)
   njkEnv.addFilter('formatDayMonth', formatDayMonth)
+  njkEnv.addFilter('formatDayMonthYear', formatDayMonthYear)
   njkEnv.addFilter('formatLocation', formatLocation)
   njkEnv.addFilter('daysOverdue', daysOverdue)
   njkEnv.addFilter('csraRatingLabel', csraRatingLabel)
@@ -79,4 +82,5 @@ export default function nunjucksSetup(app: express.Express): void {
   njkEnv.addFilter('csraTypeLabel', csraTypeLabel)
   njkEnv.addFilter('arrivalTypeLabel', arrivalTypeLabel)
   njkEnv.addFilter('enumLabel', enumLabel)
+  njkEnv.addFilter('userDisplayName', userDisplayName)
 }

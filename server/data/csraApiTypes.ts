@@ -224,6 +224,33 @@ export interface CsraCurrentRating {
   startedAt?: string | null
 }
 
+/** A started assessment with no provisional/final rating entered yet. */
+export interface CsraAssessmentStartedRow {
+  reviewId: string
+  prisonerNumber: string
+  firstName?: string | null
+  lastName?: string | null
+  startedOn: string
+  startedBy: string
+}
+
+/** An in-progress assessment where a provisional rating exists and a final rating is still pending. */
+export interface CsraProvisionalRatingRow {
+  reviewId: string
+  prisonerNumber: string
+  firstName?: string | null
+  lastName?: string | null
+  assessedOn: string
+  assessedBy: string
+  rating: CsraResult
+}
+
+/** A prison's in-progress initial assessments split by stage. */
+export interface CsraAssessmentsInProgress {
+  assessmentStarted: CsraAssessmentStartedRow[]
+  provisionalRatingEntered: CsraProvisionalRatingRow[]
+}
+
 /** The coarse type of assessment that produced the current rating. */
 export type CsraAssessmentTypeBucket = 'ASSESSMENT' | 'REVIEW'
 

@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import IndexController from '../controllers/indexController'
+import assessmentsInProgressRouter from './assessmentsInProgressRouter'
 import type { Services } from '../services'
 import checkPrisonerAccess from '../middleware/checkPrisonerAccess'
 import dueForReviewRouter from './dueForReviewRouter'
@@ -28,6 +29,7 @@ export default function routes(services: Services): Router {
   router.use('/due-for-review', dueForReviewRouter(services))
   router.use('/all-prisoners', allPrisonersRouter(services))
   router.use('/recent-arrivals', recentArrivalsRouter(services))
+  router.use('/assessments-in-progress', assessmentsInProgressRouter(services))
   router.use('/prisoner/:prisonerNumber', requirePrisonerAccess, prisonerRouter(services))
   router.use('/admin', adminRouter(services))
 

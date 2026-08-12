@@ -170,7 +170,7 @@
   }
 }
 
-.csra-due-for-review-table, .csra-all-prisoners-table, .csra-recent-arrivals-table {
+.csra-table {
   .govuk-table__body {
     .govuk-table__cell {
       vertical-align: middle;
@@ -255,4 +255,8 @@
   .csra-prisoner-image {
     vertical-align: middle;
   }
+}
+
+.continue-assessment-button {
+  margin: 0;
 }
