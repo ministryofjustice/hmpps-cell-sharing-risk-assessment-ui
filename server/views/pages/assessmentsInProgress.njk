@@ -1,0 +1,103 @@
+{% extends "../partials/layout.njk" %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+{% from "govuk/components/table/macro.njk" import govukTable %}
+{% from "../macros/mojFilter.njk" import mojFilter %}
+{% from "../macros/riskBadge.njk" import riskBadge %}
+
+{% set pageTitle = applicationName + " - Assessments in progress" %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-full">
+      <div class="csra-assessments-in-progress">
+        <div class="csra-assessments-in-progress__assessment-started">
+          <h2 class="govuk-heading-m govuk-!-margin-top-4">Assessment started ({{ assessmentStarted.length }})</h2>
+          {% if assessmentStarted.length > 0 %}
+            <p class="govuk-body">An assessment has been started but no rating entered.</p>
+            {% set rows = [] %}
+            {% for assessment in assessmentStarted %}
+              {% set name = assessment.lastName | capitalize ~ ', ' ~ assessment.firstName | capitalize %}
+              {% set imageHtml %}
+                <img src="/prisoner/{{ assessment.prisonerNumber }}/image" alt="Image of {{ name }}" class="csra-prisoner-image" />
+              {% endset %}
+              {% set nameHtml %}
+                <a class="govuk-link" href="/prisoner/{{ assessment.prisonerNumber }}">{{ name }}</a>
+                <br>
+                <span class="csra-recent-arrivals__prisoner-number">{{ assessment.prisonerNumber }}</span>
+              {% endset %}
+              {% set row = [
+                { html: imageHtml },
+                { html: nameHtml },
+                { text: assessment.startedOn | formatDayMonthYear },
+                { text: assessment.startedBy | userDisplayName },
+                { html: '<a class="govuk-button govuk-button--secondary continue-assessment-button" href="#">Continue assessment</a>' }
+              ] %}
+              {% set _ = rows.push(row) %}
+            {% endfor %}
+
+            {{ govukTable({
+              head: [
+                { text: "" , classes: "prisoner-image-column-header" },
+                { text: "Name" },
+                { text: "Started on" },
+                { text: "Started by" },
+                { text: "" }
+              ],
+              classes: "csra-table csra-assessments-in-progress-table",
+              rows: rows
+            }) }}
+          {% else %}
+            <p class="govuk-body">There are no prisoners with an assessment in progress.</p>
+          {% endif %}
+        </div>
+        <div class="csra-assessments-in-progress__provisional-rating-entered">
+          <h2 class="govuk-heading-m govuk-!-margin-top-7">Provisional rating entered ({{ provisionalRatingEntered.length }})</h2>
+          {% if provisionalRatingEntered.length > 0 %}
+            <p class="govuk-body">Further assessment is required to enter a final CSRA rating.</p>
+            {% set rows = [] %}
+            {% for assessment in provisionalRatingEntered %}
+              {% set name = assessment.lastName | capitalize ~ ', ' ~ assessment.firstName | capitalize %}
+              {% set imageHtml %}
+                <img src="/prisoner/{{ assessment.prisonerNumber }}/image" alt="Image of {{ name }}" class="csra-prisoner-image" />
+              {% endset %}
+              {% set nameHtml %}
+                <a class="govuk-link" href="/prisoner/{{ assessment.prisonerNumber }}">{{ name }}</a>
+                <br>
+                <span class="csra-recent-arrivals__prisoner-number">{{ assessment.prisonerNumber }}</span>
+              {% endset %}
+              {% set ratingHtml %}
+                {{ riskBadge({ rating: assessment.rating, provisional: true }) }}
+              {% endset %}
+              {% set row = [
+                { html: imageHtml },
+                { html: nameHtml },
+                { text: assessment.assessedOn | formatDayMonthYear },
+                { text: assessment.assessedBy | userDisplayName },
+                { html: ratingHtml },
+                { html: '<a class="govuk-button govuk-button--secondary continue-assessment-button" href="#">Continue assessment</a>' }
+              ] %}
+              {% set _ = rows.push(row) %}
+            {% endfor %}
+
+            {{ govukTable({
+              head: [
+                { text: "" , classes: "prisoner-image-column-header" },
+                { text: "Name" },
+                { text: "Assessed on" },
+                { text: "Assessed by" },
+                { text: "Rating" },
+                { text: "" }
+              ],
+              classes: "csra-table csra-provisional-rating-entered-table",
+              rows: rows
+            }) }}
+          {% else %}
+            <p class="govuk-body">There are no prisoners with a provisional rating.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

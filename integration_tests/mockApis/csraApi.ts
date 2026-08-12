@@ -2,6 +2,7 @@ import type { SuperAgentRequest } from 'superagent'
 import { stubFor } from './wiremock'
 import type {
   AgencyStatus,
+  CsraAssessmentsInProgress,
   CsraCurrentRating,
   CsraHighRiskDueForReview,
   CsraPrisonPrisonerList,
@@ -99,6 +100,45 @@ export default {
         status: 404,
         headers: { 'Content-Type': 'application/json;charset=UTF-8' },
         jsonBody: { status: 404, userMessage: 'CSRA review not found' },
+      },
+    }),
+
+  stubGetAssessmentsInProgress: (
+    prisonId = 'LEI',
+    assessmentsInProgress: Partial<CsraAssessmentsInProgress> = {},
+  ): SuperAgentRequest =>
+    stubFor({
+      request: {
+        method: 'GET',
+        urlPathPattern: `/csra-api/csra-review/prison/${prisonId}/assessments-in-progress`,
+      },
+      response: {
+        status: 200,
+        headers: { 'Content-Type': 'application/json;charset=UTF-8' },
+        jsonBody: {
+          assessmentStarted: [
+            {
+              reviewId: 'de91dfa7-821f-4552-a427-bf2f32eafeb0',
+              prisonerNumber: 'A9354JF',
+              firstName: 'Simon',
+              lastName: 'Kettleby',
+              startedOn: '2026-07-06',
+              startedBy: 'JBLOGGS',
+            },
+          ],
+          provisionalRatingEntered: [
+            {
+              reviewId: '6a4fa388-3aae-4c9f-8fc7-fb85ac2ed27f',
+              prisonerNumber: 'A5197BD',
+              firstName: 'Daniel',
+              lastName: 'Havers',
+              assessedOn: '2026-07-06',
+              assessedBy: 'MSTANLEY',
+              rating: 'HIGH_SPECIFIC',
+            },
+          ],
+          ...assessmentsInProgress,
+        },
       },
     }),
 

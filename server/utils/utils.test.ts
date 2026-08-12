@@ -12,6 +12,7 @@ import {
   formatDate,
   formatDateTime,
   formatDayMonth,
+  formatDayMonthYear,
   formatLocation,
   formatMonthYear,
   formatTime,
@@ -194,6 +195,18 @@ describe('formatDayMonth', () => {
     ['thursday', '2026-08-06', 'Thursday 6 August'],
   ])('%s formatDayMonth(%s) === %s', (_: string, input: string, expected: string) => {
     expect(formatDayMonth(input)).toEqual(expected)
+  })
+})
+
+describe('formatDayMonthYear', () => {
+  it.each([
+    ['missing', undefined, ''],
+    ['null', null, ''],
+    ['invalid', 'not-a-date', ''],
+    ['wednesday', '2026-08-05', 'Wednesday 5 August 2026'],
+    ['thursday', '2026-08-06', 'Thursday 6 August 2026'],
+  ])('%s formatDayMonthYear(%s) === %s', (_: string, input: string, expected: string) => {
+    expect(formatDayMonthYear(input)).toEqual(expected)
   })
 })
 

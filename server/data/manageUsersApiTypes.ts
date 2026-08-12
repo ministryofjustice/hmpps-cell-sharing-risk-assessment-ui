@@ -10,3 +10,11 @@ export interface UserCaseloads {
   activeCaseload?: Caseload
   caseloads: Caseload[]
 }
+
+export interface UserDetails {
+  username: string
+  name: string
+  active: boolean
+  authSource: 'auth' | 'azuread' | 'delius' | 'nomis' | 'none'
+  userId: string
+}

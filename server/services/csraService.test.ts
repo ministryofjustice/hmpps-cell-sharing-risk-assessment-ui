@@ -1,6 +1,7 @@
 import CsraService from './csraService'
 import { CsraApiClient } from '../data'
 import type {
+  CsraAssessmentsInProgress,
   CsraCurrentRating,
   CsraHighRiskDueForReview,
   CsraPrisonPrisonerList,
@@ -18,6 +19,7 @@ describe('CsraService', () => {
   beforeEach(() => {
     csraApiClient = {
       getCurrentCsraRating: jest.fn(),
+      getAssessmentsInProgress: jest.fn(),
       getCsraHistory: jest.fn(),
       getRatingSummary: jest.fn(),
       getHighRiskDueForReview: jest.fn(),
@@ -40,6 +42,36 @@ describe('CsraService', () => {
 
       expect(result).toEqual(currentRating)
       expect(csraApiClient.getCurrentCsraRating).toHaveBeenCalledWith('AUSER_GEN', { prisonerNumber: 'A1234BC' })
+    })
+  })
+
+  describe('getAssessmentsInProgress', () => {
+    it('delegates to the client, passing the username and prison id', async () => {
+      const assessmentsInProgress: CsraAssessmentsInProgress = {
+        assessmentStarted: [
+          {
+            reviewId: 'de91dfa7-821f-4552-a427-bf2f32eafeb0',
+            prisonerNumber: 'A9354JF',
+            startedOn: '2026-07-06',
+            startedBy: 'JBLOGGS',
+          },
+        ],
+        provisionalRatingEntered: [
+          {
+            reviewId: '6a4fa388-3aae-4c9f-8fc7-fb85ac2ed27f',
+            prisonerNumber: 'A5197BD',
+            assessedOn: '2026-07-06',
+            assessedBy: 'MSTANLEY',
+            rating: 'HIGH_SPECIFIC',
+          },
+        ],
+      }
+      ;(csraApiClient.getAssessmentsInProgress as unknown as jest.Mock).mockResolvedValue(assessmentsInProgress)
+
+      const result = await csraService.getAssessmentsInProgress('AUSER_GEN', 'MDI')
+
+      expect(result).toEqual(assessmentsInProgress)
+      expect(csraApiClient.getAssessmentsInProgress).toHaveBeenCalledWith('AUSER_GEN', { prisonId: 'MDI' })
     })
   })
 

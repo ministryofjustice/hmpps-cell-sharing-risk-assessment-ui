@@ -75,6 +75,17 @@ export const formatDayMonth = (isoDate?: string | null): string => {
 }
 
 /**
+ * Format an ISO date as a day of the week, day of the month, month and year, e.g. "Monday 1 June 2026".
+ * Used for the assessments in progress list. Formats in UTC and returns '' for a missing/invalid value.
+ */
+export const formatDayMonthYear = (isoDate?: string | null): string => {
+  if (!isoDate) return ''
+  const date = new Date(isoDate)
+  if (!isValid(date)) return ''
+  return format(date, 'EEEE d MMMM yyyy')
+}
+
+/**
  * Format an ISO date-time as a time, e.g. "09:30". Returns '' for a missing/invalid value.
  */
 export const formatTime = (isoDateTime?: string | null): string => {

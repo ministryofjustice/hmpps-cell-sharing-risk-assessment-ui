@@ -1,6 +1,6 @@
 import type { SuperAgentRequest } from 'superagent'
 import { stubFor } from './wiremock'
-import type { UserCaseloads } from '../../server/data/manageUsersApiTypes'
+import type { UserCaseloads, UserDetails } from '../../server/data/manageUsersApiTypes'
 
 export default {
   stubPing: (httpStatus = 200): SuperAgentRequest =>
@@ -38,4 +38,22 @@ export default {
       },
     })
   },
+  stubGetUserDetails: (username: string, name: string): SuperAgentRequest =>
+    stubFor({
+      request: {
+        method: 'GET',
+        urlPattern: `/manage-users-api/users/${username}`,
+      },
+      response: {
+        status: 200,
+        headers: { 'Content-Type': 'application/json;charset=UTF-8' },
+        jsonBody: {
+          username,
+          name,
+          active: true,
+          authSource: 'nomis',
+          userId: '12345',
+        } satisfies UserDetails,
+      },
+    }),
 }

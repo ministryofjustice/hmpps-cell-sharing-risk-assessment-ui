@@ -3,6 +3,7 @@ import config from '../config'
 import BaseApiClient from './baseApiClient'
 import { RedisClient } from './redisClient'
 import type {
+  CsraAssessmentsInProgress,
   AgencyStatus,
   CsraCurrentRating,
   CsraHighRiskDueForReview,
@@ -31,6 +32,16 @@ export default class CsraApiClient extends BaseApiClient {
    */
   getCurrentCsraRating = this.apiCall<CsraCurrentRating, { prisonerNumber: string }>({
     path: '/csra-review/prisoner/:prisonerNumber/current-rating',
+    requestType: 'get',
+    options: { asSystem: true },
+  })
+
+  /**
+   * Get a prison's in-progress initial assessments, split by whether a provisional rating exists.
+   * Called `asSystem` (see getCurrentCsraRating).
+   */
+  getAssessmentsInProgress = this.apiCall<CsraAssessmentsInProgress, { prisonId: string }>({
+    path: '/csra-review/prison/:prisonId/assessments-in-progress',
     requestType: 'get',
     options: { asSystem: true },
   })

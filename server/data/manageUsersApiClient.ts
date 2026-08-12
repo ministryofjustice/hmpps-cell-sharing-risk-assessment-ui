@@ -2,7 +2,9 @@ import type { AuthenticationClient } from '@ministryofjustice/hmpps-auth-clients
 import config from '../config'
 import BaseApiClient from './baseApiClient'
 import { RedisClient } from './redisClient'
-import type { UserCaseloads } from './manageUsersApiTypes'
+import type { UserCaseloads, UserDetails } from './manageUsersApiTypes'
+
+const USER_DETAILS_CACHE_DURATION_SECONDS = 60 * 60
 
 export default class ManageUsersApiClient extends BaseApiClient {
   constructor(redisClient: RedisClient, authenticationClient: AuthenticationClient) {
@@ -18,5 +20,15 @@ export default class ManageUsersApiClient extends BaseApiClient {
   getUserCaseloads = this.apiCall<UserCaseloads, Record<string, never>>({
     path: '/users/me/caseloads',
     requestType: 'get',
+  })
+
+  /**
+   * A single user's details from Manage Users.
+   * Called with a system token stamped with the acting username and cached by username.
+   */
+  getUserDetails = this.apiCall<UserDetails, { username: string }>({
+    path: '/users/:username',
+    requestType: 'get',
+    options: { cacheDuration: USER_DETAILS_CACHE_DURATION_SECONDS, asSystem: true },
   })
 }
