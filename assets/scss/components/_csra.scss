@@ -241,6 +241,13 @@
   }
 }
 
+.csra-prisoner-image {
+  width: 90px;
+  height: 120px;
+  object-fit: cover;
+  vertical-align: middle;
+}
+
 .csra-recent-arrivals-table {
   .govuk-table__body {
     .govuk-table__row {
@@ -252,9 +259,6 @@
     width: 104px;
   }
 
-  .csra-prisoner-image {
-    vertical-align: middle;
-  }
 }
 
 .continue-assessment-button {
