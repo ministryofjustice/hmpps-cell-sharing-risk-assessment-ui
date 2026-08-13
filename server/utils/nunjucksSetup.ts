@@ -3,6 +3,7 @@ import path from 'path'
 import nunjucks from 'nunjucks'
 import express from 'express'
 import fs from 'fs'
+import { isFunction } from 'lodash-es'
 import {
   arrivalTypeLabel,
   formatLocation,
@@ -63,6 +64,20 @@ export default function nunjucksSetup(app: express.Express): void {
       noCache: !isProduction,
     },
   )
+
+  function callAsMacro(name: string) {
+    const macro = this.ctx[name]
+
+    if (!isFunction(macro)) {
+      // eslint-disable-next-line no-console
+      console.log(`'${name}' macro does not exist`)
+      return () => ''
+    }
+
+    return macro
+  }
+
+  njkEnv.addGlobal('callAsMacro', callAsMacro)
 
   njkEnv.addFilter('initialiseName', initialiseName)
   njkEnv.addFilter('assetMap', (url: string) => assetManifest[url] || url)

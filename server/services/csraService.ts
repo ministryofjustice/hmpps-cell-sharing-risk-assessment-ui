@@ -1,6 +1,7 @@
 import { CsraApiClient } from '../data'
 import type {
   AgencyStatus,
+  CsraAssessment,
   CsraAssessmentsInProgress,
   CsraCurrentRating,
   CsraHighRiskDueForReview,
@@ -102,5 +103,18 @@ export default class CsraService {
   /** Switch CSRA on or off in DPS for a prison. Idempotent. */
   setAgencyActive(username: string, agencyId: string, active: boolean): Promise<AgencyStatus> {
     return this.csraApiClient.setAgencyActive(username, { agencyId }, { active })
+  }
+
+  async getCsraAssessment(prisonerNumber: string, assessmentId: string) {
+    const redisId = `CSRAQ_${prisonerNumber}_${assessmentId}`
+    const redisGet = (await this.csraApiClient.TEMP_getRedisClient().get(redisId)) as string
+    return redisGet ? JSON.parse(redisGet) : {}
+  }
+
+  async updateCsraAssessment(prisonerNumber: string, assessmentId: string, assessment: CsraAssessment) {
+    const redisId = `CSRAQ_${prisonerNumber}_${assessmentId}`
+    await this.csraApiClient.TEMP_getRedisClient().set(redisId, JSON.stringify(assessment))
+
+    return assessment
   }
 }

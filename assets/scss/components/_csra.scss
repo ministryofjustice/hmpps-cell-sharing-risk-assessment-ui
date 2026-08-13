@@ -85,6 +85,12 @@
   }
 }
 
+.compact-prisoner-banner {
+  border-bottom: 1px solid #B1B4B6;
+  padding-bottom: 12px;
+  margin-bottom: 30px;
+}
+
 // Summary tiles
 .csra-summary {
   display: grid;
@@ -259,6 +265,10 @@
     width: 104px;
   }
 
+}
+
+.continue-assessment-button {
+  margin: 0;
 }
 
 .continue-assessment-button {

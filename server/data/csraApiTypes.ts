@@ -254,6 +254,44 @@ export interface CsraAssessmentsInProgress {
 /** The coarse type of assessment that produced the current rating. */
 export type CsraAssessmentTypeBucket = 'ASSESSMENT' | 'REVIEW'
 
+export type EvidenceSource = 'PNC' | 'PER' | 'WARRANT' | 'DPS' | 'OTHER'
+
+export type OffenceType =
+  | 'MURDER_MANSLAUGHTER'
+  | 'ASSISTING_SUICIDE'
+  | 'SEXUAL_ASSAULT'
+  | 'REPEATED_VIOLENCE'
+  | 'PREJUDICE_MOTIVATED'
+  | 'ARSON'
+  | 'KIDNAP_HOSTAGE'
+
+export interface CsraAssessment {
+  rating: CsraResult
+  prisonId: string
+  assessmentComment: string
+  dpsChecked: boolean
+  perChecked: boolean
+  warrantChecked: boolean
+  pncChecked: boolean
+  offenceMurderManslaughter: boolean
+  offenceAssistingSuicide: boolean
+  offenceSexualAssault: boolean
+  offenceRepeatedViolence: boolean
+  offencePrejudiceMotivated: boolean
+  offenceArson: boolean
+  offenceKidnapHostage: boolean
+  offenceEvidence: { offence: OffenceType; sources: EvidenceSource[]; otherSourceDetail?: string; details: string }[]
+  officerSpokeToPrisoner: boolean
+  likelyToHarmCellmate: boolean
+  significantlyVulnerable: boolean
+  causeForConcernSharing: boolean
+  otherHighRiskIndicators: boolean
+  seenByHealthcare: boolean
+  healthcareIncreasedRisk: boolean
+  riskTo: CsraRiskToDetail[]
+  vulnerabilities: CsraVulnerabilityDetail[]
+}
+
 /** A single high-risk prisoner row in the due-for-review list (mirrors dto.CsraHighRiskReviewRow). */
 export interface CsraHighRiskReviewRow {
   prisonerNumber: string

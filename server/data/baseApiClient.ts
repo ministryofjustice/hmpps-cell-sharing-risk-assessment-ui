@@ -90,4 +90,8 @@ export default class BaseApiClient extends RestClient {
     }
     return func as typeof func & { clearCache: typeof func.clearCache }
   }
+
+  TEMP_getRedisClient() {
+    return this.redisClient
+  }
 }
