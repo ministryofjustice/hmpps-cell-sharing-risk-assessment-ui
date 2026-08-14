@@ -34,10 +34,13 @@ export default class RecentArrivalsController {
         text: `${label} (${arrivalTypeCounts[value] || 0})`,
         checked: arrivalTypes.includes(value as CsraArrivalType),
       }))
+      const totalArrivals = recentArrivals.days.reduce((total, day) => total + day.arrivals.length, 0)
 
       return res.render('pages/recentArrivals', {
         title: 'People who have arrived in the last 3 days',
         recentArrivals,
+        totalArrivals,
+        arrivalTypes,
         arrivalTypeOptions,
       })
     } catch (error) {

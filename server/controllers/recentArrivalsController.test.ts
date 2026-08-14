@@ -75,6 +75,8 @@ describe('RecentArrivalsController', () => {
           { value: 'COURT_RETURN', text: 'Court returns (0)', checked: false },
           { value: 'TEMPORARY_ABSENCE_RETURN', text: 'Temporary absence returns (0)', checked: false },
         ],
+        totalArrivals: 1,
+        arrivalTypes: [],
       }),
     )
   })
@@ -107,6 +109,8 @@ describe('RecentArrivalsController', () => {
           { value: 'COURT_RETURN', text: 'Court returns (0)', checked: false },
           { value: 'TEMPORARY_ABSENCE_RETURN', text: 'Temporary absence returns (0)', checked: false },
         ]),
+        totalArrivals: 1,
+        arrivalTypes: ['NEW_ADMISSION', 'TRANSFER_IN'],
       }),
     )
   })

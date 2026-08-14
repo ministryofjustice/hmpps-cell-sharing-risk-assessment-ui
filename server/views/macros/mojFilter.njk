@@ -14,6 +14,7 @@
       text {string} - Optional: The text for the submit button (default: "Apply")
       attributes {object} - Optional: Additional HTML attributes for the submit button
     clearFiltersUrl {string} - The URL to clear all filters
+    clearFiltersText {string} - Optional: The text for the clear filters link (default: "Clear filters")
 #}
 {% macro mojFilter(params) %}
 
@@ -37,8 +38,8 @@
         }) }}
 
         {% if params.clearFiltersUrl %}
-          <p>
-            <a class="govuk-link govuk-link--no-visited-state" href="{{ params.clearFiltersUrl }}">Clear filters</a>
+          <p class="clear-filters-link">
+            <a class="govuk-link govuk-link--no-visited-state" href="{{ params.clearFiltersUrl }}">{{ params.clearFiltersText if params.clearFiltersText else "Clear filters" }}</a>
           </p>
         {% endif %}
 
