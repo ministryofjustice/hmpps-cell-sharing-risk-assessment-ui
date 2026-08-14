@@ -1,4 +1,5 @@
 {
+  "name": "Bulk prisoner lookup. prisonId is where each prisoner is now — the assessments- and reviews-in-progress worklists filter on it to drop anyone who has left, so omitting it makes both worklists come back empty.",
   "request": {
     "method": "POST",
     "urlPath": "/prisoner-search/prisoner-numbers"
@@ -7,11 +8,11 @@
     "status": 200,
     "headers": { "Content-Type": "application/json" },
     "jsonBody": [
-      { "prisonerNumber": "A1234BC", "firstName": "John", "lastName": "Saunders" },
-      { "prisonerNumber": "A2345CD", "firstName": "Marcus", "lastName": "Webb" },
-      { "prisonerNumber": "A3456DE", "firstName": "Ashley", "lastName": "Okafor" },
-      { "prisonerNumber": "A4567EF", "firstName": "Daniel", "lastName": "Ferreira" },
-      { "prisonerNumber": "A5678FG", "firstName": "Robert", "lastName": "Nowak" }
+      { "prisonerNumber": "A1234BC", "firstName": "John", "lastName": "Saunders", "prisonId": "MDI" },
+      { "prisonerNumber": "A2345CD", "firstName": "Marcus", "lastName": "Webb", "prisonId": "MDI" },
+      { "prisonerNumber": "A3456DE", "firstName": "Ashley", "lastName": "Okafor", "prisonId": "MDI" },
+      { "prisonerNumber": "A4567EF", "firstName": "Daniel", "lastName": "Ferreira", "prisonId": "MDI" },
+      { "prisonerNumber": "A5678FG", "firstName": "Robert", "lastName": "Nowak", "prisonId": "MDI" }
     ]
   }
 }
