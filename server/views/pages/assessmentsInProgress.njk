@@ -8,6 +8,12 @@
 
 {% set pageTitle = applicationName + " - Assessments in progress" %}
 
+{% set assessmentButtonHtml %}
+  {% if canEditAssessments %}
+    <a class="govuk-button govuk-button--secondary continue-assessment-button" href="#">Continue assessment</a>
+  {% endif %}
+{% endset %}
+
 {% block content %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-full">
@@ -32,7 +38,7 @@
                 { html: nameHtml },
                 { text: assessment.startedOn | formatDayMonthYear },
                 { text: assessment.startedBy | userDisplayName },
-                { html: '<a class="govuk-button govuk-button--secondary continue-assessment-button" href="#">Continue assessment</a>' }
+                { html: assessmentButtonHtml }
               ] %}
               {% set _ = rows.push(row) %}
             {% endfor %}
@@ -76,7 +82,7 @@
                 { text: assessment.assessedOn | formatDayMonthYear },
                 { text: assessment.assessedBy | userDisplayName },
                 { html: ratingHtml },
-                { html: '<a class="govuk-button govuk-button--secondary continue-assessment-button" href="#">Continue assessment</a>' }
+                { html: assessmentButtonHtml }
               ] %}
               {% set _ = rows.push(row) %}
             {% endfor %}

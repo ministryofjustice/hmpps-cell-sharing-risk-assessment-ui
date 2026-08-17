@@ -9,7 +9,10 @@ test.describe('Assessments in progress', () => {
   })
 
   test('renders assessments and resolves staff display names from Manage Users', async ({ page }) => {
-    await login(page, { activeCaseLoad: { caseLoadId: 'LEI', description: 'Leeds (HMP)' } })
+    await login(page, {
+      activeCaseLoad: { caseLoadId: 'LEI', description: 'Leeds (HMP)' },
+      roles: ['ROLE_CSRA__ASSESSMENT_EDIT'],
+    })
     await csraApi.stubGetAssessmentsInProgress('LEI')
     await manageUsersApi.stubGetUserDetails('JBLOGGS', 'Joe Bloggs')
     await manageUsersApi.stubGetUserDetails('MSTANLEY', 'Mia Stanley')
@@ -25,6 +28,7 @@ test.describe('Assessments in progress', () => {
     await expect(assessmentStartedTable).toContainText('Kettleby, Simon')
     await expect(assessmentStartedTable).toContainText('Joe Bloggs')
     await expect(assessmentStartedTable).toContainText('A9354JF')
+    await expect(assessmentStartedTable).toContainText('Continue assessment')
 
     const provisionalRatingTable = page.locator('.csra-provisional-rating-entered-table')
     await expect(provisionalRatingTable.locator('tbody tr')).toHaveCount(1)
@@ -33,6 +37,26 @@ test.describe('Assessments in progress', () => {
     await expect(provisionalRatingTable.locator('.risk-badge')).toContainText('HIGH RISK SPECIFIC')
     await expect(provisionalRatingTable.locator('.risk-badge')).toContainText('(PROVISIONAL)')
     await expect(provisionalRatingTable).toContainText('A5197BD')
+    await expect(provisionalRatingTable).toContainText('Continue assessment')
+  })
+
+  test('does not show continue assessment buttons when user does not have the role', async ({ page }) => {
+    await login(page, { activeCaseLoad: { caseLoadId: 'LEI', description: 'Leeds (HMP)' }, roles: [] })
+    await csraApi.stubGetAssessmentsInProgress('LEI')
+    await manageUsersApi.stubGetUserDetails('JBLOGGS', 'Joe Bloggs')
+    await manageUsersApi.stubGetUserDetails('MSTANLEY', 'Mia Stanley')
+
+    await page.goto('/assessments-in-progress')
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Assessments in progress' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Assessment started (1)' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Provisional rating entered (1)' })).toBeVisible()
+
+    const assessmentStartedTable = page.locator('.csra-assessments-in-progress-table')
+    await expect(assessmentStartedTable).not.toContainText('Continue assessment')
+
+    const provisionalRatingTable = page.locator('.csra-provisional-rating-entered-table')
+    await expect(provisionalRatingTable).not.toContainText('Continue assessment')
   })
 
   test('renders empty states when there are no in-progress assessments', async ({ page }) => {

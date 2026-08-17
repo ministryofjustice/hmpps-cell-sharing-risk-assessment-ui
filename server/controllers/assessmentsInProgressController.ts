@@ -3,6 +3,7 @@ import type { Services } from '../services'
 import { Page } from '../services/auditService'
 import logger from '../../logger'
 import { populateUserDisplayNames } from '../utils/populateUserDisplayNames'
+import { Role } from '../utils/roles'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService' | 'manageUsersService'>
 
@@ -22,6 +23,8 @@ export default class AssessmentsInProgressController {
         res.locals.feComponents.sharedData.activeCaseLoad.caseLoadId,
       )
 
+      const canEditAssessments = res.locals.user?.userRoles?.includes(Role.CSRA__ASSESSMENT_EDIT)
+
       const usernames = Array.from(
         new Set([
           ...assessmentStarted.map(assessment => assessment.startedBy),
@@ -35,6 +38,7 @@ export default class AssessmentsInProgressController {
         title: 'Assessments in progress',
         assessmentStarted,
         provisionalRatingEntered,
+        canEditAssessments,
       })
     } catch (error) {
       logger.error('Error fetching prisoners for assessments-in-progress page', error)

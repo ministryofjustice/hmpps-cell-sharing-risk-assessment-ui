@@ -1,3 +1,4 @@
+import { Request, Response } from 'express'
 import AssessmentsInProgressController from './assessmentsInProgressController'
 import { Page } from '../services/auditService'
 
@@ -121,6 +122,46 @@ describe('assessmentsInProgressController', () => {
       'pages/assessmentsInProgress',
       expect.objectContaining({
         provisionalRatingEntered: expectedAssessmentsInProgress.provisionalRatingEntered,
+      }),
+    )
+  })
+
+  it('passes true for canEditAssessments when the user has the role', async () => {
+    const res = {
+      locals: {
+        user: { username: 'USER2', token: 'token-2', userRoles: ['CSRA__ASSESSMENT_EDIT'] },
+        feComponents: { sharedData: { activeCaseLoad: { caseLoadId: 'LEI' } } },
+      },
+      render: jest.fn(),
+    } as unknown as Response
+
+    const controller = new AssessmentsInProgressController({ auditService, csraService, manageUsersService } as any)
+    await controller.index({} as Request, res, jest.fn())
+
+    expect(res.render).toHaveBeenCalledWith(
+      'pages/assessmentsInProgress',
+      expect.objectContaining({
+        canEditAssessments: true,
+      }),
+    )
+  })
+
+  it('passes false for canEditAssessments when the user does not have the role', async () => {
+    const res = {
+      locals: {
+        user: { username: 'USER2', token: 'token-2', userRoles: [] },
+        feComponents: { sharedData: { activeCaseLoad: { caseLoadId: 'LEI' } } },
+      },
+      render: jest.fn(),
+    } as unknown as Response
+
+    const controller = new AssessmentsInProgressController({ auditService, csraService, manageUsersService } as any)
+    await controller.index({} as Request, res, jest.fn())
+
+    expect(res.render).toHaveBeenCalledWith(
+      'pages/assessmentsInProgress',
+      expect.objectContaining({
+        canEditAssessments: false,
       }),
     )
   })
