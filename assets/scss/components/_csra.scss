@@ -274,3 +274,12 @@
 .continue-assessment-button {
   margin: 0;
 }
+
+#recent-arrivals-page {
+  .clear-filters-link {
+    margin-left: govuk-spacing(3);
+    margin-bottom: govuk-spacing(2);
+    display: inline-block;
+    vertical-align: bottom;
+  }
+}

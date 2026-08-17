@@ -72,7 +72,9 @@ test.describe('Recent arrivals', () => {
     await page.goto('/recent-arrivals')
 
     await RecentArrivalsPage.verifyOnPage(page)
-    const emptyDayMessages = page.locator('.csra-recent-arrivals p', { hasText: 'No prisoners arrived on this day.' })
+    const emptyDayMessages = page.locator('.csra-recent-arrivals .govuk-inset-text', {
+      hasText: 'No prisoners arrived on this day.',
+    })
     // Default stub has two empty days
     await expect(emptyDayMessages).toHaveCount(2)
   })
@@ -122,7 +124,64 @@ test.describe('Recent arrivals', () => {
 
     await RecentArrivalsPage.verifyOnPage(page)
     await expect(page.locator('.csra-recent-arrivals tbody tr')).toHaveCount(0)
-    const emptyDayMessages = page.locator('.csra-recent-arrivals p', { hasText: 'No prisoners arrived on this day.' })
+    const emptyDayMessages = page.locator('.csra-recent-arrivals .govuk-inset-text', {
+      hasText: 'No prisoners arrived on this day.',
+    })
     await expect(emptyDayMessages).toHaveCount(3)
+  })
+
+  test('does not show filters when there are no arrivals and no filters have been applied', async ({ page }) => {
+    await login(page)
+    await csraApi.stubGetRecentArrivals('LEI', emptyRecentArrivals)
+
+    await page.goto('/recent-arrivals')
+
+    const recentArrivalsPage = await RecentArrivalsPage.verifyOnPage(page)
+    await expect(recentArrivalsPage.filterPanel).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Apply' })).toHaveCount(0)
+  })
+
+  test('shows a clear link next to Apply when filters have been applied', async ({ page }) => {
+    await login(page)
+    await csraApi.stubGetRecentArrivals('LEI', emptyRecentArrivals)
+
+    await page.goto('/recent-arrivals?arrivalType=TRANSFER_IN')
+
+    const recentArrivalsPage = await RecentArrivalsPage.verifyOnPage(page)
+    await expect(recentArrivalsPage.applyButton).toBeVisible()
+
+    const clearLink = recentArrivalsPage.filterPanel.getByRole('link', { name: 'Clear' })
+    await expect(clearLink).toBeVisible()
+    await expect(clearLink).toHaveAttribute('href', '/recent-arrivals')
+  })
+
+  test('shows empty-state guidance when filters are applied and no prisoners match', async ({ page }) => {
+    await login(page)
+    await csraApi.stubGetRecentArrivals('LEI', emptyRecentArrivals)
+
+    await page.goto('/recent-arrivals?arrivalType=TRANSFER_IN')
+
+    await RecentArrivalsPage.verifyOnPage(page)
+    await expect(page.locator('.csra-recent-arrivals')).toContainText(
+      'No prisoners have been found for the selected filters.',
+    )
+    await expect(page.locator('.csra-recent-arrivals')).toContainText('You can:')
+    await expect(page.locator('.csra-recent-arrivals li')).toContainText([
+      'select different arrival types',
+      'clear filters to view all people who have arrived in the last 3 days',
+    ])
+  })
+
+  test('does not show empty day sections when filters are applied and no prisoners match', async ({ page }) => {
+    await login(page)
+    await csraApi.stubGetRecentArrivals('LEI', emptyRecentArrivals)
+
+    await page.goto('/recent-arrivals?arrivalType=TRANSFER_IN')
+
+    await RecentArrivalsPage.verifyOnPage(page)
+    await expect(page.locator('.csra-recent-arrivals h2')).toHaveCount(0)
+    await expect(
+      page.locator('.csra-recent-arrivals .govuk-inset-text', { hasText: 'No prisoners arrived on this day.' }),
+    ).toHaveCount(0)
   })
 })
