@@ -9,6 +9,7 @@ import type {
   CsraRecentArrivals,
   CsraReviewDetail,
   CsraReviewHistory,
+  CsraReviewsInProgress,
 } from '../../server/data/csraApiTypes'
 
 export default {
@@ -138,6 +139,35 @@ export default {
             },
           ],
           ...assessmentsInProgress,
+        },
+      },
+    }),
+
+  stubGetReviewsInProgress: (
+    prisonId = 'LEI',
+    reviewsInProgress: Partial<CsraReviewsInProgress> = {},
+  ): SuperAgentRequest =>
+    stubFor({
+      request: {
+        method: 'GET',
+        urlPathPattern: `/csra-api/csra-review/prison/${prisonId}/reviews-in-progress`,
+      },
+      response: {
+        status: 200,
+        headers: { 'Content-Type': 'application/json;charset=UTF-8' },
+        jsonBody: {
+          content: [
+            {
+              reviewId: 'de91dfa7-821f-4552-a427-bf2f32eafeb0',
+              prisonerNumber: 'A9354JF',
+              firstName: 'Simon',
+              lastName: 'Kettleby',
+              startedOn: '2026-07-03',
+              startedBy: 'SCARTER',
+            },
+          ],
+          totalResults: 1,
+          ...reviewsInProgress,
         },
       },
     }),

@@ -251,6 +251,22 @@ export interface CsraAssessmentsInProgress {
   provisionalRatingEntered: CsraProvisionalRatingRow[]
 }
 
+/** A cell sharing risk review started but not yet completed. */
+export interface CsraReviewInProgressRow {
+  reviewId: string
+  prisonerNumber: string
+  firstName?: string | null
+  lastName?: string | null
+  startedOn: string
+  startedBy: string
+}
+
+/** A prison's in-progress CSRA reviews. */
+export interface CsraReviewsInProgress {
+  content: CsraReviewInProgressRow[]
+  totalResults: number
+}
+
 /** The coarse type of assessment that produced the current rating. */
 export type CsraAssessmentTypeBucket = 'ASSESSMENT' | 'REVIEW'
 

@@ -53,4 +53,10 @@ describe('userDisplayName', () => {
     const result = userDisplayName.call({}, 'JBLOGGS')
     expect(result).toBe('JBLOGGS')
   })
+
+  it('returns "System user" for the special username CELL_SHARING_RISK_ASSESSMENT_API', () => {
+    const ctx = { userDisplayNames: new Map() }
+    const result = userDisplayName.call({ ctx }, 'CELL_SHARING_RISK_ASSESSMENT_API')
+    expect(result).toBe('System user')
+  })
 })

@@ -14,6 +14,7 @@ import type {
   CsraRecentArrivalsQuery,
   CsraReviewDetail,
   CsraReviewHistory,
+  CsraReviewsInProgress,
 } from '../data/csraApiTypes'
 
 export default class CsraService {
@@ -33,6 +34,14 @@ export default class CsraService {
    */
   getAssessmentsInProgress(username: string, prisonId: string): Promise<CsraAssessmentsInProgress> {
     return this.csraApiClient.getAssessmentsInProgress(username, { prisonId })
+  }
+
+  /**
+   * Get a prison's in-progress CSRA reviews. `username` is stamped onto the system token used for the
+   * call.
+   */
+  getReviewsInProgress(username: string, prisonId: string): Promise<CsraReviewsInProgress> {
+    return this.csraApiClient.getReviewsInProgress(username, { prisonId })
   }
 
   /**

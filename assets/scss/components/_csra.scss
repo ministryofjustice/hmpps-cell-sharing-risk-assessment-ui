@@ -271,15 +271,30 @@
   margin: 0;
 }
 
-.continue-assessment-button {
-  margin: 0;
-}
-
 #recent-arrivals-page {
   .clear-filters-link {
     margin-left: govuk-spacing(3);
     margin-bottom: govuk-spacing(2);
     display: inline-block;
     vertical-align: bottom;
+  }
+}
+
+.csra-reviews-in-progress-table {
+  .govuk-table__body {
+    .govuk-table__row {
+      height: 146px;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: govuk-spacing(4);
+    white-space: nowrap;
+
+    .continue-review-button {
+      margin: 0;
+    }
   }
 }
