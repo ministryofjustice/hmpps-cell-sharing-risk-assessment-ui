@@ -10,6 +10,7 @@ export enum Page {
   ADMIN_PRISONS = 'ADMIN_PRISONS',
   RECENT_ARRIVALS = 'RECENT_ARRIVALS',
   ASSESSMENTS_IN_PROGRESS = 'ASSESSMENTS_IN_PROGRESS',
+  REVIEWS_IN_PROGRESS = 'REVIEWS_IN_PROGRESS',
 }
 
 /** Auditable admin actions (as opposed to page views), recorded via logAuditEvent. */

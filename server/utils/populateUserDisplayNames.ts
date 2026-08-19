@@ -33,6 +33,9 @@ export async function populateUserDisplayNames(
  * Resolve a username to a display name using the map attached to the render context.
  */
 export function userDisplayName(this: { ctx?: { userDisplayNames?: Map<string, string> } }, username: string): string {
-  const map = this?.ctx?.userDisplayNames
-  return map?.get(username) ?? username
+  const map = new Map([
+    ...Array.from(this?.ctx?.userDisplayNames ?? []),
+    ['CELL_SHARING_RISK_ASSESSMENT_API', 'System user'],
+  ])
+  return map.get(username) ?? username
 }

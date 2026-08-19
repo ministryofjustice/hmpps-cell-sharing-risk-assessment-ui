@@ -16,6 +16,7 @@ import type {
   CsraRecentArrivalsQuery,
   CsraReviewDetail,
   CsraReviewHistory,
+  CsraReviewsInProgress,
 } from './csraApiTypes'
 
 export default class CsraApiClient extends BaseApiClient {
@@ -42,6 +43,16 @@ export default class CsraApiClient extends BaseApiClient {
    */
   getAssessmentsInProgress = this.apiCall<CsraAssessmentsInProgress, { prisonId: string }>({
     path: '/csra-review/prison/:prisonId/assessments-in-progress',
+    requestType: 'get',
+    options: { asSystem: true },
+  })
+
+  /**
+   * Get a prison's in-progress CSRA reviews: reviews started but not yet completed.
+   * Called `asSystem` (see getCurrentCsraRating).
+   */
+  getReviewsInProgress = this.apiCall<CsraReviewsInProgress, { prisonId: string }>({
+    path: '/csra-review/prison/:prisonId/reviews-in-progress',
     requestType: 'get',
     options: { asSystem: true },
   })
