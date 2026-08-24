@@ -16,9 +16,9 @@
 {% block content %}
   <div class="govuk-grid-row govuk-!-margin-top-5">
     <div class="govuk-grid-column-full">
-      <p class="govuk-body">Prisoners who have a cell sharing risk review in progress.</p>
-
       {% if reviewsInProgress.length > 0 %}
+        <p class="govuk-body">Prisoners who have a cell sharing risk review in progress.</p>
+
         {% set rows = [] %}
         {% for review in reviewsInProgress %}
           {% set name = review.lastName | capitalize ~ ', ' ~ review.firstName | capitalize %}
