@@ -50,5 +50,6 @@ test.describe('Reviews in progress', () => {
 
     await expect(page.getByRole('heading', { level: 1, name: 'Reviews in progress' })).toBeVisible()
     await expect(page.getByText('There are no prisoners with a review in progress.')).toBeVisible()
+    await expect(page.getByText('Prisoners who have a cell sharing risk review in progress.')).not.toBeVisible()
   })
 })
