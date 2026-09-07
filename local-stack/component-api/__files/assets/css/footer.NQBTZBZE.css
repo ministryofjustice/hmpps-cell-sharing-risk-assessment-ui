@@ -1,0 +1,190 @@
+/* Local WireMock fallback for shared footer CSS to avoid ORB from protected remote assets. */
+
+:root {
+    --govuk-breakpoint-mobile: 20rem;
+    --govuk-breakpoint-tablet: 40.0625rem;
+    --govuk-breakpoint-desktop: 48.0625rem
+}
+
+:root {
+    --govuk-frontend-version: "6.4.0"
+}
+
+:root {
+    --govuk-brand-colour: #1d70b8;
+    --govuk-text-colour: #0b0c0c;
+    --govuk-inverse-text-colour: #ffffff;
+    --govuk-template-background-colour: #f4f8fb;
+    --govuk-body-background-colour: #ffffff;
+    --govuk-print-text-colour: #000000;
+    --govuk-secondary-text-colour: #484949;
+    --govuk-focus-colour: #ffdd00;
+    --govuk-focus-text-colour: #0b0c0c;
+    --govuk-error-colour: #ca3535;
+    --govuk-success-colour: #0f7a52;
+    --govuk-border-colour: #cecece;
+    --govuk-input-border-colour: #0b0c0c;
+    --govuk-hover-colour: #cecece;
+    --govuk-link-colour: #1a65a6;
+    --govuk-link-visited-colour: #54319f;
+    --govuk-link-hover-colour: #0f385c;
+    --govuk-link-active-colour: #0b0c0c;
+    --govuk-surface-background-colour: #f4f8fb;
+    --govuk-surface-text-colour: #0b0c0c;
+    --govuk-surface-border-colour: #8eb8dc
+}
+
+@media print {
+    :root {
+        --govuk-text-colour: var(--govuk-print-text-colour, #000000)
+    }
+}
+
+.connect-dps-common-footer {
+    border-top: 1px solid var(--govuk-border-colour, #cecece);
+    padding: 45px 0 30px;
+    color: var(--govuk-text-colour, #0b0c0c);
+    background: var(--govuk-template-background-colour, #f4f8fb);
+    font-family: GDS Transport,arial,sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale
+}
+
+@font-face {
+    font-family: GDS Transport;
+    font-style: normal;
+    font-weight: 400;
+    font-display: fallback;
+    src: url(/assets/fonts/light-94a07e06a1-v2.woff2) format("woff2"),url(/assets/fonts/light-f591b13f7d-v2.woff) format("woff")
+}
+
+@font-face {
+    font-family: GDS Transport;
+    font-style: normal;
+    font-weight: 700;
+    font-display: fallback;
+    src: url(/assets/fonts/bold-b542beb274-v2.woff2) format("woff2"),url(/assets/fonts/bold-affa96571d-v2.woff) format("woff")
+}
+
+@media print {
+    .connect-dps-common-footer {
+        font-family: sans-serif
+    }
+}
+
+.connect-dps-common-footer {
+    font-weight: 400;
+    font-size: 1rem;
+    line-height: 1.25
+}
+
+@media print {
+    .connect-dps-common-footer {
+        font-size: 14pt;
+        line-height: 1.2
+    }
+}
+
+.connect-dps-common-footer a {
+    text-underline-offset: .23em
+}
+
+.connect-dps-common-footer h2 {
+    font-size: 24px;
+    margin-top: 0;
+    padding-bottom: 25px;
+    border-bottom: 1px solid #484949
+}
+
+@media(max-width: 40.0525em) {
+    .connect-dps-common-footer__help h2 {
+        padding-top:25px
+    }
+}
+
+.connect-dps-common-footer__support-links {
+    border-top: 1px solid #484949;
+    padding-top: 30px
+}
+
+.connect-dps-common-footer__inline-list {
+    margin-top: 0;
+    margin-bottom: 15px;
+    padding: 0
+}
+
+.connect-dps-common-footer__inline-list-item {
+    display: inline-block;
+    margin-right: 15px;
+    margin-bottom: 5px
+}
+
+.connect-dps-common-footer__link {
+    font-family: GDS Transport,arial,sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale
+}
+
+@media print {
+    .connect-dps-common-footer__link {
+        font-family: sans-serif
+    }
+}
+
+.connect-dps-common-footer__link {
+    text-decoration: underline;
+    text-decoration-thickness: max(1px,.0625rem);
+    text-underline-offset: .1578em
+}
+
+.connect-dps-common-footer__link:hover {
+    text-decoration-thickness: max(3px,.1875rem,.12em);
+    -webkit-text-decoration-skip-ink: none;
+    text-decoration-skip-ink: none;
+    -webkit-text-decoration-skip: none;
+    text-decoration-skip: none
+}
+
+.connect-dps-common-footer__link:focus {
+    outline: 3px solid transparent;
+    color: var(--govuk-focus-text-colour, #0b0c0c);
+    background-color: var(--govuk-focus-colour, #ffdd00);
+    box-shadow: 0 -2px var(--govuk-focus-colour, #ffdd00),0 4px var(--govuk-focus-text-colour, #0b0c0c);
+    text-decoration: none
+}
+
+@supports not (text-wrap: balance) {
+    .connect-dps-common-footer__link:focus {
+        -webkit-box-decoration-break:clone;
+        box-decoration-break: clone
+    }
+}
+
+.connect-dps-common-footer__link:link,.connect-dps-common-footer__link:visited,.connect-dps-common-footer__link:active {
+    color: var(--govuk-text-colour, #0b0c0c)
+}
+
+.connect-dps-common-footer__link:focus {
+    color: var(--govuk-focus-text-colour, #0b0c0c)
+}
+
+.connect-dps-common-footer__services-menu ul {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 15px 15px;
+    justify-items: start
+}
+
+@media(max-width: 48.0525em) {
+    .connect-dps-common-footer__services-menu ul {
+        grid-template-columns:1fr 1fr
+    }
+}
+
+.connect-dps-common-footer__services-menu ul li a {
+    color: var(--govuk-text-colour, #0b0c0c);
+    font-size: 16px
+}
+
+/*! Copyright (c) 2011 by Margaret Calvert & Henrik Kubel. All rights reserved. The font has been customised for exclusive use on gov.uk. This cut is not commercially available. */

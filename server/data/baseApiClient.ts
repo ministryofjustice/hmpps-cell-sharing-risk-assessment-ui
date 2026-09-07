@@ -16,7 +16,7 @@ export default class BaseApiClient extends RestClient {
 
   protected apiCall<
     ReturnType extends object | string,
-    Parameters extends { [k: string]: string | string[] | undefined },
+    Parameters extends { [k: string]: string | string[] | number | undefined },
     Data extends Record<string, unknown> | string[] | string = undefined,
   >({
     path,
@@ -89,5 +89,9 @@ export default class BaseApiClient extends RestClient {
       }
     }
     return func as typeof func & { clearCache: typeof func.clearCache }
+  }
+
+  TEMP_getRedisClient() {
+    return this.redisClient
   }
 }

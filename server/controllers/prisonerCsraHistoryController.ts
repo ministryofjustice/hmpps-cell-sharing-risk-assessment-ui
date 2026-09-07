@@ -6,11 +6,11 @@ import { buildPagination, parseCsraHistoryQuery } from '../utils/utils'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
 
-export default function prisonerCsraHistoryController({
-  auditService,
-  csraService,
-}: Dependencies): RequestHandler<{ prisonerNumber: string }> {
-  return async (req, res) => {
+export default class PrisonerCsraHistoryController {
+  constructor(private readonly dependencies: Dependencies) {}
+
+  index: RequestHandler<{ prisonerNumber: string }> = async (req, res) => {
+    const { auditService, csraService } = this.dependencies
     const { prisonerNumber } = req.params
     const { username } = res.locals.user
     const { prisoner } = res.locals
@@ -27,6 +27,9 @@ export default function prisonerCsraHistoryController({
     })
 
     const baseQueryParams = new URLSearchParams()
+    // Pagination links are built from these, so the worklist the prisoner was reached from has to be
+    // among them or paging would drop it out of the breadcrumb trail.
+    if (res.locals.fromKey) baseQueryParams.set('from', res.locals.fromKey)
     ratings.forEach(rating => baseQueryParams.append('ratings', rating))
     establishments.forEach(establishment => baseQueryParams.append('establishments', establishment))
     if (fromDateRaw) baseQueryParams.set('fromDate', fromDateRaw)

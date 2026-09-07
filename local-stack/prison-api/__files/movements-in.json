@@ -1,0 +1,52 @@
+[
+  {
+    "offenderNo": "A1234BC",
+    "firstName": "John",
+    "lastName": "Saunders",
+    "dateOfBirth": "1990-03-14",
+    "movementType": "ADM",
+    "movementReasonCode": "N",
+    "movementDateTime": "{{now offset='-1 days' format='yyyy-MM-dd'}}T09:15:00",
+    "location": "MDI-RECP"
+  },
+  {
+    "offenderNo": "A2345CD",
+    "firstName": "Marcus",
+    "lastName": "Webb",
+    "dateOfBirth": "1985-11-02",
+    "movementType": "ADM",
+    "movementReasonCode": "INT",
+    "movementDateTime": "{{now offset='-2 days' format='yyyy-MM-dd'}}T14:40:00",
+    "location": "MDI-A-1-012"
+  },
+  {
+    "offenderNo": "A3456DE",
+    "firstName": "Ashley",
+    "lastName": "Okafor",
+    "dateOfBirth": "1998-07-21",
+    "movementType": "ADM",
+    "movementReasonCode": "TRNCRT",
+    "movementDateTime": "{{now offset='-3 days' format='yyyy-MM-dd'}}T17:05:00",
+    "location": "MDI-B-2-004"
+  },
+  {
+    "offenderNo": "A4567EF",
+    "firstName": "Daniel",
+    "lastName": "Ferreira",
+    "dateOfBirth": "1993-01-30",
+    "movementType": "ADM",
+    "movementReasonCode": "V",
+    "movementDateTime": "{{now offset='-5 days' format='yyyy-MM-dd'}}T11:20:00",
+    "location": "MDI-C-3-021"
+  },
+  {
+    "offenderNo": "A5678FG",
+    "firstName": "Robert",
+    "lastName": "Nowak",
+    "dateOfBirth": "1979-09-08",
+    "movementType": "CRT",
+    "movementReasonCode": "CRTRTN",
+    "movementDateTime": "{{now offset='-1 days' format='yyyy-MM-dd'}}T16:00:00",
+    "location": "MDI-D-1-007"
+  }
+]

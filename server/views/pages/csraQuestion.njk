@@ -1,0 +1,46 @@
+{% extends "../partials/layout.njk" %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+{% from "govuk/components/input/macro.njk" import govukInput %}
+{% from "govuk/components/radios/macro.njk" import govukRadios %}
+{% from "govuk/components/table/macro.njk" import govukTable %}
+{% from "govuk/components/textarea/macro.njk" import govukTextarea %}
+{% from "moj/components/date-picker/macro.njk" import mojDatePicker %}
+
+{% set pageTitle = applicationName + " - CSRA Question" %}
+
+{% block heading %}
+  {% include "../partials/compactPrisonerBanner.njk" %}
+
+  {{ super() }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      {% if currentStep.bodyHtml %}
+        {{ currentStep.bodyHtml | safe }}
+      {% endif %}
+
+      <form method="post" action>
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+
+        {% for question in currentStep.questions %}
+          {{ callAsMacro(question.component)(question.componentAttributes(validationErrors, values, assessment)) }}
+        {% endfor %}
+
+        {{ govukButton({
+          text: "Save and continue",
+          classes: "govuk-!-margin-bottom-0",
+          attributes: { "data-qa": "prison-search-button" }
+        }) }}
+      </form>
+
+      <br>
+      <br>
+
+      <a class="govuk-link" href="{{ cancelLink }}">Cancel</a>
+    </div>
+  </div>
+{% endblock %}

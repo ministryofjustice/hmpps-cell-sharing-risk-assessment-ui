@@ -1,0 +1,77 @@
+{
+  "mappings": [
+    {
+      "request": {
+        "method": "GET",
+        "urlPath": "/api/splash-screen/OCDNOQUE"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "moduleName": "OCDNOQUE",
+          "warningText": "CSRA is moving to DPS. Record new assessments in DPS.",
+          "blockedText": "CSRA is now recorded in DPS. This screen is no longer in use.",
+          "blockAccessType": "COND",
+          "conditions": [
+            {
+              "conditionType": "CASELOAD",
+              "conditionValue": "MDI",
+              "blockAccess": true
+            },
+            {
+              "conditionType": "CASELOAD",
+              "conditionValue": "LEI",
+              "blockAccess": false
+            },
+            {
+              "conditionType": "CASELOAD",
+              "conditionValue": "WWI",
+              "blockAccess": true
+            }
+          ]
+        }
+      },
+      "metadata": {
+        "comment": [
+          "The NOMIS splash screens CSRA replaces, read by the rollout admin console. The two are set",
+          "together, so the seeded conditions below deliberately disagree for WWI to show the Mixed",
+          "state the console surfaces when something has changed them outside the service.",
+          "Across the four seeded prisons: MDI blocked, LEI warning, BXI normal (no condition), WWI mixed."
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "urlPath": "/api/splash-screen/OIDCAPPR"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "moduleName": "OIDCAPPR",
+          "warningText": "CSRA is moving to DPS. Approvals are not used in DPS.",
+          "blockedText": "CSRA is now recorded in DPS. This screen is no longer in use.",
+          "blockAccessType": "COND",
+          "conditions": [
+            {
+              "conditionType": "CASELOAD",
+              "conditionValue": "MDI",
+              "blockAccess": true
+            },
+            {
+              "conditionType": "CASELOAD",
+              "conditionValue": "LEI",
+              "blockAccess": false
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -17,7 +17,16 @@ export const attemptHmppsAuthLogin = async (page: Page) => {
 
 export const login = async (
   page: Page,
-  { name, roles = DEFAULT_ROLES, active = true, authSource = 'nomis' }: UserToken & { active?: boolean } = {},
+  {
+    name,
+    roles = DEFAULT_ROLES,
+    active = true,
+    authSource = 'nomis',
+    // Left undefined so stubComponents applies its own default establishment. Pass one to put the
+    // user at a particular prison, or null for no active caseload — the active caseload also drives
+    // the CSRA rollout gate on the landing page.
+    activeCaseLoad,
+  }: UserToken & { active?: boolean; activeCaseLoad?: { caseLoadId: string; description: string } | null } = {},
 ) => {
   await Promise.all([
     hmppsAuth.favicon(),
@@ -26,7 +35,7 @@ export const login = async (
     hmppsAuth.token({ name, roles, authSource }),
     tokenVerification.stubVerifyToken(active),
     // The DPS shared header/footer are fetched by getFrontendComponents on every authenticated page.
-    componentApi.stubComponents(),
+    ...(activeCaseLoad === undefined ? [componentApi.stubComponents()] : [componentApi.stubComponents(activeCaseLoad)]),
   ])
   await attemptHmppsAuthLogin(page)
 }

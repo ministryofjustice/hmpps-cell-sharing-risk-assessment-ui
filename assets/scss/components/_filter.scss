@@ -1,0 +1,21 @@
+.moj-filter {
+  .moj-filter__selected {
+    box-shadow: none;
+  }
+
+  .govuk-checkboxes--small {
+    .govuk-checkboxes__label::before {
+      background-color: white;
+    }
+  }
+}
+
+.moj-filter-layout__filter {
+  width: 270px;
+}
+
+.csra-checkboxes--inline {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: govuk-spacing(4);
+}

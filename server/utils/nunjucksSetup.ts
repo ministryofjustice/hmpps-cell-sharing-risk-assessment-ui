@@ -3,16 +3,27 @@ import path from 'path'
 import nunjucks from 'nunjucks'
 import express from 'express'
 import fs from 'fs'
+import { isFunction } from 'lodash-es'
 import {
+  arrivalTypeLabel,
+  formatLocation,
   convertToTitleCase,
+  csraLevelLabel,
   csraRatingLabel,
   csraRatingTagClass,
   csraStatusLabel,
+  csraTypeLabel,
+  daysOverdue,
   enumLabel,
   formatDate,
+  formatDateTime,
+  formatTime,
   formatMonthYear,
   initialiseName,
+  formatDayMonth,
+  formatDayMonthYear,
 } from './utils'
+import { userDisplayName } from './populateUserDisplayNames'
 import config from '../config'
 import logger from '../../logger'
 
@@ -54,13 +65,37 @@ export default function nunjucksSetup(app: express.Express): void {
     },
   )
 
+  function callAsMacro(name: string) {
+    const macro = this.ctx[name]
+
+    if (!isFunction(macro)) {
+      // eslint-disable-next-line no-console
+      console.log(`'${name}' macro does not exist`)
+      return () => ''
+    }
+
+    return macro
+  }
+
+  njkEnv.addGlobal('callAsMacro', callAsMacro)
+
   njkEnv.addFilter('initialiseName', initialiseName)
   njkEnv.addFilter('assetMap', (url: string) => assetManifest[url] || url)
   njkEnv.addFilter('convertToTitleCase', convertToTitleCase)
   njkEnv.addFilter('formatDate', formatDate)
+  njkEnv.addFilter('formatDateTime', formatDateTime)
+  njkEnv.addFilter('formatTime', formatTime)
   njkEnv.addFilter('formatMonthYear', formatMonthYear)
+  njkEnv.addFilter('formatDayMonth', formatDayMonth)
+  njkEnv.addFilter('formatDayMonthYear', formatDayMonthYear)
+  njkEnv.addFilter('formatLocation', formatLocation)
+  njkEnv.addFilter('daysOverdue', daysOverdue)
   njkEnv.addFilter('csraRatingLabel', csraRatingLabel)
+  njkEnv.addFilter('csraLevelLabel', csraLevelLabel)
   njkEnv.addFilter('csraRatingTagClass', csraRatingTagClass)
   njkEnv.addFilter('csraStatusLabel', csraStatusLabel)
+  njkEnv.addFilter('csraTypeLabel', csraTypeLabel)
+  njkEnv.addFilter('arrivalTypeLabel', arrivalTypeLabel)
   njkEnv.addFilter('enumLabel', enumLabel)
+  njkEnv.addFilter('userDisplayName', userDisplayName)
 }

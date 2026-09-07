@@ -1,0 +1,146 @@
+{% extends "../../partials/layout.njk" %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/tag/macro.njk" import govukTag %}
+{% from "govuk/components/table/macro.njk" import govukTable %}
+{% from "govuk/components/notification-banner/macro.njk" import govukNotificationBanner %}
+
+{% set pageTitle = applicationName + " - Manage enabled prisons" %}
+{% set mainClasses = "govuk-body" %}
+
+{% block content %}
+  {% if successMessage %}
+    {{ govukNotificationBanner({
+      type: "success",
+      text: successMessage,
+      attributes: { "data-qa": "success-banner" }
+    }) }}
+  {% endif %}
+
+  {% if errorMessage %}
+    {{ govukNotificationBanner({
+      titleText: "There is a problem",
+      text: errorMessage,
+      attributes: { "data-qa": "error-banner" }
+    }) }}
+  {% endif %}
+
+  <p class="govuk-body-l govuk-!-margin-top-4 govuk-!-margin-bottom-6" data-qa="active-count">
+    CSRA is switched on for {{ activeCount }} of {{ totalCount }} prisons.
+  </p>
+
+  {% if not nomisScreenAvailable %}
+    <p class="govuk-inset-text" data-qa="nomis-unavailable">
+      The NOMIS CSRA screen ({{ nomisModules }}) status is currently unavailable. One or more may not
+      have been set up in NOMIS yet, so the controls are hidden.
+    </p>
+  {% endif %}
+
+  <form method="get" action="/admin/prisons" class="govuk-!-margin-bottom-6">
+    <div class="govuk-form-group govuk-!-margin-bottom-0">
+      <label class="govuk-label govuk-label--s govuk-!-margin-bottom-1" for="q">Search by prison name or ID</label>
+      <div class="csra-admin-search">
+        <input class="govuk-input govuk-input--width-20 govuk-!-margin-bottom-0" id="q" name="q" type="text"
+               value="{{ search }}" data-qa="prison-search"/>
+        {{ govukButton({
+          text: "Search",
+          classes: "govuk-!-margin-bottom-0",
+          attributes: { "data-qa": "prison-search-button" }
+        }) }}
+      </div>
+    </div>
+  </form>
+
+  {% if agencies.length %}
+    {% set rows = [] %}
+    {% for agency in agencies %}
+      {% set statusTag %}
+        {% if agency.active %}
+          {{ govukTag({ text: "On", classes: "govuk-tag--green" }) }}
+        {% else %}
+          {{ govukTag({ text: "Off", classes: "govuk-tag--grey" }) }}
+        {% endif %}
+      {% endset %}
+
+      {% set toggle %}
+        <form method="post" action="/admin/prisons/{{ agency.agencyId }}" novalidate>
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}"/>
+          <input type="hidden" name="active" value="{{ 'false' if agency.active else 'true' }}"/>
+          <input type="hidden" name="name" value="{{ agency.name }}"/>
+          <input type="hidden" name="q" value="{{ search }}"/>
+          {{ govukButton({
+            text: ("Turn off" if agency.active else "Turn on"),
+            classes: "govuk-button--secondary govuk-!-margin-bottom-0",
+            attributes: { "data-qa": "toggle-" + agency.agencyId }
+          }) }}
+        </form>
+      {% endset %}
+
+      {% set nomisTag %}
+        {% if not nomisScreenAvailable %}
+          {{ govukTag({ text: "Unknown", classes: "govuk-tag--grey" }) }}
+        {% elif agency.nomisState == "BLOCKED" %}
+          {{ govukTag({ text: "Blocked", classes: "govuk-tag--red" }) }}
+        {% elif agency.nomisState == "WARNING" %}
+          {{ govukTag({ text: "Warning", classes: "govuk-tag--yellow" }) }}
+        {% elif agency.nomisState == "MIXED" %}
+          {# The screens are always set together, so disagreeing means something changed them elsewhere. #}
+          {{ govukTag({ text: "Mixed", classes: "govuk-tag--orange" }) }}
+        {% else %}
+          {{ govukTag({ text: "Normal", classes: "govuk-tag--grey" }) }}
+        {% endif %}
+      {% endset %}
+
+      {% set nomisActions %}
+        {% if nomisScreenAvailable %}
+          {% set nomisTargets = [
+            { state: "WARNING", text: "Show warning", qa: "nomis-warning-" },
+            { state: "BLOCKED", text: "Block", qa: "nomis-block-" },
+            { state: "NORMAL", text: "Clear", qa: "nomis-clear-" }
+          ] %}
+          {% for target in nomisTargets %}
+            {# Only offer the transitions the prison is not already in. #}
+            {% if agency.nomisState != target.state %}
+              <form method="post" action="/admin/prisons/{{ agency.agencyId }}/nomis-screen" novalidate
+                    class="csra-admin-inline-form">
+                <input type="hidden" name="_csrf" value="{{ csrfToken }}"/>
+                <input type="hidden" name="state" value="{{ target.state }}"/>
+                <input type="hidden" name="name" value="{{ agency.name }}"/>
+                <input type="hidden" name="q" value="{{ search }}"/>
+                {{ govukButton({
+                  text: target.text,
+                  classes: "govuk-button--secondary govuk-!-margin-bottom-0",
+                  attributes: { "data-qa": target.qa + agency.agencyId }
+                }) }}
+              </form>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+      {% endset %}
+
+      {% set rows = (rows.push([
+        { text: agency.name, attributes: { "data-qa": "name-" + agency.agencyId } },
+        { text: agency.agencyId },
+        { html: statusTag, attributes: { "data-qa": "status-" + agency.agencyId } },
+        { html: toggle, classes: "govuk-!-text-align-right" },
+        { html: nomisTag, attributes: { "data-qa": "nomis-status-" + agency.agencyId } },
+        { html: nomisActions, classes: "govuk-!-text-align-right" }
+      ]), rows) %}
+    {% endfor %}
+
+    {{ govukTable({
+      attributes: { "data-qa": "prisons-table" },
+      head: [
+        { text: "Prison" },
+        { text: "ID" },
+        { text: "CSRA service (DPS)" },
+        { text: "DPS action", classes: "govuk-!-text-align-right" },
+        { text: "NOMIS CSRA screens" },
+        { text: "NOMIS action", classes: "govuk-!-text-align-right" }
+      ],
+      rows: rows
+    }) }}
+  {% else %}
+    <p class="govuk-body" data-qa="no-results">No prisons match your search.</p>
+  {% endif %}
+{% endblock %}

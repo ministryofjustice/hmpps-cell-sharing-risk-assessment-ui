@@ -5,11 +5,11 @@ import { Page } from '../services/auditService'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
 
-export default function prisonerCsraController({
-  auditService,
-  csraService,
-}: Dependencies): RequestHandler<{ prisonerNumber: string }> {
-  return async (req, res) => {
+export default class PrisonerCsraController {
+  constructor(private readonly dependencies: Dependencies) {}
+
+  index: RequestHandler<{ prisonerNumber: string }> = async (req, res) => {
+    const { auditService, csraService } = this.dependencies
     const { prisonerNumber } = req.params
     const { username } = res.locals.user
     const { prisoner } = res.locals

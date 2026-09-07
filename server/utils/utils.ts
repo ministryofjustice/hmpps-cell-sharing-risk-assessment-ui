@@ -1,5 +1,6 @@
 import type { ParsedQs } from 'qs'
-import type { CsraHistoryQuery } from '../data/csraApiTypes'
+import { differenceInCalendarDays, format, isValid, parse, parseISO, startOfDay } from 'date-fns'
+import { type CsraArrivalType, type CsraHistoryQuery } from '../data/csraApiTypes'
 
 const properCase = (word: string): string =>
   word.length >= 1 ? word[0].toUpperCase() + word.toLowerCase().slice(1) : word
@@ -38,6 +39,20 @@ export const formatDate = (isoDate?: string | null): string => {
 }
 
 /**
+ * Format an ISO date-time as e.g. "1 July 2026 at 09:30".
+ *
+ * Deliberately not formatDate: the API's audit stamps are zoneless LocalDateTimes, which `new Date()`
+ * reads as local time. Formatting those in UTC as formatDate does would shift anything before 01:00
+ * back a day during British Summer Time. parseISO keeps the components exactly as written.
+ */
+export const formatDateTime = (isoDateTime?: string | null): string => {
+  if (!isoDateTime) return ''
+  const dateTime = parseISO(isoDateTime)
+  if (!isValid(dateTime)) return ''
+  return format(dateTime, "d MMMM yyyy 'at' HH:mm")
+}
+
+/**
  * Format an ISO date as a month and year, e.g. "June 2011". Used for the history summary date range.
  * Formats in UTC and returns '' for a missing/invalid value.
  */
@@ -46,6 +61,51 @@ export const formatMonthYear = (isoDate?: string | null): string => {
   const date = new Date(isoDate)
   if (Number.isNaN(date.getTime())) return ''
   return date.toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+}
+
+/**
+ * Format an ISO date as a day of the week, day of the month and month, e.g. "Monday 1 June". Used for
+ * the recent arrivals list. Formats in UTC and returns '' for a missing/invalid value.
+ */
+export const formatDayMonth = (isoDate?: string | null): string => {
+  if (!isoDate) return ''
+  const date = new Date(isoDate)
+  if (!isValid(date)) return ''
+  return format(date, 'EEEE d MMMM')
+}
+
+/**
+ * Format an ISO date as a day of the week, day of the month, month and year, e.g. "Monday 1 June 2026".
+ * Used for the assessments in progress list. Formats in UTC and returns '' for a missing/invalid value.
+ */
+export const formatDayMonthYear = (isoDate?: string | null): string => {
+  if (!isoDate) return ''
+  const date = new Date(isoDate)
+  if (!isValid(date)) return ''
+  return format(date, 'EEEE d MMMM yyyy')
+}
+
+/**
+ * Format an ISO date-time as a time, e.g. "09:30". Returns '' for a missing/invalid value.
+ */
+export const formatTime = (isoDateTime?: string | null): string => {
+  if (!isoDateTime) return ''
+  const dateTime = parseISO(isoDateTime)
+  if (!isValid(dateTime)) return ''
+  return format(dateTime, 'HH:mm')
+}
+
+/**
+ * Number of calendar days an ISO date is overdue relative to today.
+ * Returns 0 when the date is today/in the future or invalid.
+ */
+export const daysOverdue = (isoDate?: string | null, now: Date = new Date()): number => {
+  if (!isoDate) return 0
+  const dueDate = parseISO(isoDate)
+  if (!isValid(dueDate)) return 0
+
+  const overdueDays = differenceInCalendarDays(startOfDay(now), startOfDay(dueDate))
+  return overdueDays > 0 ? overdueDays : 0
 }
 
 /** Human-readable label for a CSRA result (mirrors the API's CsraResult enum). */
@@ -59,6 +119,45 @@ export const csraRatingLabel = (rating?: string | null): string => {
       return 'High risk – specific'
     case 'STANDARD':
       return 'Standard'
+    case 'NO_RATING':
+      return 'No rating'
+    default:
+      return ''
+  }
+}
+
+export const RATING_VALUES = ['HIGH_GENERAL', 'HIGH_SPECIFIC', 'HIGH', 'STANDARD', 'NO_RATING'] as const
+export type RatingValue = (typeof RATING_VALUES)[number]
+
+const RATING_OPTIONS = RATING_VALUES.map(rating => ({
+  value: rating,
+  text: csraRatingLabel(rating).replace('risk ', ''),
+}))
+
+export const getRatingOptions = (selectedRatings: string[], allowedRatings: readonly string[] = RATING_VALUES) =>
+  RATING_OPTIONS.filter(option => allowedRatings.includes(option.value)).map(option => ({
+    ...option,
+    checked: selectedRatings.includes(option.value),
+  }))
+
+/**
+ * Human-readable label for a raw NOMIS supervision level (mirrors the API's CsraLevel enum).
+ *
+ * Separate from csraRatingLabel because the legacy fields are CsraLevel, not CsraResult — passing
+ * 'LOW' or 'HI' to csraRatingLabel returns an empty string.
+ */
+export const csraLevelLabel = (level?: string | null): string => {
+  switch (level) {
+    case 'HI':
+      return 'High'
+    case 'MED':
+      return 'Medium'
+    case 'LOW':
+      return 'Low'
+    case 'STANDARD':
+      return 'Standard'
+    case 'PEND':
+      return 'Pending'
     default:
       return ''
   }
@@ -69,10 +168,11 @@ export const csraRatingTagClass = (rating?: string | null): string => {
   switch (rating) {
     case 'HIGH':
     case 'HIGH_GENERAL':
+      return 'govuk-tag--dark-red'
     case 'HIGH_SPECIFIC':
       return 'govuk-tag--red'
     case 'STANDARD':
-      return 'govuk-tag--blue'
+      return 'govuk-tag--green'
     default:
       return 'govuk-tag--grey'
   }
@@ -94,6 +194,22 @@ export const csraStatusLabel = (status?: string | null): string => {
   }
 }
 
+/** Human-readable label for an arrival type (mirrors the API's CsraArrivalType enum). */
+export const arrivalTypeLabel = (arrivalType?: CsraArrivalType | null): string => {
+  switch (arrivalType) {
+    case 'NEW_ADMISSION':
+      return 'New admission'
+    case 'TRANSFER_IN':
+      return 'Transfer in'
+    case 'COURT_RETURN':
+      return 'Court return'
+    case 'TEMPORARY_ABSENCE_RETURN':
+      return 'Temporary absence return'
+    default:
+      return ''
+  }
+}
+
 /**
  * Turn a SCREAMING_SNAKE_CASE enum value (e.g. a risk-to or vulnerability category) into a readable
  * sentence-case label, e.g. "DIFFERENT_ETHNICITY" -> "Different ethnicity".
@@ -102,6 +218,32 @@ export const enumLabel = (value?: string | null): string => {
   if (!value) return ''
   const sentence = value.replace(/_/g, ' ').toLowerCase()
   return sentence.charAt(0).toUpperCase() + sentence.slice(1)
+}
+
+/**
+ * Human-readable label for a CSRA record type (mirrors the API's CsraType enum). The new-model values
+ * need spelling out; enumLabel alone would render them "Csra initial review".
+ */
+export const csraTypeLabel = (type?: string | null): string => {
+  switch (type) {
+    case 'CSRA_INITIAL_REVIEW':
+      return 'CSRA initial review'
+    case 'CSRA_REVIEW':
+      return 'CSRA review'
+    default:
+      return enumLabel(type)
+  }
+}
+
+/**
+ * Human-readable label for a location. The API returns the raw NOMIS location name, which is often a code (e.g. "RECP" for reception).
+ */
+export const formatLocation = (locationName: string): string => {
+  if (!locationName) return ''
+  if (locationName.includes('RECP')) return 'Reception'
+  if (locationName.includes('CSWAP')) return 'No cell allocated'
+  if (locationName.includes('COURT')) return 'Court'
+  return locationName
 }
 
 const PRISON_NUMBER_PATTERN = /^[A-Za-z]\d{4}[A-Za-z]{2}$/
@@ -124,6 +266,53 @@ const toArray = (value: ParsedQs[string]): string[] =>
     .map(item => item?.toString().trim())
     .filter((item): item is string => Boolean(item))
 
+/** Error types returned by {@link validateUkDate}. */
+export type UkDateValidationError = 'WRONG_FORMAT' | 'INCOMPLETE' | 'NON_EXISTENT'
+
+/**
+ * Format string used by date-fns to parse UK date inputs (d/m/yyyy with slash separators only).
+ */
+const UK_DATE_FORMAT = 'd/M/yyyy'
+
+/**
+ * Validate a UK-format date string and return the specific error type, or null if valid/empty.
+ * Only slash separators are accepted (e.g. "17/5/2024"); dashes and dots are treated as wrong format.
+ * - 'WRONG_FORMAT': no slash separators, or non-numeric parts where digits are expected
+ * - 'INCOMPLETE': slashes present but fewer than three parts, or an empty part
+ * - 'NON_EXISTENT': well-formed d/m/yyyy but the calendar date does not exist (e.g. 31/4/2026)
+ */
+export const validateUkDate = (value?: string): UkDateValidationError | null => {
+  if (!value?.trim()) return null
+
+  const trimmed = value.trim()
+
+  if (!trimmed.includes('/')) return 'WRONG_FORMAT'
+
+  const parts = trimmed.split('/')
+  if (parts.length !== 3 || parts.some(p => !p)) return 'INCOMPLETE'
+
+  const match = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  if (!match) return 'WRONG_FORMAT'
+
+  const [, d, m, y] = match
+  const day = Number(d)
+  const month = Number(m)
+  const year = Number(y)
+
+  // Use date-fns to parse and validate the calendar date. Overflow (e.g. 31/4/2026 → May 1)
+  // is detected by comparing the parsed date's components back to the original values.
+  const parsed = parse(`${day}/${month}/${year}`, UK_DATE_FORMAT, new Date(0))
+  if (
+    !isValid(parsed) ||
+    parsed.getDate() !== day ||
+    parsed.getMonth() !== month - 1 ||
+    parsed.getFullYear() !== year
+  ) {
+    return 'NON_EXISTENT'
+  }
+  return null
+}
+
 /**
  * Parse a UK-format date ("17/5/2024", also accepting "-" or ".") into an ISO date ("2024-05-17"),
  * or undefined if it is missing or not a real calendar date. Used to translate the MOJ date-picker
@@ -131,17 +320,22 @@ const toArray = (value: ParsedQs[string]): string[] =>
  */
 export const parseUkDate = (value?: string): string | undefined => {
   if (!value) return undefined
-  const match = value.trim().match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$/)
+  const match = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
   if (!match) return undefined
   const [, d, m, y] = match
   const day = Number(d)
   const month = Number(m)
   const year = Number(y)
-  const date = new Date(Date.UTC(year, month - 1, day))
-  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+  const parsed = parse(`${day}/${month}/${year}`, UK_DATE_FORMAT, new Date(0))
+  if (
+    !isValid(parsed) ||
+    parsed.getDate() !== day ||
+    parsed.getMonth() !== month - 1 ||
+    parsed.getFullYear() !== year
+  ) {
     return undefined
   }
-  return `${y}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+  return format(parsed, 'yyyy-MM-dd')
 }
 
 export interface ParsedCsraHistoryQuery {

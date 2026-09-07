@@ -1,36 +1,50 @@
-import indexController from './indexController'
+import IndexController from './indexController'
 import { Page } from '../services/auditService'
+import { Role } from '../utils/roles'
 
 describe('indexController', () => {
-  afterEach(() => {
-    jest.resetAllMocks()
+  const csraService = {
+    getRatingSummary: jest.fn(),
+  }
+
+  const auditService = {
+    logPageView: jest.fn(),
+  }
+
+  const controller = () => new IndexController({ auditService, csraService } as any)
+
+  const request = (id = 'request-id-123') => ({ id }) as any
+
+  const response = ({
+    username = 'user1',
+    userRoles = [] as string[],
+    // null (not undefined) means "no active caseload" — an explicit undefined would take the default.
+    caseLoad = { caseLoadId: 'MDI', description: 'Leeds (HMP)' } as Record<string, string> | null,
+  } = {}) =>
+    ({
+      locals: {
+        user: { username, userRoles },
+        feComponents: caseLoad ? { sharedData: { activeCaseLoad: caseLoad } } : undefined,
+      },
+      render: jest.fn(),
+    }) as any
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    auditService.logPageView.mockResolvedValue(null)
+    csraService.getRatingSummary.mockResolvedValue({
+      prisonId: 'MDI',
+      total: 1015,
+      noRating: 0,
+      highRisk: 217,
+      standardRisk: 795,
+    })
   })
 
   it('renders the index page with expected locals', async () => {
-    const auditService = {
-      logPageView: jest.fn().mockResolvedValue(null),
-    }
+    const res = response()
 
-    const controller = indexController({ auditService } as any)
-
-    const req = {
-      id: 'request-id-123',
-    } as any
-    const res = {
-      locals: {
-        user: { username: 'user1' },
-        feComponents: {
-          sharedData: {
-            activeCaseLoad: {
-              description: 'Leeds (HMP)',
-            },
-          },
-        },
-      },
-      render: jest.fn(),
-    } as any
-
-    await controller(req, res, jest.fn())
+    await controller().index(request(), res, jest.fn())
 
     expect(auditService.logPageView).toHaveBeenCalledWith(Page.INDEX, {
       who: 'user1',
@@ -40,6 +54,7 @@ describe('indexController', () => {
     expect(res.render).toHaveBeenCalledWith('pages/index', {
       title: 'Cell sharing risk assessment (CSRA)',
       establishmentName: 'Leeds (HMP)',
+      isAdmin: false,
       cardsSections: [
         {
           subheading: 'Start and complete assessments',
@@ -69,7 +84,7 @@ describe('indexController', () => {
             },
             {
               heading: 'Reviews in progress',
-              description: 'Continue incomplete cell sharing risk reviews for prisoners.',
+              description: 'View incomplete cell sharing risk reviews for prisoners.',
               href: '/reviews-in-progress',
               clickable: true,
             },
@@ -77,9 +92,9 @@ describe('indexController', () => {
         },
       ],
       stats: {
-        noRating: 3,
-        highRisk: 217,
-        standardRisk: 795,
+        noRating: '0',
+        highRisk: '217',
+        standardRisk: '795',
       },
     })
 
@@ -90,23 +105,9 @@ describe('indexController', () => {
   })
 
   it('falls back to Unknown establishment when active case load is unavailable', async () => {
-    const auditService = {
-      logPageView: jest.fn().mockResolvedValue(null),
-    }
+    const res = response({ username: 'user2', caseLoad: null })
 
-    const controller = indexController({ auditService } as any)
-
-    const req = {
-      id: 'request-id-456',
-    } as any
-    const res = {
-      locals: {
-        user: { username: 'user2' },
-      },
-      render: jest.fn(),
-    } as any
-
-    await controller(req, res, jest.fn())
+    await controller().index(request('request-id-456'), res, jest.fn())
 
     expect(res.render).toHaveBeenCalledWith(
       'pages/index',
@@ -114,5 +115,44 @@ describe('indexController', () => {
         establishmentName: 'Unknown establishment',
       }),
     )
+  })
+
+  it('always links the journey tiles, whether or not the establishment is switched on', async () => {
+    // Reading CSRA information is open to any user with the prisoner in their caseload, so rollout
+    // deliberately does not gate these worklists. Rollout gates writing, which lives elsewhere.
+    const res = response()
+
+    await controller().index(request(), res, jest.fn())
+
+    const journeyCards = res.render.mock.calls[0][1].cardsSections.flatMap(
+      (section: { cards: unknown[] }) => section.cards,
+    )
+    expect(journeyCards).toHaveLength(4)
+    journeyCards.forEach((card: { href?: string; clickable: boolean }) => {
+      expect(card.href).toBeDefined()
+      expect(card.clickable).toBe(true)
+    })
+  })
+
+  it('shows the admin tile only to a user with the admin role', async () => {
+    const res = response({ userRoles: [Role.CSRA__ADMIN] })
+
+    await controller().index(request(), res, jest.fn())
+
+    const renderLocals = res.render.mock.calls[0][1]
+    expect(renderLocals.isAdmin).toBe(true)
+    expect(renderLocals.cardsSections).toHaveLength(3)
+    expect(renderLocals.cardsSections[2]).toEqual({
+      subheading: 'Admin',
+      cards: [
+        {
+          heading: 'Manage enabled prisons',
+          description: 'Switch CSRA on or off for a prison and control the NOMIS CSRA screen.',
+          href: '/admin/prisons',
+          clickable: true,
+          'data-qa': 'admin-card',
+        },
+      ],
+    })
   })
 })

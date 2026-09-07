@@ -16,8 +16,8 @@
     "lint": "eslint . --cache --max-warnings 0",
     "lint-fix": "eslint . --cache --max-warnings 0 --fix",
     "typecheck": "tsc && tsc -p integration_tests",
-    "test": "jest",
-    "test:ci": "jest --runInBand",
+    "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest",
+    "test:ci": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest --runInBand",
     "security_audit": "npx audit-ci --config audit-ci.json",
     "int-test": "npx playwright test",
     "int-test-ui": "npx playwright test --ui",
@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-sqs": "3.1079.0",
-    "@ministryofjustice/frontend": "^9.0.0",
+    "@ministryofjustice/frontend": "^10.0.1",
     "@ministryofjustice/hmpps-auth-clients": "^3.0.0",
     "@ministryofjustice/hmpps-connect-dps-components": "6.2.1",
     "@ministryofjustice/hmpps-monitoring": "^2.1.0",
@@ -43,14 +43,16 @@
     "bunyan-format": "^0.2.1",
     "compression": "^1.8.1",
     "connect-flash": "^0.1.1",
-    "connect-redis": "^9.0.0",
+    "connect-redis": "^10.0.0",
     "csrf-sync": "^4.2.1",
+    "date-fns": "4.4.0",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
     "govuk-frontend": "^6.3.0",
     "helmet": "^8.2.0",
     "http-errors": "^2.0.1",
     "jwt-decode": "^4.0.0",
+    "lodash-es": "4.18.1",
     "nocache": "^4.0.0",
     "nunjucks": "^3.2.4",
     "passport": "^0.7.0",
@@ -61,7 +63,7 @@
   "devDependencies": {
     "@jgoz/esbuild-plugin-typecheck": "^4.0.4",
     "@ministryofjustice/eslint-config-hmpps": "^1.0.3",
-    "@ministryofjustice/frontend-types": "2.0.0",
+    "@ministryofjustice/frontend-types": "2.0.1",
     "@ministryofjustice/hmpps-npm-script-allowlist": "0.0.6",
     "@ministryofjustice/hmpps-precommit-hooks": "3.0.1",
     "@playwright/test": "1.61.1",
@@ -74,6 +76,7 @@
     "@types/http-errors": "^2.0.5",
     "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/lodash-es": "4.17.12",
     "@types/node": "^24.13.2",
     "@types/nunjucks": "^3.2.6",
     "@types/passport": "^1.0.17",
@@ -107,6 +110,6 @@
     "@opentelemetry/sdk-node": "^0.220.0",
     "@opentelemetry/exporter-prometheus": "^0.220.0",
     "@opentelemetry/core": "^2.9.0",
-    "protobufjs": "^8.6.5"
+    "protobufjs": "^8.6.6"
   }
 }

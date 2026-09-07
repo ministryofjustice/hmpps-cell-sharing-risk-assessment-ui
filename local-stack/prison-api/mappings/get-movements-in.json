@@ -1,0 +1,12 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/api/movements/[A-Za-z0-9]+/in"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "bodyFileName": "movements-in.json",
+    "transformers": ["response-template"]
+  }
+}

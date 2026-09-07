@@ -1,17 +1,41 @@
 import {
+  arrivalTypeLabel,
   buildPagination,
   convertToTitleCase,
+  csraLevelLabel,
   csraRatingLabel,
   csraRatingTagClass,
   csraStatusLabel,
+  csraTypeLabel,
+  daysOverdue,
   enumLabel,
   formatDate,
+  formatDateTime,
+  formatDayMonth,
+  formatDayMonthYear,
+  formatLocation,
   formatMonthYear,
+  formatTime,
   initialiseName,
   isPrisonerNumber,
   parseCsraHistoryQuery,
   parseUkDate,
+  validateUkDate,
 } from './utils'
+
+describe('arrivalTypeLabel', () => {
+  it.each([
+    ['NEW_ADMISSION', 'New admission'],
+    ['TRANSFER_IN', 'Transfer in'],
+    ['COURT_RETURN', 'Court return'],
+    ['TEMPORARY_ABSENCE_RETURN', 'Temporary absence return'],
+    ['UNKNOWN', ''],
+    [null, ''],
+    [undefined, ''],
+  ])('arrivalTypeLabel(%s) === %s', (input: string, expected: string) => {
+    expect(arrivalTypeLabel(input as any)).toEqual(expected)
+  })
+})
 
 describe('convert to title case', () => {
   it.each([
@@ -54,6 +78,53 @@ describe('formatDate', () => {
   })
 })
 
+describe('formatDateTime', () => {
+  it.each([
+    ['missing', undefined, ''],
+    ['null', null, ''],
+    ['invalid', 'not-a-date', ''],
+    ['date-time', '2026-06-26T11:20:00', '26 June 2026 at 11:20'],
+    // The API's stamps are zoneless LocalDateTimes. formatDate reads these as local and prints them
+    // in UTC, so during BST it renders 31 May. Keeping the components as written is the whole point
+    // of having a separate filter.
+    ['just after midnight during BST', '2026-06-01T00:30:00', '1 June 2026 at 00:30'],
+  ])('%s formatDateTime(%s) === %s', (_: string, input: string, expected: string) => {
+    expect(formatDateTime(input)).toEqual(expected)
+  })
+})
+
+describe('csraLevelLabel', () => {
+  it.each([
+    ['HI', 'High'],
+    ['MED', 'Medium'],
+    ['LOW', 'Low'],
+    ['STANDARD', 'Standard'],
+    ['PEND', 'Pending'],
+    ['UNKNOWN', ''],
+    [null, ''],
+    [undefined, ''],
+  ])('csraLevelLabel(%s) === %s', (input: string, expected: string) => {
+    expect(csraLevelLabel(input)).toEqual(expected)
+  })
+
+  it('labels the raw NOMIS levels that the CSRA result labels cannot', () => {
+    expect(csraRatingLabel('LOW')).toBe('')
+    expect(csraLevelLabel('LOW')).toBe('Low')
+  })
+})
+
+describe('csraTypeLabel', () => {
+  it.each([
+    ['CSRA_INITIAL_REVIEW', 'CSRA initial review'],
+    ['CSRA_REVIEW', 'CSRA review'],
+    ['RECEPTION', 'Reception'],
+    ['REVIEW', 'Review'],
+    [null, ''],
+  ])('csraTypeLabel(%s) === %s', (input: string, expected: string) => {
+    expect(csraTypeLabel(input)).toEqual(expected)
+  })
+})
+
 describe('csraRatingLabel', () => {
   it.each([
     ['HIGH', 'High'],
@@ -69,10 +140,10 @@ describe('csraRatingLabel', () => {
 
 describe('csraRatingTagClass', () => {
   it.each([
-    ['HIGH', 'govuk-tag--red'],
-    ['HIGH_GENERAL', 'govuk-tag--red'],
+    ['HIGH', 'govuk-tag--dark-red'],
+    ['HIGH_GENERAL', 'govuk-tag--dark-red'],
     ['HIGH_SPECIFIC', 'govuk-tag--red'],
-    ['STANDARD', 'govuk-tag--blue'],
+    ['STANDARD', 'govuk-tag--green'],
     [null, 'govuk-tag--grey'],
   ])('csraRatingTagClass(%s) === %s', (input: string, expected: string) => {
     expect(csraRatingTagClass(input)).toEqual(expected)
@@ -115,6 +186,70 @@ describe('formatMonthYear', () => {
   })
 })
 
+describe('formatDayMonth', () => {
+  it.each([
+    ['missing', undefined, ''],
+    ['null', null, ''],
+    ['invalid', 'not-a-date', ''],
+    ['wednesday', '2026-08-05', 'Wednesday 5 August'],
+    ['thursday', '2026-08-06', 'Thursday 6 August'],
+  ])('%s formatDayMonth(%s) === %s', (_: string, input: string, expected: string) => {
+    expect(formatDayMonth(input)).toEqual(expected)
+  })
+})
+
+describe('formatDayMonthYear', () => {
+  it.each([
+    ['missing', undefined, ''],
+    ['null', null, ''],
+    ['invalid', 'not-a-date', ''],
+    ['wednesday', '2026-08-05', 'Wednesday 5 August 2026'],
+    ['thursday', '2026-08-06', 'Thursday 6 August 2026'],
+  ])('%s formatDayMonthYear(%s) === %s', (_: string, input: string, expected: string) => {
+    expect(formatDayMonthYear(input)).toEqual(expected)
+  })
+})
+
+describe('formatTime', () => {
+  it.each([
+    ['missing', undefined, ''],
+    ['null', null, ''],
+    ['invalid', 'not-a-datetime', ''],
+    ['midnight', '2026-08-06T00:00:00', '00:00'],
+    ['afternoon', '2026-08-06T14:03:00', '14:03'],
+  ])('%s formatTime(%s) === %s', (_: string, input: string, expected: string) => {
+    expect(formatTime(input)).toEqual(expected)
+  })
+})
+
+describe('formatLocation', () => {
+  it.each([
+    ['empty string', '', ''],
+    ['RECP', 'RECP', 'Reception'],
+    ['CSWAP', 'CSWAP', 'No cell allocated'],
+    ['COURT', 'COURT', 'Court'],
+    ['cell reference', 'C-2-005', 'C-2-005'],
+    ['null', null, ''],
+    ['undefined', undefined, ''],
+  ])('%s formatLocation(%s) === %s', (_: string, input: string, expected: string) => {
+    expect(formatLocation(input as any)).toEqual(expected)
+  })
+})
+
+describe('daysOverdue', () => {
+  const now = new Date('2026-07-23T12:00:00Z')
+
+  it.each([
+    ['missing', undefined, 0],
+    ['invalid', 'not-a-date', 0],
+    ['today', '2026-07-23', 0],
+    ['future', '2026-07-30', 0],
+    ['past', '2026-07-14', 9],
+  ])('%s daysOverdue(%s) === %s', (_: string, input: string, expected: number) => {
+    expect(daysOverdue(input, now)).toEqual(expected)
+  })
+})
+
 describe('isPrisonerNumber', () => {
   it.each([
     ['A1234BC', true],
@@ -133,12 +268,34 @@ describe('parseUkDate', () => {
     ['blank', '', undefined],
     ['single digits', '5/7/2024', '2024-07-05'],
     ['padded', '17/05/2024', '2024-05-17'],
-    ['dash separators', '17-5-2024', '2024-05-17'],
+    ['dash separators', '17-5-2024', undefined],
     ['not a real date', '31/2/2024', undefined],
     ['nonsense', 'abc', undefined],
     ['wrong order', '2024/05/17', undefined],
   ])('%s parseUkDate(%s) === %s', (_: string, input: string, expected?: string) => {
     expect(parseUkDate(input)).toEqual(expected)
+  })
+})
+
+describe('validateUkDate', () => {
+  it.each([
+    ['undefined', undefined, null],
+    ['empty string', '', null],
+    ['valid date', '17/5/2024', null],
+    ['valid date with dashes', '17-5-2024', 'WRONG_FORMAT'],
+    ['no separators', 'zzxxyy', 'WRONG_FORMAT'],
+    ['no separators digits only', '17052024', 'WRONG_FORMAT'],
+    ['non-numeric year', '31/4/abcd', 'WRONG_FORMAT'],
+    ['non-numeric month', '31/ab/2024', 'WRONG_FORMAT'],
+    ['only two parts', '1/2026', 'INCOMPLETE'],
+    ['only day no separator', '17', 'WRONG_FORMAT'],
+    ['trailing separator', '1/2/', 'INCOMPLETE'],
+    ['empty middle part', '1//2024', 'INCOMPLETE'],
+    ['non-existent date', '31/4/2026', 'NON_EXISTENT'],
+    ['non-existent leap day non-leap year', '29/2/2025', 'NON_EXISTENT'],
+    ['leap day in leap year', '29/2/2024', null],
+  ])('%s validateUkDate(%s) === %s', (_: string, input: string, expected: string | null) => {
+    expect(validateUkDate(input)).toEqual(expected)
   })
 })
 

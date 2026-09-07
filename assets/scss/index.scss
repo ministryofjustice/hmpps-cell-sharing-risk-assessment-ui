@@ -7,6 +7,15 @@ $card-tint: #f3f2f1;
 $moj-page-width: 1170px;
 $govuk-page-width: $moj-page-width;
 
+$risk-badge-dark-red: #942514;
+$risk-badge-dark-red-text: #711a0d;
+$risk-badge-red: #d4351c;
+$risk-badge-red-text: #942514;
+$risk-badge-green: #85994b;
+$risk-badge-green-text: #485b10;
+$risk-badge-grey: #505a5f;
+$risk-badge-grey-text: #0b0c0c;
+
 @import "govuk-frontend/dist/govuk/index";
 @import "@ministryofjustice/frontend/moj/all";
 
@@ -16,4 +25,9 @@ $govuk-page-width: $moj-page-width;
 @import './components/header-bar';
 @import './components/csra';
 @import './components/card';
+@import './components/filter';
+@import './components/admin';
+@import './components/pagination';
+@import './components/risk-badge';
+
 @import './overrides/local';

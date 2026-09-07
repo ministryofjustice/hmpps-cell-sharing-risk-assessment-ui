@@ -1,5 +1,5 @@
 import { ManageUsersApiClient } from '../data'
-import type { UserCaseloads } from '../data/manageUsersApiTypes'
+import type { UserCaseloads, UserDetails } from '../data/manageUsersApiTypes'
 
 export default class ManageUsersService {
   constructor(private readonly manageUsersApiClient: ManageUsersApiClient) {}
@@ -10,5 +10,12 @@ export default class ManageUsersService {
    */
   getUserCaseloads(user: { token: string }): Promise<UserCaseloads> {
     return this.manageUsersApiClient.getUserCaseloads(user.token)
+  }
+
+  /**
+   * Details for a specific username, called with a system token stamped with the acting username.
+   */
+  getUserDetails(actingUsername: string, username: string): Promise<UserDetails> {
+    return this.manageUsersApiClient.getUserDetails(actingUsername, { username })
   }
 }

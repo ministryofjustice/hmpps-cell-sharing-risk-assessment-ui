@@ -1,22 +1,32 @@
 import type { Express } from 'express'
 import request from 'supertest'
-import { appWithAllRoutes, user } from './testutils/appSetup'
+import { appWithAllRoutes, flashProvider, user } from './testutils/appSetup'
 import AuditService, { Page } from '../services/auditService'
 import CsraService from '../services/csraService'
 import PrisonerSearchService from '../services/prisonerSearchService'
 import ManageUsersService from '../services/manageUsersService'
-import type { CsraCurrentRating, CsraReviewHistory } from '../data/csraApiTypes'
+import PrisonApiService from '../services/prisonApiService'
+import ActiveAgenciesService from '../services/activeAgenciesService'
+import type { CsraCurrentRating, CsraReviewDetail, CsraReviewHistory } from '../data/csraApiTypes'
 import type { Prisoner } from '../data/prisonerSearchApiTypes'
+import { Role } from '../utils/roles'
+import { NomisScreenNotSetUpError } from '../utils/nomisSplash'
 
 jest.mock('../services/auditService')
 jest.mock('../services/csraService')
 jest.mock('../services/prisonerSearchService')
 jest.mock('../services/manageUsersService')
+jest.mock('../services/prisonApiService')
+jest.mock('../services/activeAgenciesService')
 
 const auditService = new AuditService(null) as jest.Mocked<AuditService>
 const csraService = new CsraService(null) as jest.Mocked<CsraService>
 const prisonerSearchService = new PrisonerSearchService(null) as jest.Mocked<PrisonerSearchService>
 const manageUsersService = new ManageUsersService(null) as jest.Mocked<ManageUsersService>
+const prisonApiService = new PrisonApiService(null, null) as jest.Mocked<PrisonApiService>
+const activeAgenciesService = new ActiveAgenciesService(null) as jest.Mocked<ActiveAgenciesService>
+
+const adminUser = { ...user, userRoles: [Role.CSRA__ADMIN] }
 
 let app: Express
 
@@ -31,16 +41,39 @@ beforeEach(() => {
     activeCaseload: { id: 'LEI', name: 'Leeds (HMP)' },
     caseloads: [{ id: 'LEI', name: 'Leeds (HMP)' }],
   })
+  csraService.getRatingSummary.mockResolvedValue({
+    prisonId: 'LEI',
+    total: 1015,
+    noRating: 0,
+    highRisk: 217,
+    standardRisk: 795,
+  })
   app = appWithAllRoutes({
     services: {
       auditService,
       csraService,
       prisonerSearchService,
       manageUsersService,
+      prisonApiService,
+      activeAgenciesService,
     },
     userSupplier: () => user,
   })
 })
+
+/** The same app but signed in as a rollout admin, for the admin console tests. */
+const adminApp = () =>
+  appWithAllRoutes({
+    services: {
+      auditService,
+      csraService,
+      prisonerSearchService,
+      manageUsersService,
+      prisonApiService,
+      activeAgenciesService,
+    },
+    userSupplier: () => adminUser,
+  })
 
 afterEach(() => {
   jest.resetAllMocks()
@@ -271,5 +304,470 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
 
   it('returns 404 for an invalid prisoner number', () => {
     return request(app).get('/prisoner/not-a-number/history').expect(404)
+  })
+
+  it('keeps the originating worklist on the filter form, the links and the pagination', () => {
+    csraService.getHistory.mockResolvedValue(history)
+
+    return request(app)
+      .get('/prisoner/A1234BC/history?from=due-for-review&ratings=HIGH&page=2')
+      .expect(200)
+      .expect(res => {
+        // A GET form rebuilds the query string, so the origin has to be a field.
+        expect(res.text).toContain('name="from" value="due-for-review"')
+        expect(res.text).toContain('href="/prisoner/A1234BC/history?from=due-for-review"') // clear filters
+        expect(res.text).toContain(
+          'href="/prisoner/A1234BC/history/de91dfa7-821f-4552-a427-bf2f32eafeb0?from=due-for-review"',
+        )
+        // Pagination links come from the controller's base query params.
+        expect(res.text).toContain('from=due-for-review&amp;ratings=HIGH&amp;page=')
+      })
+  })
+})
+
+describe('breadcrumbs', () => {
+  const prisoner: Prisoner = {
+    prisonerNumber: 'A1234BC',
+    firstName: 'DANIEL',
+    lastName: 'HAVERS',
+    prisonId: 'LEI',
+  }
+
+  /** The breadcrumb nav only, so assertions cannot be satisfied by links elsewhere on the page. */
+  const trail = (html: string) => html.match(/<nav class="govuk-breadcrumbs.*?<\/nav>/s)?.[0] ?? ''
+
+  beforeEach(() => {
+    auditService.logPageView.mockResolvedValue(null)
+    prisonerSearchService.getPrisoner.mockResolvedValue(prisoner)
+    csraService.getCurrentRating.mockResolvedValue({
+      prisonerNumber: 'A1234BC',
+      status: 'NO_RATING',
+      rating: null,
+      provisional: false,
+      riskTo: [],
+      vulnerabilities: [],
+    })
+  })
+
+  it('ends at the prisoner on the current rating page, with no worklist', () => {
+    return request(app)
+      .get('/prisoner/A1234BC')
+      .expect(200)
+      .expect(res => {
+        expect(trail(res.text)).toContain('Digital Prison Services')
+        expect(trail(res.text)).toContain('CSRA')
+        expect(trail(res.text)).toContain('Daniel Havers')
+        expect(trail(res.text)).not.toContain('due-for-review')
+      })
+  })
+
+  it('includes the worklist the prisoner was reached from', () => {
+    return request(app)
+      .get('/prisoner/A1234BC?from=due-for-review')
+      .expect(200)
+      .expect(res => {
+        expect(trail(res.text)).toContain('href="/due-for-review"')
+        expect(trail(res.text)).toContain('High risk prisoners due for review')
+      })
+  })
+
+  it('links the prisoner crumb back to the current rating from the history page, keeping the worklist', () => {
+    csraService.getHistory.mockResolvedValue({
+      summary: { totalCsras: 0, highCount: 0, standardCount: 0 },
+      content: [],
+      page: 0,
+      size: 20,
+      totalElements: 0,
+      totalPages: 0,
+    })
+
+    return request(app)
+      .get('/prisoner/A1234BC/history?from=due-for-review')
+      .expect(200)
+      .expect(res => {
+        expect(trail(res.text)).toContain('href="/prisoner/A1234BC?from=due-for-review"')
+        expect(trail(res.text)).toContain('CSRA history')
+      })
+  })
+
+  it('never renders an unrecognised origin', () => {
+    return request(app)
+      .get('/prisoner/A1234BC?from=https://evil.example/phish')
+      .expect(200)
+      .expect(res => {
+        expect(res.text).not.toContain('evil.example')
+      })
+  })
+})
+
+describe('GET /prisoner/:prisonerNumber/history/:reviewId', () => {
+  const reviewId = 'de91dfa7-821f-4552-a427-bf2f32eafeb0'
+
+  const prisoner: Prisoner = {
+    prisonerNumber: 'A1234BC',
+    firstName: 'DANIEL',
+    lastName: 'HAVERS',
+    dateOfBirth: '1972-02-03',
+    prisonId: 'LEI',
+  }
+
+  const legacyReview: CsraReviewDetail = {
+    id: reviewId,
+    prisonerNumber: 'A1234BC',
+    prisonId: 'LEI',
+    prisonName: 'Leeds (HMP)',
+    assessmentDate: '2016-10-31',
+    type: 'REVIEW',
+    finalResult: 'HIGH',
+    finalResultDate: '2016-10-31',
+    createdAt: '2016-10-31T09:15:00',
+    createdBy: 'NQP56Y',
+    legacy: {
+      level: 'HI',
+      approvedResult: 'HI',
+      calculatedResult: 'STANDARD',
+      approvalCommitteeComment: 'Agreed at review board.',
+      approvalCommittee: { code: 'REVIEW', name: 'Review Board' },
+      approvalDate: '2016-11-02',
+      assessmentComment: 'Previous violence towards cellmates.',
+      assessmentCommittee: { code: 'RECP', name: 'Reception' },
+      nextReviewDate: '2017-10-31',
+      questions: [
+        { question: 'Select Risk Rating', answer: 'High', additionalAnswers: [] },
+        {
+          question: 'Who is this person a risk to?',
+          answer: 'Different ethnicity',
+          additionalAnswers: ['Transgender'],
+        },
+        { question: 'Never answered', answer: null, additionalAnswers: [] },
+      ],
+    },
+  }
+
+  beforeEach(() => {
+    auditService.logPageView.mockResolvedValue(null)
+    prisonerSearchService.getPrisoner.mockResolvedValue(prisoner)
+  })
+
+  it('renders a legacy review with its detail and questions, and audits the page view', () => {
+    csraService.getReview.mockResolvedValue(legacyReview)
+
+    return request(app)
+      .get(`/prisoner/A1234BC/history/${reviewId}`)
+      .expect('Content-Type', /html/)
+      .expect(200)
+      .expect(res => {
+        expect(res.text).toContain('CSRA review on 31 October 2016')
+        expect(res.text).toContain('Daniel Havers')
+        expect(res.text).toContain('Approved result')
+        expect(res.text).toContain('Agreed at review board.')
+        expect(res.text).toContain('Review Board')
+        expect(res.text).toContain('2 November 2016')
+        expect(res.text).toContain('Previous violence towards cellmates.')
+        expect(res.text).toContain('Leeds (HMP)')
+        expect(res.text).toContain('Reception')
+        expect(res.text).toContain('31 October 2017') // next review date
+        // Questions, including the additional answer the legacy screen drops
+        expect(res.text).toContain('Select Risk Rating')
+        expect(res.text).toContain('Who is this person a risk to?')
+        expect(res.text).toContain('Transgender')
+        expect(res.text).not.toContain('Never answered')
+        expect(csraService.getReview).toHaveBeenCalledWith(user.username, reviewId)
+        expect(auditService.logPageView).toHaveBeenCalledWith(Page.PRISONER_CSRA_REVIEW, {
+          who: user.username,
+          subjectId: 'A1234BC',
+          subjectType: 'PRISONER_ID',
+          correlationId: expect.any(String),
+          details: { reviewId },
+        })
+      })
+  })
+
+  it('never shows override rows, which are not in the migration contract', () => {
+    csraService.getReview.mockResolvedValue(legacyReview)
+
+    return request(app)
+      .get(`/prisoner/A1234BC/history/${reviewId}`)
+      .expect(200)
+      .expect(res => {
+        expect(res.text).not.toContain('Override result')
+        expect(res.text).not.toContain('Override reason')
+      })
+  })
+
+  it('tells the user the captured answers are not available for a DPS-created review', () => {
+    csraService.getReview.mockResolvedValue({
+      ...legacyReview,
+      type: 'CSRA_INITIAL_REVIEW',
+      legacy: null,
+    })
+
+    return request(app)
+      .get(`/prisoner/A1234BC/history/${reviewId}`)
+      .expect(200)
+      .expect(res => {
+        expect(res.text).toContain('CSRA initial review')
+        expect(res.text).toContain('not available in this service yet')
+        expect(res.text).not.toContain('Review questions')
+      })
+  })
+
+  it('returns 404 when the API does not know the review', () => {
+    csraService.getReview.mockRejectedValue({ responseStatus: 404 })
+
+    return request(app).get(`/prisoner/A1234BC/history/${reviewId}`).expect(404)
+  })
+
+  it('returns 404 for a review id that is not a UUID, without calling the API', () => {
+    return request(app)
+      .get('/prisoner/A1234BC/history/not-a-uuid')
+      .expect(404)
+      .expect(() => {
+        expect(csraService.getReview).not.toHaveBeenCalled()
+      })
+  })
+
+  it('returns 404 for a review belonging to a different prisoner', () => {
+    csraService.getReview.mockResolvedValue({ ...legacyReview, prisonerNumber: 'Z9999ZZ' })
+
+    return request(app)
+      .get(`/prisoner/A1234BC/history/${reviewId}`)
+      .expect(404)
+      .expect(() => {
+        expect(auditService.logPageView).not.toHaveBeenCalled()
+      })
+  })
+})
+
+describe('Admin - manage enabled prisons', () => {
+  const agencies = [
+    { agencyId: 'LEI', name: 'Leeds (HMP)', active: false },
+    { agencyId: 'MDI', name: 'Moorland (HMP)', active: true },
+  ]
+
+  beforeEach(() => {
+    flashProvider.mockReturnValue([])
+    csraService.getAllAgencies.mockResolvedValue(agencies)
+    prisonApiService.getNomisScreenStates.mockResolvedValue(new Map())
+    auditService.logPageView.mockResolvedValue(null)
+    auditService.logAuditEvent.mockResolvedValue(null)
+  })
+
+  describe('GET /admin/prisons', () => {
+    it('lists every prison with its DPS state and audits the page view', () => {
+      return request(adminApp())
+        .get('/admin/prisons')
+        .expect('Content-Type', /html/)
+        .expect(200)
+        .expect(res => {
+          expect(res.text).toContain('Manage enabled prisons')
+          expect(res.text).toContain('CSRA is switched on for 1 of 2 prisons.')
+          expect(res.text).toContain('Leeds (HMP)')
+          expect(res.text).toContain('Moorland (HMP)')
+          expect(auditService.logPageView).toHaveBeenCalledWith(Page.ADMIN_PRISONS, {
+            who: adminUser.username,
+            correlationId: expect.any(String),
+          })
+        })
+    })
+
+    it('filters the list by the search term', () => {
+      return request(adminApp())
+        .get('/admin/prisons?q=leeds')
+        .expect(200)
+        .expect(res => {
+          expect(res.text).toContain('Leeds (HMP)')
+          expect(res.text).not.toContain('Moorland (HMP)')
+        })
+    })
+
+    it('tells the admin when no prison matches the search', () => {
+      return request(adminApp())
+        .get('/admin/prisons?q=nowhere')
+        .expect(200)
+        .expect(res => {
+          expect(res.text).toContain('No prisons match your search.')
+        })
+    })
+
+    it('shows the NOMIS state and only the transitions the prison is not already in', () => {
+      prisonApiService.getNomisScreenStates.mockResolvedValue(new Map([['MDI', 'BLOCKED']]))
+
+      return request(adminApp())
+        .get('/admin/prisons')
+        .expect(200)
+        .expect(res => {
+          expect(res.text).toContain('Blocked')
+          expect(res.text).toContain('data-qa="nomis-warning-MDI"')
+          expect(res.text).toContain('data-qa="nomis-clear-MDI"')
+          expect(res.text).not.toContain('data-qa="nomis-block-MDI"')
+        })
+    })
+
+    it('flags a prison whose NOMIS screens disagree, offering every state so it can be repaired', () => {
+      prisonApiService.getNomisScreenStates.mockResolvedValue(new Map([['MDI', 'MIXED']]))
+
+      return request(adminApp())
+        .get('/admin/prisons')
+        .expect(200)
+        .expect(res => {
+          expect(res.text).toContain('Mixed')
+          // None of the three states matches, so all are offered.
+          expect(res.text).toContain('data-qa="nomis-warning-MDI"')
+          expect(res.text).toContain('data-qa="nomis-block-MDI"')
+          expect(res.text).toContain('data-qa="nomis-clear-MDI"')
+        })
+    })
+
+    it('reports the NOMIS screen as unavailable and hides its controls when it cannot be read', () => {
+      prisonApiService.getNomisScreenStates.mockResolvedValue(null)
+
+      return request(adminApp())
+        .get('/admin/prisons')
+        .expect(200)
+        .expect(res => {
+          expect(res.text).toContain('status is currently unavailable')
+          expect(res.text).toContain('Unknown')
+          expect(res.text).not.toContain('data-qa="nomis-block-MDI"')
+        })
+    })
+
+    it('is forbidden for a user without the admin role', () => {
+      return request(app)
+        .get('/admin/prisons')
+        .expect(403)
+        .expect(res => {
+          expect(res.text).toContain('Authorisation Error')
+          expect(csraService.getAllAgencies).not.toHaveBeenCalled()
+        })
+    })
+  })
+
+  describe('POST /admin/prisons/:agencyId', () => {
+    it('switches a prison on, drops the cached rollout state and redirects with a success flash', () => {
+      csraService.setAgencyActive.mockResolvedValue({ agencyId: 'LEI', name: 'Leeds (HMP)', active: true })
+
+      return request(adminApp())
+        .post('/admin/prisons/LEI')
+        .send({ active: 'true', name: 'Leeds (HMP)' })
+        .expect(302)
+        .expect('Location', '/admin/prisons')
+        .expect(() => {
+          expect(csraService.setAgencyActive).toHaveBeenCalledWith(adminUser.username, 'LEI', true)
+          expect(activeAgenciesService.applyAgencyChange).toHaveBeenCalledWith('LEI', true)
+          expect(flashProvider).toHaveBeenCalledWith('success', 'CSRA is now switched on for Leeds (HMP).')
+          expect(auditService.logAuditEvent).toHaveBeenCalledWith(
+            expect.objectContaining({ what: 'SET_PRISON_ACTIVE', subjectId: 'LEI', details: { active: true } }),
+          )
+        })
+    })
+
+    it('switches a prison off and keeps the admin on the same filtered view', () => {
+      csraService.setAgencyActive.mockResolvedValue({ agencyId: 'MDI', name: 'Moorland (HMP)', active: false })
+
+      return request(adminApp())
+        .post('/admin/prisons/MDI')
+        .send({ active: 'false', name: 'Moorland (HMP)', q: 'moor' })
+        .expect(302)
+        .expect('Location', '/admin/prisons?q=moor')
+        .expect(() => {
+          expect(csraService.setAgencyActive).toHaveBeenCalledWith(adminUser.username, 'MDI', false)
+          expect(flashProvider).toHaveBeenCalledWith('success', 'CSRA is now switched off for Moorland (HMP).')
+        })
+    })
+
+    it('is forbidden for a user without the admin role', () => {
+      return request(app)
+        .post('/admin/prisons/LEI')
+        .send({ active: 'true' })
+        .expect(403)
+        .expect(() => {
+          expect(csraService.setAgencyActive).not.toHaveBeenCalled()
+        })
+    })
+  })
+
+  describe('POST /admin/prisons/:agencyId/nomis-screen', () => {
+    it('blocks the NOMIS screen and redirects with a success flash', () => {
+      prisonApiService.setNomisScreenState.mockResolvedValue(undefined)
+
+      return request(adminApp())
+        .post('/admin/prisons/MDI/nomis-screen')
+        .send({ state: 'BLOCKED', name: 'Moorland (HMP)' })
+        .expect(302)
+        .expect('Location', '/admin/prisons')
+        .expect(() => {
+          expect(prisonApiService.setNomisScreenState).toHaveBeenCalledWith(adminUser.username, 'MDI', 'BLOCKED')
+          expect(flashProvider).toHaveBeenCalledWith('success', 'NOMIS CSRA access is now blocked for Moorland (HMP).')
+          expect(auditService.logAuditEvent).toHaveBeenCalledWith(
+            expect.objectContaining({ what: 'SET_NOMIS_CSRA_SCREEN', subjectId: 'MDI', details: { state: 'BLOCKED' } }),
+          )
+        })
+    })
+
+    it('rejects an unrecognised state without calling prison-api', () => {
+      return request(adminApp())
+        .post('/admin/prisons/MDI/nomis-screen')
+        .send({ state: 'NONSENSE', name: 'Moorland (HMP)' })
+        .expect(302)
+        .expect(() => {
+          expect(prisonApiService.setNomisScreenState).not.toHaveBeenCalled()
+          expect(flashProvider).toHaveBeenCalledWith('error', 'Select a valid NOMIS CSRA screen state.')
+        })
+    })
+
+    it('explains that the splash screen has not been set up in NOMIS yet', () => {
+      prisonApiService.setNomisScreenState.mockRejectedValue(new NomisScreenNotSetUpError(['OIDCAPPR']))
+
+      return request(adminApp())
+        .post('/admin/prisons/MDI/nomis-screen')
+        .send({ state: 'BLOCKED', name: 'Moorland (HMP)' })
+        .expect(302)
+        .expect(() => {
+          expect(flashProvider).toHaveBeenCalledWith('error', expect.stringContaining('OIDCAPPR'))
+          expect(auditService.logAuditEvent).not.toHaveBeenCalled()
+        })
+    })
+
+    it('is forbidden for a user without the admin role', () => {
+      return request(app)
+        .post('/admin/prisons/MDI/nomis-screen')
+        .send({ state: 'BLOCKED' })
+        .expect(403)
+        .expect(() => {
+          expect(prisonApiService.setNomisScreenState).not.toHaveBeenCalled()
+        })
+    })
+  })
+
+  describe('the admin tile on the landing page', () => {
+    beforeEach(() => {
+      csraService.getRatingSummary.mockResolvedValue({
+        prisonId: 'LEI',
+        total: 10,
+        noRating: 1,
+        highRisk: 2,
+        standardRisk: 7,
+      })
+    })
+
+    it('is shown to an admin', () => {
+      return request(adminApp())
+        .get('/')
+        .expect(200)
+        .expect(res => {
+          expect(res.text).toContain('Manage enabled prisons')
+          expect(res.text).toContain('/admin/prisons')
+        })
+    })
+
+    it('is hidden from a user without the admin role', () => {
+      return request(app)
+        .get('/')
+        .expect(200)
+        .expect(res => {
+          expect(res.text).not.toContain('/admin/prisons')
+        })
+    })
   })
 })

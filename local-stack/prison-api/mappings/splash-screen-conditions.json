@@ -1,0 +1,57 @@
+{
+  "mappings": [
+    {
+      "request": {
+        "method": "POST",
+        "urlPathPattern": "/api/splash-screen/(OCDNOQUE|OIDCAPPR)/condition"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "moduleName": "OCDNOQUE",
+          "conditions": []
+        }
+      },
+      "metadata": {
+        "comment": [
+          "Accept the rollout console's condition writes so the journey completes and the success",
+          "banner shows. Like the other stubs here these are read-only fixtures: the state returned by",
+          "get-splash-screen.json does not move, so a re-read still shows the seeded state. Point",
+          "PRISON_API_URL at a real prison-api to exercise the writes for real."
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "PUT",
+        "urlPathPattern": "/api/splash-screen/(OCDNOQUE|OIDCAPPR)/condition/CASELOAD/[A-Z]+/(true|false)"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "moduleName": "OCDNOQUE",
+          "conditions": []
+        }
+      }
+    },
+    {
+      "request": {
+        "method": "DELETE",
+        "urlPathPattern": "/api/splash-screen/(OCDNOQUE|OIDCAPPR)/condition/CASELOAD/[A-Z]+"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {}
+      }
+    }
+  ]
+}

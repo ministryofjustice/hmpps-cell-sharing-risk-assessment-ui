@@ -18,6 +18,11 @@ const footerHtml = `
     <a class="connect-dps-common-footer__link" href="/feedback">Feedback</a>
   </footer>`
 
+const defaultActiveCaseLoad = {
+  caseLoadId: 'LEI',
+  description: 'Leeds (HMP)',
+}
+
 export default {
   stubPing: (httpStatus = 200): SuperAgentRequest =>
     stubFor({
@@ -32,8 +37,15 @@ export default {
       },
     }),
 
-  // The DPS shared header/footer, fetched by getFrontendComponents on every authenticated page.
-  stubComponents: (): SuperAgentRequest =>
+  /**
+   * The DPS shared header/footer, fetched by getFrontendComponents on every authenticated page.
+   *
+   * `activeCaseLoad` also drives the CSRA rollout gate, so pass one when a spec needs the service to
+   * behave as though the user is at a particular establishment.
+   */
+  stubComponents: (
+    activeCaseLoad: { caseLoadId: string; description: string } | null = defaultActiveCaseLoad,
+  ): SuperAgentRequest =>
     stubFor({
       request: {
         method: 'GET',
@@ -46,8 +58,8 @@ export default {
           header: { html: headerHtml, css: [], javascript: [] },
           footer: { html: footerHtml, css: [], javascript: [] },
           meta: {
-            caseLoads: [],
-            activeCaseLoad: null,
+            caseLoads: activeCaseLoad ? [activeCaseLoad] : [],
+            activeCaseLoad,
             services: [],
           },
         },

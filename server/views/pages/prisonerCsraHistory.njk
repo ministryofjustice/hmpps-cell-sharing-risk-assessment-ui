@@ -66,6 +66,11 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-one-third">
       <form method="get" action="/prisoner/{{ prisonerNumber }}/history" novalidate data-qa="csra-filters">
+        {# A GET form rebuilds the query string from its inputs, so the worklist we came from has to be
+           carried as a field or applying a filter would drop it from the breadcrumb trail. #}
+        {% if fromKey %}
+          <input type="hidden" name="from" value="{{ fromKey }}">
+        {% endif %}
         <h2 class="govuk-heading-m">Filter</h2>
 
         {{ govukCheckboxes({
@@ -117,7 +122,7 @@
 
         {{ govukButton({ text: "Apply", attributes: { "data-qa": "apply-filters" } }) }}
         <p class="govuk-body">
-          <a class="govuk-link" href="/prisoner/{{ prisonerNumber }}/history" data-qa="clear-filters">Clear filters</a>
+          <a class="govuk-link" href="/prisoner/{{ prisonerNumber }}/history{{ fromQuery }}" data-qa="clear-filters">Clear filters</a>
         </p>
       </form>
     </div>
@@ -132,7 +137,7 @@
           <div class="csra-review" data-qa="csra-review">
             <div class="csra-review__header">
               <span class="csra-review__type">Review</span>
-              <a class="govuk-link" href="/prisoner/{{ prisonerNumber }}/history/{{ review.id }}" data-qa="view-full-review">View full review</a>
+              <a class="govuk-link" href="/prisoner/{{ prisonerNumber }}/history/{{ review.id }}{{ fromQuery }}" data-qa="view-full-review">View full review</a>
             </div>
             {{ govukTag({
               text: review.rating | csraRatingLabel,
