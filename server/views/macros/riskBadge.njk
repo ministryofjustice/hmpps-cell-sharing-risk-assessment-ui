@@ -15,9 +15,18 @@
     "STANDARD": "risk-badge--low"
   } %}
 
+  {# An assessment's Day 1 rating and a review's first-sitting rating are both unconfirmed, but users are
+     told they are called different things, so the API distinguishes them with ratingStage. Fall back to
+     the older provisional boolean for callers that have only that. #}
+  {% set stageSuffix = {
+    "PROVISIONAL": "(PROVISIONAL)",
+    "INTERIM": "(INTERIM)"
+  } %}
+
   {% set badgeLabel = badgeLabelHtml[params.rating] if params.rating else "<strong>NO RATING</strong>" %}
-  {% if params.provisional %}
-    {% set badgeLabel = badgeLabel + "<br>(PROVISIONAL)" %}
+  {% set suffix = stageSuffix[params.ratingStage] if params.ratingStage else ("(PROVISIONAL)" if params.provisional else "") %}
+  {% if suffix %}
+    {% set badgeLabel = badgeLabel + "<br>" + suffix %}
   {% endif %}
 
   {{ mojBadge({

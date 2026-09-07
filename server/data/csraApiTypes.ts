@@ -23,6 +23,12 @@ export type CsraCommitteeCode = 'GOV' | 'MED' | 'OCA' | 'RECP' | 'REVIEW' | 'SEC
 /** The state of a prisoner's current CSRA rating (mirrors dto.CsraRatingStatus). */
 export type CsraRatingStatus = 'NO_RATING' | 'IN_PROGRESS' | 'PROVISIONAL' | 'COMPLETE'
 
+/**
+ * Which stage the current rating came from. Narrower than the `provisional` boolean, which cannot tell an
+ * assessment's Day 1 rating from a review's interim one - the two are badged and sorted differently.
+ */
+export type CsraRatingStage = 'FINAL' | 'PROVISIONAL' | 'INTERIM'
+
 /** A group a high-risk prisoner may pose a risk to (mirrors jpa.CsraRiskToCategory). */
 export type CsraRiskToCategory =
   | 'DIFFERENT_ETHNICITY'
@@ -211,6 +217,8 @@ export interface CsraCurrentRating {
   status: CsraRatingStatus
   rating?: CsraResult | null
   provisional: boolean
+  /** Which stage the rating came from; distinguishes a review's interim from an assessment's provisional. */
+  ratingStage?: CsraRatingStage | null
   reviewId?: string | null
   prisonId?: string | null
   /** The prison the assessment took place at, falling back to the id when it cannot be resolved. */
@@ -319,6 +327,8 @@ export interface CsraHighRiskReviewRow {
   ratingType: CsraResult
   rating: CsraResult
   provisional: boolean
+  /** Which stage the rating came from; distinguishes a review's interim from an assessment's provisional. */
+  ratingStage?: CsraRatingStage | null
   lastRatingSource: CsraAssessmentTypeBucket
   lastRatingDate: string
 }
@@ -367,6 +377,8 @@ export interface CsraPrisonPrisoner {
   /** The current rating (final if present, otherwise interim); null means no rating. */
   rating?: CsraResult | null
   provisional: boolean
+  /** Which stage the rating came from; distinguishes a review's interim from an assessment's provisional. */
+  ratingStage?: CsraRatingStage | null
   assessmentType?: CsraAssessmentTypeBucket | null
   /** ISO-8601 date the current rating was recorded; null when no rating. */
   assessedOn?: string | null
