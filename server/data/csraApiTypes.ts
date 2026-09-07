@@ -116,6 +116,8 @@ export interface CsraCurrentRating {
   provisional: boolean
   reviewId?: string | null
   prisonId?: string | null
+  /** The prison the assessment took place at, falling back to the id when it cannot be resolved. */
+  prisonName?: string | null
   assessmentComment?: string | null
   provisionalAssessmentComment?: string | null
   riskTo: CsraRiskToDetail[]
