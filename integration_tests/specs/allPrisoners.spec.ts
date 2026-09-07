@@ -69,6 +69,36 @@ const noRatingPrisoners: CsraPrisonPrisonerList = {
   totalPages: 1,
 }
 
+// Same rating and the same provisional flag; only ratingStage tells the two badges apart.
+const unconfirmedPrisoners: CsraPrisonPrisonerList = {
+  content: [
+    {
+      prisonerNumber: 'A4103ED',
+      firstName: 'GENERAL',
+      lastName: 'PROVIS',
+      rating: 'HIGH_GENERAL',
+      provisional: true,
+      ratingStage: 'PROVISIONAL',
+      assessmentType: 'ASSESSMENT',
+      assessedOn: '2026-03-02',
+    },
+    {
+      prisonerNumber: 'A4104ED',
+      firstName: 'TERRY',
+      lastName: 'MIMMS',
+      rating: 'HIGH_GENERAL',
+      provisional: true,
+      ratingStage: 'INTERIM',
+      assessmentType: 'REVIEW',
+      assessedOn: '2026-03-07',
+    },
+  ],
+  page: 0,
+  size: 25,
+  totalElements: 2,
+  totalPages: 1,
+}
+
 test.describe('All prisoners', () => {
   test.afterEach(async () => {
     await resetStubs()
@@ -128,6 +158,20 @@ test.describe('All prisoners', () => {
 
     await expect(prisonerRow).toContainText('Smith, Jordan')
     await expect(prisonerRow.locator('.risk-badge')).toContainText('NO RATING')
+  })
+
+  test('badges a provisional and an interim rating differently', async ({ page }) => {
+    await login(page, { activeCaseLoad: MDI })
+    await csraApi.stubGetPrisonPrisoners('MDI', unconfirmedPrisoners)
+
+    await page.goto('/all-prisoners')
+
+    const rows = page.locator('[data-qa="all-prisoners-table"] tbody tr')
+
+    await expect(rows.nth(0).locator('.risk-badge')).toContainText('HIGH RISK GENERAL')
+    await expect(rows.nth(0).locator('.risk-badge')).toContainText('(PROVISIONAL)')
+    await expect(rows.nth(1).locator('.risk-badge')).toContainText('HIGH RISK GENERAL')
+    await expect(rows.nth(1).locator('.risk-badge')).toContainText('(INTERIM)')
   })
 
   test('submits selected filter values in the URL when Apply is clicked', async ({ page }) => {

@@ -74,7 +74,8 @@
                 <span class="csra-recent-arrivals__prisoner-number">{{ assessment.prisonerNumber }}</span>
               {% endset %}
               {% set ratingHtml %}
-                {{ riskBadge({ rating: assessment.rating, provisional: true }) }}
+                {# This worklist is initial assessments only, so an unconfirmed rating here is always provisional. #}
+                {{ riskBadge({ rating: assessment.rating, ratingStage: 'PROVISIONAL' }) }}
               {% endset %}
               {% set row = [
                 { html: imageHtml },
