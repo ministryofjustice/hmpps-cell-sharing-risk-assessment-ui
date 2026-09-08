@@ -2,12 +2,9 @@ import { type RequestHandler } from 'express'
 
 import type { Services } from '../services'
 
-type Dependencies = Pick<Services, 'auditService' | 'csraService'>
+type Dependencies = Pick<Services, 'csraService'>
 
-export default function csraStartController({
-  // auditService,
-  csraService,
-}: Dependencies): RequestHandler {
+export default function csraStartController({ csraService }: Dependencies): RequestHandler {
   return async (req, res, _next) => {
     const {
       user: { username },
@@ -17,13 +14,6 @@ export default function csraStartController({
     const activeCaseloadId = res.locals.feComponents?.sharedData?.activeCaseLoad?.caseLoadId
 
     const { assessmentId } = await csraService.startCsraAssessment(username, prisonerNumber, activeCaseloadId)
-
-    // await auditService.logPageView(Page.PRISONER_CSRA, {
-    //   who: username,
-    //   subjectId: prisonerNumber,
-    //   subjectType: 'PRISONER_ID',
-    //   correlationId: req.id,
-    // })
 
     res.redirect(`/prisoner/${prisonerNumber}/csra/${assessmentId}`)
   }

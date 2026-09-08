@@ -6,6 +6,7 @@ import flowConfig from '../lib/transactionFlow/config'
 import getAnswersFromAssessment from './getAnswersFromAssessment'
 import { CsraAssessmentStageAnswers } from '../data/csraApiTypes'
 import config from '../config'
+import { Page } from '../services/auditService'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
 
@@ -43,7 +44,7 @@ function getSectionForTaskList(title: string, status: SectionStatus, href: strin
 }
 
 export default function csraTaskListController({
-  // auditService,
+  auditService,
   csraService,
 }: Dependencies): RequestHandler<{ prisonerNumber: string; assessmentId: string }> {
   return async (req, res, _next) => {
@@ -127,12 +128,12 @@ export default function csraTaskListController({
       ],
     })
 
-    // await auditService.logPageView(Page.PRISONER_CSRA, {
-    //   who: username,
-    //   subjectId: prisonerNumber,
-    //   subjectType: 'PRISONER_ID',
-    //   correlationId: req.id,
-    // })
+    await auditService.logPageView(Page.PRISONER_CSRA_TASK_LIST, {
+      who: username,
+      subjectId: assessmentId,
+      subjectType: 'ASSESSMENT_ID',
+      correlationId: req.id,
+    })
 
     const { serviceUrls } = config
 

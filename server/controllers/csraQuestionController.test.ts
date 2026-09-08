@@ -29,7 +29,11 @@ describe('csraQuestionController', () => {
     updateCsraAssessment: jest.fn(),
   }
 
-  const controller = () => csraQuestionController({ auditService: {} as never, csraService } as never)
+  const auditService = {
+    logPageView: jest.fn().mockResolvedValue(null),
+  }
+
+  const controller = () => csraQuestionController({ auditService, csraService } as never)
 
   const request = (method: 'GET' | 'POST' = 'GET', body: Record<string, unknown> = {}, stepId?: string) =>
     ({
@@ -66,6 +70,15 @@ describe('csraQuestionController', () => {
     await controller()(request(), res, jest.fn())
 
     expect(csraService.getCsraAssessment).toHaveBeenCalledWith('user1', 'A1234BC', ASSESSMENT_ID)
+    expect(auditService.logPageView).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        who: 'user1',
+        subjectId: ASSESSMENT_ID,
+        subjectType: 'ASSESSMENT_ID',
+        correlationId: 'request-id-123',
+      }),
+    )
     expect(res.render).toHaveBeenCalledWith(
       'pages/csraQuestion',
       expect.objectContaining({
@@ -86,6 +99,15 @@ describe('csraQuestionController', () => {
     await controller()(request('POST'), res, jest.fn())
 
     expect(csraService.updateCsraAssessment).not.toHaveBeenCalled()
+    expect(auditService.logPageView).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        who: 'user1',
+        subjectId: ASSESSMENT_ID,
+        subjectType: 'ASSESSMENT_ID',
+        correlationId: 'request-id-123',
+      }),
+    )
     expect(res.render).toHaveBeenCalledWith(
       'pages/csraQuestion',
       expect.objectContaining({
@@ -126,7 +148,7 @@ describe('csraQuestionController', () => {
     const next = jest.fn()
 
     await expect(
-      csraQuestionController({ auditService: {} as never, csraService } as never)(
+      csraQuestionController({ auditService, csraService } as never)(
         {
           id: 'request-id-123',
           method: 'GET',

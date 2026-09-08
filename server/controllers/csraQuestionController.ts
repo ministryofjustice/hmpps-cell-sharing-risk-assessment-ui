@@ -7,6 +7,7 @@ import { CsraAssessmentStageAnswers } from '../data/csraApiTypes'
 import CheckboxQuestion from '../lib/transactionFlow/questionTypes/checkbox'
 import getAnswersFromAssessment from './getAnswersFromAssessment'
 import YesNoQuestion from '../lib/transactionFlow/questionTypes/yesNo'
+import { Page } from '../services/auditService'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
 
@@ -63,7 +64,7 @@ function getCurrentStep(assessmentAnswers: CsraAssessmentStageAnswers, sectionId
 }
 
 export default function csraQuestionController({
-  // auditService,
+  auditService,
   csraService,
 }: Dependencies): RequestHandler<{ prisonerNumber: string; assessmentId: string; sectionId: string; stepId?: string }> {
   return async (req, res, _next) => {
@@ -177,12 +178,12 @@ export default function csraQuestionController({
       }
     }
 
-    // await auditService.logPageView(Page.PRISONER_CSRA, {
-    //   who: username,
-    //   subjectId: prisonerNumber,
-    //   subjectType: 'PRISONER_ID',
-    //   correlationId: req.id,
-    // })
+    await auditService.logPageView(Page.PRISONER_CSRA_QUESTION, {
+      who: username,
+      subjectId: assessmentId,
+      subjectType: 'ASSESSMENT_ID',
+      correlationId: req.id,
+    })
 
     res.render('pages/csraQuestion', {
       title: currentStep.title ?? section.title,

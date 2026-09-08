@@ -4,11 +4,12 @@ import { NotFound } from 'http-errors'
 import type { Services } from '../services'
 import getAnswersFromAssessment from './getAnswersFromAssessment'
 import flowConfig from '../lib/transactionFlow/config'
+import { Page } from '../services/auditService'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
 
 export default function csraConfirmRatingController({
-  // auditService,
+  auditService,
   csraService,
 }: Dependencies): RequestHandler<{ prisonerNumber: string; assessmentId: string }> {
   return async (req, res, _next) => {
@@ -25,13 +26,6 @@ export default function csraConfirmRatingController({
 
     const assessmentAnswers = getAnswersFromAssessment(assessment)
 
-    // await auditService.logPageView(Page.PRISONER_CSRA, {
-    //   who: username,
-    //   subjectId: prisonerNumber,
-    //   subjectType: 'PRISONER_ID',
-    //   correlationId: req.id,
-    // })
-
     if (req.method === 'POST') {
       // TODO: change this to submit real data when the submit rating page is implemented fully
       await csraService.submitProvisionalRating(username, prisonerNumber, assessmentId, {
@@ -42,6 +36,13 @@ export default function csraConfirmRatingController({
 
       res.redirect(`/prisoner/${prisonerNumber}`)
     } else {
+      await auditService.logPageView(Page.PRISONER_CSRA_CONFIRM_RATING, {
+        who: username,
+        subjectId: assessmentId,
+        subjectType: 'ASSESSMENT_ID',
+        correlationId: req.id,
+      })
+
       res.render('pages/csraConfirmRating', {
         prisoner,
         assessment,

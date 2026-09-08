@@ -30,7 +30,11 @@ describe('csraConfirmRatingController', () => {
     submitProvisionalRating: jest.fn(),
   }
 
-  const controller = () => csraConfirmRatingController({ auditService: {} as never, csraService } as never)
+  const auditService = {
+    logPageView: jest.fn().mockResolvedValue(null),
+  }
+
+  const controller = () => csraConfirmRatingController({ auditService, csraService } as never)
 
   const request = (method: 'GET' | 'POST' = 'GET') =>
     ({
@@ -67,6 +71,15 @@ describe('csraConfirmRatingController', () => {
     await controller()(request(), res, jest.fn())
 
     expect(csraService.getCsraAssessment).toHaveBeenCalledWith('user1', 'A1234BC', ASSESSMENT_ID)
+    expect(auditService.logPageView).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        who: 'user1',
+        subjectId: ASSESSMENT_ID,
+        subjectType: 'ASSESSMENT_ID',
+        correlationId: 'request-id-123',
+      }),
+    )
     expect(res.render).toHaveBeenCalledWith(
       'pages/csraConfirmRating',
       expect.objectContaining({
@@ -89,6 +102,7 @@ describe('csraConfirmRatingController', () => {
 
     await controller()(request('POST'), res, jest.fn())
 
+    expect(auditService.logPageView).not.toHaveBeenCalled()
     expect(csraService.submitProvisionalRating).toHaveBeenCalledWith(
       'user1',
       'A1234BC',
