@@ -1,7 +1,6 @@
 import { CsraApiClient } from '../data'
 import type {
   AgencyStatus,
-  CsraAssessment,
   CsraAssessmentsInProgress,
   CsraAssessmentStageAnswers,
   CsraCurrentRating,

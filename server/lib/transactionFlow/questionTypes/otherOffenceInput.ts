@@ -1,4 +1,4 @@
-import { CsraAssessment, CsraAssessmentStageAnswers, OffenceType } from '../../../data/csraApiTypes'
+import { CsraAssessmentStageAnswers, OffenceType } from '../../../data/csraApiTypes'
 import Question from './base'
 import required from '../validations/required'
 

@@ -18,7 +18,6 @@ import type {
   CsraReviewHistory,
   CsraReviewsInProgress,
   CsraAssessment,
-  CsraAssessmentStage,
   CsraAssessmentStageAnswers,
   CsraAssessmentStageRequest,
 } from './csraApiTypes'

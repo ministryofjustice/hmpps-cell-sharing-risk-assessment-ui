@@ -1,7 +1,7 @@
 import Question from './base'
-import { CsraAssessment, CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 import required from '../validations/required'
 import FeComponentsService from '../../../services/feComponentsService'
+import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 
 export default class YesNoQuestion extends Question {
   constructor(

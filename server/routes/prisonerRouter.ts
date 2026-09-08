@@ -6,8 +6,6 @@ import PrisonerCsraReviewController from '../controllers/prisonerCsraReviewContr
 import PrisonerImageController from '../controllers/prisonerImageController'
 import csraBreadcrumbs from '../middleware/csraBreadcrumbs'
 import type { Services } from '../services'
-import csraQuestionController from '../controllers/csraQuestionController'
-import csraStartController from '../controllers/csraStartController'
 import csraRouter from './csraRouter'
 
 export default function prisonerRouter(

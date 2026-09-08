@@ -1,5 +1,5 @@
 import Question from './base'
-import { CsraAssessment, CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
+import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 import FeComponentsService from '../../../services/feComponentsService'
 import required from '../validations/required'
 
