@@ -7,6 +7,9 @@
 /** The outcome of a CSRA review (mirrors jpa.CsraResult). */
 export type CsraResult = 'HIGH' | 'HIGH_GENERAL' | 'HIGH_SPECIFIC' | 'STANDARD'
 
+/** The status of a CSRA review (mirrors jpa.CsraReviewStatus). */
+export type CsraReviewStatus = 'IN_PROGRESS' | 'COMPLETE' | 'CLOSED' | 'ARCHIVED'
+
 /**
  * A raw NOMIS supervision level (mirrors dto.migration.CsraLevel). Distinct from CsraResult: legacy
  * LOW and MED both collapse to STANDARD in a review's result, so these values exist only to render
@@ -292,30 +295,76 @@ export type OffenceType =
   | 'KIDNAP_HOSTAGE'
 
 export interface CsraAssessment {
-  rating: CsraResult
+  assessmentId: string
+  prisonerNumber: string
+  prisonId?: string
+  status: CsraReviewStatus
+  startedBy: string
+  startedAt: string
+  interimResult?: CsraResult
+  finalResult?: CsraResult
+  stages: CsraAssessmentStageAnswers[]
+}
+
+export interface CsraAssessmentStageAnswers {
+  stage: CsraAssessmentStage
   prisonId: string
-  assessmentComment: string
-  dpsChecked: boolean
-  perChecked: boolean
-  warrantChecked: boolean
-  pncChecked: boolean
-  offenceMurderManslaughter: boolean
-  offenceAssistingSuicide: boolean
-  offenceSexualAssault: boolean
-  offenceRepeatedViolence: boolean
-  offencePrejudiceMotivated: boolean
-  offenceArson: boolean
-  offenceKidnapHostage: boolean
-  offenceEvidence: { offence: OffenceType; sources: EvidenceSource[]; otherSourceDetail?: string; details: string }[]
-  officerSpokeToPrisoner: boolean
-  likelyToHarmCellmate: boolean
-  significantlyVulnerable: boolean
-  causeForConcernSharing: boolean
-  otherHighRiskIndicators: boolean
-  seenByHealthcare: boolean
-  healthcareIncreasedRisk: boolean
+  lastSavedBy?: string | null
+  lastSavedAt?: string | null
+
+  // Evidence sources checked (null = not answered)
+  dpsChecked?: boolean | null
+  perChecked?: boolean | null
+  warrantChecked?: boolean | null
+  pncChecked?: boolean | null
+
+  // Offence flags (null = not answered)
+  offenceMurderManslaughter?: boolean | null
+  offenceAssistingSuicide?: boolean | null
+  offenceSexualAssault?: boolean | null
+  offenceRepeatedViolence?: boolean | null
+  offencePrejudiceMotivated?: boolean | null
+  offenceArson?: boolean | null
+  offenceKidnapHostage?: boolean | null
+
+  offenceEvidence: CsraOffenceEvidence[]
+
+  // Prisoner conversation and vulnerability (null = not answered)
+  officerSpokeToPrisoner?: boolean | null
+  likelyToHarmCellmate?: boolean | null
+  likelyToHarmCellmateDetail?: string | null
+  significantlyVulnerable?: boolean | null
+  significantlyVulnerableDetail?: string | null
+
+  // Officer observation / other indicators (null = not answered)
+  causeForConcernSharing?: boolean | null
+  causeForConcernSharingDetail?: string | null
+  otherHighRiskIndicators?: boolean | null
+  otherHighRiskIndicatorsDetail?: string | null
+
+  // Healthcare assessment (null = not answered)
+  seenByHealthcare?: boolean | null
+  healthcareIncreasedRisk?: boolean | null
+  healthcareIncreasedRiskDetail?: string | null
+
   riskTo: CsraRiskToDetail[]
   vulnerabilities: CsraVulnerabilityDetail[]
+
+  version: number
+}
+
+export type CsraAssessmentStageRequest = Omit<CsraAssessmentStageAnswers, 'stage' | 'version'> & {
+  rating: CsraResult
+  assessmentComment: string
+}
+
+export type CsraAssessmentStage = 'PROVISIONAL' | 'FINAL'
+
+export interface CsraOffenceEvidence {
+  offence: OffenceType
+  sources: EvidenceSource[]
+  otherSourceDetail?: string | null
+  details: string
 }
 
 /** A single high-risk prisoner row in the due-for-review list (mirrors dto.CsraHighRiskReviewRow). */

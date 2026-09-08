@@ -27,7 +27,7 @@
         <input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 
         {% for question in currentStep.questions %}
-          {{ callAsMacro(question.component)(question.componentAttributes(validationErrors, values, assessment)) }}
+          {{ callAsMacro(question.component)(question.componentAttributes(validationErrors, values, assessmentAnswers)) }}
         {% endfor %}
 
         {{ govukButton({

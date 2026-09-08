@@ -1,5 +1,5 @@
 import Question from './base'
-import { CsraAssessment } from '../../../data/csraApiTypes'
+import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 import FeComponentsService from '../../../services/feComponentsService'
 import required from '../validations/required'
 
@@ -15,7 +15,7 @@ export default abstract class CheckboxQuestion extends Question {
   override componentAttributes(
     validationErrors: Record<string, { text: string }> | undefined,
     values: FormValues | undefined,
-    assessment: CsraAssessment,
+    assessmentAnswers: CsraAssessmentStageAnswers,
   ): object {
     return {
       multiple: true,
@@ -29,7 +29,7 @@ export default abstract class CheckboxQuestion extends Question {
       },
       items: this.items
         .map(item => {
-          if (item.removeIf?.(assessment)) {
+          if (item.removeIf?.(assessmentAnswers)) {
             return null
           }
 
@@ -39,7 +39,7 @@ export default abstract class CheckboxQuestion extends Question {
               ? {
                   html: FeComponentsService.getComponent(
                     item.conditional.component,
-                    item.conditional.componentAttributes(validationErrors, values, assessment),
+                    item.conditional.componentAttributes(validationErrors, values, assessmentAnswers),
                   ),
                 }
               : undefined,

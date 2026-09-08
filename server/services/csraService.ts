@@ -1,8 +1,8 @@
 import { CsraApiClient } from '../data'
 import type {
   AgencyStatus,
-  CsraAssessment,
   CsraAssessmentsInProgress,
+  CsraAssessmentStageAnswers,
   CsraCurrentRating,
   CsraHighRiskDueForReview,
   CsraHighRiskDueForReviewQuery,
@@ -114,16 +114,33 @@ export default class CsraService {
     return this.csraApiClient.setAgencyActive(username, { agencyId }, { active })
   }
 
-  async getCsraAssessment(prisonerNumber: string, assessmentId: string) {
-    const redisId = `CSRAQ_${prisonerNumber}_${assessmentId}`
-    const redisGet = (await this.csraApiClient.TEMP_getRedisClient().get(redisId)) as string
-    return redisGet ? JSON.parse(redisGet) : {}
+  getCsraAssessment(username: string, prisonerNumber: string, assessmentId: string) {
+    return this.csraApiClient.getCsraAssessment(username, { prisonerNumber, assessmentId })
   }
 
-  async updateCsraAssessment(prisonerNumber: string, assessmentId: string, assessment: CsraAssessment) {
-    const redisId = `CSRAQ_${prisonerNumber}_${assessmentId}`
-    await this.csraApiClient.TEMP_getRedisClient().set(redisId, JSON.stringify(assessment))
+  updateCsraAssessment(
+    username: string,
+    prisonerNumber: string,
+    assessmentId: string,
+    answers: Partial<CsraAssessmentStageAnswers>,
+  ) {
+    return this.csraApiClient.updateCsraAssessment(
+      username,
+      { prisonerNumber, assessmentId, stage: 'PROVISIONAL' },
+      answers,
+    )
+  }
 
-    return assessment
+  startCsraAssessment(username: string, prisonerNumber: string, prisonId: string) {
+    return this.csraApiClient.startCsraAssessment(username, { prisonerNumber }, { prisonId })
+  }
+
+  async submitProvisionalRating(
+    username: string,
+    prisonerNumber: string,
+    assessmentId: string,
+    rating: Parameters<CsraApiClient['submitProvisionalRating']>[2],
+  ) {
+    return this.csraApiClient.submitProvisionalRating(username, { prisonerNumber, assessmentId }, rating)
   }
 }

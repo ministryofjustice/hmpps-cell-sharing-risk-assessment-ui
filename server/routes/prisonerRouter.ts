@@ -6,7 +6,7 @@ import PrisonerCsraReviewController from '../controllers/prisonerCsraReviewContr
 import PrisonerImageController from '../controllers/prisonerImageController'
 import csraBreadcrumbs from '../middleware/csraBreadcrumbs'
 import type { Services } from '../services'
-import csraQuestionController from '../controllers/csraQuestionController'
+import csraRouter from './csraRouter'
 
 export default function prisonerRouter(
   services: Pick<Services, 'auditService' | 'csraService' | 'prisonApiService'>,
@@ -28,8 +28,7 @@ export default function prisonerRouter(
   // renders.
   router.get('/image', imageController.index)
 
-  router.get('/csra/:assessmentId/section/:sectionId{/:stepId}', csraQuestionController(services))
-  router.post('/csra/:assessmentId/section/:sectionId{/:stepId}', csraQuestionController(services))
+  router.use('/csra', csraRouter(services))
 
   return router
 }

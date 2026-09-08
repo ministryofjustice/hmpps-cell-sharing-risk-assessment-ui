@@ -2,6 +2,7 @@ import type { SuperAgentRequest } from 'superagent'
 import { stubFor } from './wiremock'
 import type {
   AgencyStatus,
+  CsraAssessment,
   CsraAssessmentsInProgress,
   CsraCurrentRating,
   CsraHighRiskDueForReview,
@@ -44,6 +45,58 @@ export default {
           vulnerabilities: [],
           ...currentRating,
         },
+      },
+    }),
+
+  stubStartAssessment: (prisonerNumber: string, assessmentId: string): SuperAgentRequest =>
+    stubFor({
+      request: {
+        method: 'POST',
+        urlPattern: `/csra-api/csra-review/prisoner/${prisonerNumber}/assessment`,
+      },
+      response: {
+        status: 200,
+        headers: { 'Content-Type': 'application/json;charset=UTF-8' },
+        jsonBody: { assessmentId },
+      },
+    }),
+
+  stubGetAssessment: (
+    prisonerNumber: string,
+    assessmentId: string,
+    assessment: Partial<CsraAssessment> = {},
+  ): SuperAgentRequest =>
+    stubFor({
+      request: {
+        method: 'GET',
+        urlPattern: `/csra-api/csra-review/prisoner/${prisonerNumber}/assessment/${assessmentId}`,
+      },
+      response: {
+        status: 200,
+        headers: { 'Content-Type': 'application/json;charset=UTF-8' },
+        jsonBody: {
+          assessmentId,
+          prisonerNumber,
+          prisonId: 'MDI',
+          status: 'IN_PROGRESS',
+          startedBy: 'AUSER_GEN',
+          startedAt: '2026-08-06T09:15:00',
+          stages: [],
+          ...assessment,
+        },
+      },
+    }),
+
+  stubSubmitProvisionalRating: (prisonerNumber: string, assessmentId: string): SuperAgentRequest =>
+    stubFor({
+      request: {
+        method: 'PUT',
+        urlPattern: `/csra-api/csra-review/prisoner/${prisonerNumber}/assessment/${assessmentId}/provisional`,
+      },
+      response: {
+        status: 200,
+        headers: { 'Content-Type': 'application/json;charset=UTF-8' },
+        jsonBody: {},
       },
     }),
 

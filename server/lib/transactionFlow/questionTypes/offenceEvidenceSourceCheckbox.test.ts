@@ -1,35 +1,17 @@
-import { CsraAssessment } from '../../../data/csraApiTypes'
+import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 import YesNoQuestion from './yesNo'
 import OffenceEvidenceSourceCheckboxQuestion from './offenceEvidenceSourceCheckbox'
 
-const makeAssessment = (overrides: Partial<CsraAssessment> = {}): CsraAssessment => ({
-  rating: 'STANDARD',
+const makeAssessment = (overrides: Partial<CsraAssessmentStageAnswers> = {}): CsraAssessmentStageAnswers => ({
+  stage: 'PROVISIONAL',
   prisonId: 'MDI',
-  assessmentComment: '',
-  dpsChecked: true,
-  perChecked: true,
-  warrantChecked: true,
-  pncChecked: true,
-  offenceMurderManslaughter: true,
-  offenceAssistingSuicide: false,
-  offenceSexualAssault: false,
-  offenceRepeatedViolence: false,
-  offencePrejudiceMotivated: false,
-  offenceArson: false,
-  offenceKidnapHostage: false,
   offenceEvidence: [
     { offence: 'MURDER_MANSLAUGHTER', sources: ['PNC'], details: 'A detail' },
     { offence: 'ASSISTING_SUICIDE', sources: ['DPS'], details: 'Keep this' },
   ],
-  officerSpokeToPrisoner: false,
-  likelyToHarmCellmate: false,
-  significantlyVulnerable: false,
-  causeForConcernSharing: false,
-  otherHighRiskIndicators: false,
-  seenByHealthcare: false,
-  healthcareIncreasedRisk: false,
   riskTo: [],
   vulnerabilities: [],
+  version: 1,
   ...overrides,
 })
 
@@ -42,7 +24,7 @@ describe('OffenceEvidenceSourceCheckboxQuestion', () => {
   })
 
   it('updates matching offence sources and other detail when OTHER is selected', () => {
-    const mutated = question.mutateAssessment(makeAssessment(), {
+    const mutated = question.mutateAssessmentAnswers(makeAssessment(), {
       evidenceSources: ['DPS', 'OTHER'],
       otherSource: 'Intel report',
     })
@@ -81,7 +63,7 @@ describe('OffenceEvidenceSourceCheckboxQuestion', () => {
   })
 
   it('is complete when sources are present in evidence data', () => {
-    expect(question.isComplete(makeAssessment())).toBe(true)
-    expect(question.isComplete(makeAssessment({ offenceEvidence: [] }))).toBe(false)
+    expect(question.isAnswered(makeAssessment())).toBe(true)
+    expect(question.isAnswered(makeAssessment({ offenceEvidence: [] }))).toBe(false)
   })
 })

@@ -1,41 +1,24 @@
-import { CsraAssessment } from '../../../data/csraApiTypes'
+import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 import TextAreaQuestion from './textArea'
 
-const makeAssessment = (overrides: Partial<CsraAssessment> = {}): CsraAssessment => ({
-  rating: 'STANDARD',
+const makeAssessment = (overrides: Partial<CsraAssessmentStageAnswers> = {}): CsraAssessmentStageAnswers => ({
+  stage: 'PROVISIONAL',
   prisonId: 'MDI',
-  assessmentComment: '',
-  dpsChecked: false,
-  perChecked: false,
-  warrantChecked: false,
-  pncChecked: false,
-  offenceMurderManslaughter: false,
-  offenceAssistingSuicide: false,
-  offenceSexualAssault: false,
-  offenceRepeatedViolence: false,
-  offencePrejudiceMotivated: false,
-  offenceArson: false,
-  offenceKidnapHostage: false,
   offenceEvidence: [],
-  officerSpokeToPrisoner: false,
   likelyToHarmCellmate: false,
-  significantlyVulnerable: false,
-  causeForConcernSharing: false,
-  otherHighRiskIndicators: false,
-  seenByHealthcare: false,
-  healthcareIncreasedRisk: false,
   riskTo: [],
   vulnerabilities: [],
+  version: 1,
   ...overrides,
 })
 
 describe('TextAreaQuestion', () => {
-  const question = new TextAreaQuestion('Provide details', 'assessmentComment')
+  const question = new TextAreaQuestion('Provide details', 'likelyToHarmCellmateDetail')
 
   it('builds textarea component attributes', () => {
     const result = question.componentAttributes(
-      { assessmentComment: { text: 'Required' } },
-      { assessmentComment: 'Current value' },
+      { likelyToHarmCellmateDetail: { text: 'Required' } },
+      { likelyToHarmCellmateDetail: 'Current value' },
       makeAssessment(),
     ) as { value?: string; errorMessage?: string }
 
@@ -51,16 +34,18 @@ describe('TextAreaQuestion', () => {
   })
 
   it('maps values between form and assessment', () => {
-    expect(question.getFormValues(makeAssessment({ assessmentComment: 'A note' }))).toEqual({
-      assessmentComment: 'A note',
+    expect(question.getFormValues(makeAssessment({ likelyToHarmCellmateDetail: 'A note' }))).toEqual({
+      likelyToHarmCellmateDetail: 'A note',
     })
 
-    const mutated = question.mutateAssessment(makeAssessment(), { assessmentComment: 'Updated comment' })
-    expect(mutated.assessmentComment).toBe('Updated comment')
+    const mutated = question.mutateAssessmentAnswers(makeAssessment(), {
+      likelyToHarmCellmateDetail: 'Updated comment',
+    })
+    expect(mutated.likelyToHarmCellmateDetail).toBe('Updated comment')
   })
 
   it('is complete when a value exists', () => {
-    expect(question.isComplete(makeAssessment({ assessmentComment: 'Done' }))).toBe(true)
-    expect(question.isComplete(makeAssessment({ assessmentComment: '' }))).toBe(false)
+    expect(question.isAnswered(makeAssessment({ likelyToHarmCellmateDetail: 'Done' }))).toBe(true)
+    expect(question.isAnswered(makeAssessment({ likelyToHarmCellmateDetail: '' }))).toBe(false)
   })
 })

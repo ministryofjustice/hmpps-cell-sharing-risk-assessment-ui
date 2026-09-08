@@ -1,15 +1,18 @@
 import TextAreaQuestion from './textArea'
-import { CsraAssessment, OffenceType } from '../../../data/csraApiTypes'
+import { CsraAssessmentStageAnswers, OffenceType } from '../../../data/csraApiTypes'
 
 export default class OffenceEvidenceDetailsQuestion extends TextAreaQuestion {
   constructor(public offenceType: OffenceType) {
-    super('Provide details of the evidence', 'assessmentComment')
+    super('Provide details of the evidence', 'likelyToHarmCellmateDetail')
   }
 
-  override mutateAssessment(assessment: CsraAssessment, formValues: FormValues): CsraAssessment {
+  override mutateAssessmentAnswers(
+    assessmentAnswers: CsraAssessmentStageAnswers,
+    formValues: FormValues,
+  ): CsraAssessmentStageAnswers {
     return {
-      ...assessment,
-      offenceEvidence: assessment.offenceEvidence.map(e => {
+      ...assessmentAnswers,
+      offenceEvidence: assessmentAnswers.offenceEvidence.map(e => {
         if (e.offence !== this.offenceType) {
           return e
         }
@@ -19,15 +22,15 @@ export default class OffenceEvidenceDetailsQuestion extends TextAreaQuestion {
     }
   }
 
-  private getEvidenceData(assessment: CsraAssessment) {
-    return assessment.offenceEvidence?.find(e => e.offence === this.offenceType)
+  private getEvidenceData(assessmentAnswers: CsraAssessmentStageAnswers) {
+    return assessmentAnswers.offenceEvidence?.find(e => e.offence === this.offenceType)
   }
 
-  override getFormValues(assessment: CsraAssessment): FormValues {
-    return { [this.id]: this.getEvidenceData(assessment)?.details || '' }
+  override getFormValues(assessmentAnswers: CsraAssessmentStageAnswers): FormValues {
+    return { [this.id]: this.getEvidenceData(assessmentAnswers)?.details || '' }
   }
 
-  override isComplete(assessment: CsraAssessment): boolean {
-    return !!this.getEvidenceData(assessment)?.details
+  override isAnswered(assessmentAnswers: CsraAssessmentStageAnswers): boolean {
+    return !!this.getEvidenceData(assessmentAnswers)?.details
   }
 }

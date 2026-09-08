@@ -1,8 +1,8 @@
-import { CsraAssessment } from '../../../data/csraApiTypes'
+import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 
 export default abstract class Question {
   constructor(
-    public readonly question: string,
+    public readonly question: string | null,
     public readonly id: string,
     public readonly component: string,
   ) {}
@@ -10,15 +10,22 @@ export default abstract class Question {
   abstract componentAttributes(
     validationErrors: Record<string, { text: string }> | undefined,
     values: FormValues | undefined,
-    assessment: CsraAssessment,
+    assessmentAnswers: CsraAssessmentStageAnswers,
   ): object
 
   abstract validations(): ValidationFunction[]
 
   /** Converts the passed in API values to values that the component will use */
-  abstract getFormValues(assessment: CsraAssessment): FormValues
+  abstract getFormValues(assessmentAnswers: CsraAssessmentStageAnswers): FormValues
 
-  abstract isComplete(assessment: CsraAssessment): boolean
+  isComplete(assessmentAnswers: CsraAssessmentStageAnswers): boolean {
+    return this.isAnswered(assessmentAnswers)
+  }
 
-  abstract mutateAssessment(assessment: CsraAssessment, formValues: FormValues): CsraAssessment
+  abstract isAnswered(assessmentAnswers: CsraAssessmentStageAnswers): boolean
+
+  abstract mutateAssessmentAnswers(
+    assessmentAnswers: CsraAssessmentStageAnswers,
+    formValues: FormValues,
+  ): CsraAssessmentStageAnswers
 }

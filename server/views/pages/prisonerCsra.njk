@@ -17,17 +17,13 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
-      <h1 class="govuk-heading-xl govuk-!-margin-bottom-2" data-qa="page-heading">Current rating</h1>
-
+      <h1 class="govuk-heading-xl govuk-!-margin-bottom-2" data-qa="page-heading">Current CSRA rating</h1>
       {% if csra.status == "NO_RATING" %}
-
         {{ govukInsetText({
           attributes: { "data-qa": "no-csra" },
           html: "<strong>This person does not have a current CSRA.</strong><br>A cell sharing risk assessment needs to be carried out."
         }) }}
-
       {% else %}
-
         <p class="govuk-body">
           {{ govukTag({
             text: csra.rating | csraRatingLabel or (csra.status | csraStatusLabel),
@@ -75,9 +71,21 @@
             {% endfor %}
           </ul>
         {% endif %}
-
       {% endif %}
 
+      <hr>
+
+      <h2 class="govuk-heading-m">Assessment</h2>
+
+      {% if csra.reviewId %}
+        <p>Continue the in progress cell sharing risk assessment.</p>
+
+        <a href="/prisoner/{{ prisoner.prisonerNumber }}/csra/{{ csra.reviewId }}" class="govuk-button govuk-button--primary">Continue assessment</a>
+      {% else %}
+        <p>Start a new cell sharing risk assessment.</p>
+
+        <a href="/prisoner/{{ prisoner.prisonerNumber }}/csra/start" class="govuk-button govuk-button--primary">Start assessment</a>
+      {% endif %}
     </div>
   </div>
 {% endblock %}

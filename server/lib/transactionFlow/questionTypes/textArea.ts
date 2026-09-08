@@ -1,11 +1,11 @@
 import Question from './base'
-import { CsraAssessment } from '../../../data/csraApiTypes'
+import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 import required from '../validations/required'
 
 export default class TextAreaQuestion extends Question {
   constructor(
     question: string,
-    public override id: keyof PickByType<CsraAssessment, string>,
+    public override id: keyof PickByType<CsraAssessmentStageAnswers, string>,
   ) {
     super(question, id, 'govukTextarea')
   }
@@ -13,14 +13,14 @@ export default class TextAreaQuestion extends Question {
   override componentAttributes(
     validationErrors: Record<string, { text: string }> | undefined,
     values: Record<string, unknown> | undefined,
-    _assessment: CsraAssessment,
+    _assessmentAnswers: CsraAssessmentStageAnswers,
   ): object {
     return {
       id: this.id,
       name: this.id,
       label: {
         text: this.question,
-        classes: 'govuk-fieldset__legend--m',
+        classes: 'govuk-fieldset__legend--s',
       },
       value: values[this.id],
       errorMessage: validationErrors ? validationErrors[this.id]?.text : undefined,
@@ -31,15 +31,18 @@ export default class TextAreaQuestion extends Question {
     return [required('TODO: enter a reason')]
   }
 
-  override getFormValues(assessment: CsraAssessment): FormValues {
-    return { [this.id]: assessment[this.id] }
+  override getFormValues(assessmentAnswers: CsraAssessmentStageAnswers): FormValues {
+    return { [this.id]: assessmentAnswers[this.id] }
   }
 
-  override isComplete(assessment: CsraAssessment): boolean {
-    return !!assessment[this.id]
+  override isAnswered(assessmentAnswers: CsraAssessmentStageAnswers): boolean {
+    return !!assessmentAnswers[this.id]
   }
 
-  override mutateAssessment(assessment: CsraAssessment, formValues: FormValues): CsraAssessment {
-    return { ...assessment, [this.id]: formValues[this.id] }
+  override mutateAssessmentAnswers(
+    assessmentAnswers: CsraAssessmentStageAnswers,
+    formValues: FormValues,
+  ): CsraAssessmentStageAnswers {
+    return { ...assessmentAnswers, [this.id]: formValues[this.id] }
   }
 }

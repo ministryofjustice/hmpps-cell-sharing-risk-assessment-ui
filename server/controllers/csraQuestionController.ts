@@ -3,14 +3,17 @@ import { type RequestHandler } from 'express'
 import { NotFound } from 'http-errors'
 import type { Services } from '../services'
 import flowConfig from '../lib/transactionFlow/config'
-import { CsraAssessment } from '../data/csraApiTypes'
+import { CsraAssessmentStageAnswers } from '../data/csraApiTypes'
 import CheckboxQuestion from '../lib/transactionFlow/questionTypes/checkbox'
+import getAnswersFromAssessment from './getAnswersFromAssessment'
+import YesNoQuestion from '../lib/transactionFlow/questionTypes/yesNo'
+import { Page } from '../services/auditService'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
 
-function findNextAvailableStep(assessment: CsraAssessment, section: Section, afterStepId = -1) {
+function findNextAvailableStep(assessmentAnswers: CsraAssessmentStageAnswers, section: Section, afterStepId = -1) {
   const nextAvailableStepId = section.steps.findIndex((step, i) => {
-    return !(afterStepId >= i || step.removeIf?.(assessment))
+    return !(afterStepId >= i || step.removeIf?.(assessmentAnswers))
   })
 
   return nextAvailableStepId >= 0
@@ -21,70 +24,75 @@ function findNextAvailableStep(assessment: CsraAssessment, section: Section, aft
     : null
 }
 
-function findNextIncompleteStep(assessment: CsraAssessment, section: Section, afterStepId = -1) {
-  const nextIncompleteStepId = section.steps.findIndex((step, i) => {
-    if (afterStepId >= i || step.removeIf?.(assessment)) {
+function findNextUnansweredStep(assessmentAnswers: CsraAssessmentStageAnswers, section: Section, afterStepId = -1) {
+  const nextUnansweredStepId = section.steps.findIndex((step, i) => {
+    if (afterStepId >= i || step.removeIf?.(assessmentAnswers)) {
       return false
     }
 
-    return !step.isComplete(assessment)
+    return !step.isAnswered(assessmentAnswers)
   })
 
-  return nextIncompleteStepId >= 0
+  return nextUnansweredStepId >= 0
     ? {
-        stepId: nextIncompleteStepId,
-        step: section.steps[nextIncompleteStepId],
+        stepId: nextUnansweredStepId,
+        step: section.steps[nextUnansweredStepId],
       }
     : null
 }
 
-function getCurrentStep(assessment: CsraAssessment, sectionId: string, stepId: number) {
+function getCurrentStep(assessmentAnswers: CsraAssessmentStageAnswers, sectionId: string, stepId: number) {
   const section = flowConfig[sectionId]
 
-  const firstIncompleteStep = findNextIncompleteStep(assessment, section)
+  const firstUnansweredStep = findNextUnansweredStep(assessmentAnswers, section)
   let currentStepId = stepId
   if (currentStepId === undefined || Number.isNaN(currentStepId)) {
-    currentStepId = firstIncompleteStep?.stepId || 0
+    currentStepId = firstUnansweredStep?.stepId || 0
   }
 
-  if (firstIncompleteStep && firstIncompleteStep.stepId >= 0) {
-    currentStepId = Math.min(currentStepId, firstIncompleteStep.stepId)
+  if (firstUnansweredStep && firstUnansweredStep.stepId >= 0) {
+    currentStepId = Math.min(currentStepId, firstUnansweredStep.stepId)
   }
 
   let currentStep = section.steps[currentStepId]
-  if (!currentStep || currentStep.removeIf?.(assessment)) {
-    currentStep = firstIncompleteStep?.step
-    currentStepId = firstIncompleteStep?.stepId
+  if (!currentStep || currentStep.removeIf?.(assessmentAnswers)) {
+    currentStep = firstUnansweredStep?.step
+    currentStepId = firstUnansweredStep?.stepId
   }
 
   return { currentStep, currentStepId }
 }
 
 export default function csraQuestionController({
-  // auditService,
+  auditService,
   csraService,
 }: Dependencies): RequestHandler<{ prisonerNumber: string; assessmentId: string; sectionId: string; stepId?: string }> {
   return async (req, res, _next) => {
     const { assessmentId, sectionId } = req.params
-    const { prisoner } = res.locals
+    const {
+      prisoner,
+      user: { username },
+    } = res.locals
 
     const section = flowConfig[sectionId]
     if (!section) {
       throw NotFound(`Invalid CSRA section: ${sectionId}`)
     }
 
-    const assessment = await csraService.getCsraAssessment(res.locals.prisoner.prisonerNumber, assessmentId)
+    const assessment = await csraService.getCsraAssessment(username, res.locals.prisoner.prisonerNumber, assessmentId)
     if (!assessment) {
       throw NotFound(`No CSRA assessment found for ID: ${assessmentId}`)
     }
 
-    const { currentStep, currentStepId } = getCurrentStep(assessment, sectionId, Number(req.params.stepId))
+    const assessmentAnswers = getAnswersFromAssessment(assessment)
+
+    const { currentStep, currentStepId } = getCurrentStep(assessmentAnswers, sectionId, Number(req.params.stepId))
 
     if (!currentStep) {
       throw NotFound('Assessment step not found')
     }
 
-    const values = currentStep.getFormValues(assessment)
+    const values = currentStep.getFormValues(assessmentAnswers)
 
     const assessmentUrl = `/prisoner/${prisoner.prisonerNumber}/csra/${assessmentId}`
 
@@ -99,7 +107,7 @@ export default function csraQuestionController({
 
       // Add conditional checkbox field values to newValues
       currentStep.questions.forEach(question => {
-        if (question instanceof CheckboxQuestion) {
+        if (question instanceof CheckboxQuestion || question instanceof YesNoQuestion) {
           const value = newValues[question.id]
           question.items.forEach(i => {
             if (((value || []) as string[]).includes(i.value) && i.conditional) {
@@ -126,7 +134,7 @@ export default function csraQuestionController({
           return false
         })
 
-        if (question instanceof CheckboxQuestion) {
+        if (question instanceof CheckboxQuestion || question instanceof YesNoQuestion) {
           question.items.forEach(i => {
             if (((value || []) as string[]).includes(i.value) && i.conditional) {
               const conditionalValue = newValues[i.conditional.id]
@@ -148,13 +156,18 @@ export default function csraQuestionController({
       })
 
       if (Object.keys(validationErrors).length === 0) {
+        const mutatedAssessmentAnswers = {
+          ...currentStep.mutateAssessmentAnswers(assessmentAnswers, newValues),
+          version: assessmentAnswers.version || 0,
+        }
         const newAssessment = await csraService.updateCsraAssessment(
+          username,
           res.locals.prisoner.prisonerNumber,
           assessmentId,
-          currentStep.mutateAssessment(assessment, newValues),
+          mutatedAssessmentAnswers,
         )
 
-        const nextStep = findNextAvailableStep(newAssessment, section, currentStepId)
+        const nextStep = findNextAvailableStep(getAnswersFromAssessment(newAssessment), section, currentStepId)
         let nextStepUrl = assessmentUrl
         if (nextStep) {
           nextStepUrl += `/section/${sectionId}/${nextStep.stepId}`
@@ -165,12 +178,12 @@ export default function csraQuestionController({
       }
     }
 
-    // await auditService.logPageView(Page.PRISONER_CSRA, {
-    //   who: username,
-    //   subjectId: prisonerNumber,
-    //   subjectType: 'PRISONER_ID',
-    //   correlationId: req.id,
-    // })
+    await auditService.logPageView(Page.PRISONER_CSRA_QUESTION, {
+      who: username,
+      subjectId: assessmentId,
+      subjectType: 'ASSESSMENT_ID',
+      correlationId: req.id,
+    })
 
     res.render('pages/csraQuestion', {
       title: currentStep.title ?? section.title,
@@ -179,7 +192,7 @@ export default function csraQuestionController({
       currentStep,
       ...(Object.keys(validationErrors).length > 0 ? { validationErrors } : {}),
       values,
-      assessment,
+      assessmentAnswers,
       cancelLink: assessmentUrl,
     })
   }

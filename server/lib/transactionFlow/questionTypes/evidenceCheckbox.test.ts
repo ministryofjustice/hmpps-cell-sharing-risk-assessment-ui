@@ -1,4 +1,4 @@
-import { CsraAssessment } from '../../../data/csraApiTypes'
+import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 import Question from './base'
 import EvidenceCheckboxQuestion from './evidenceCheckbox'
 
@@ -15,40 +15,22 @@ class ConditionalQuestion extends Question {
     return {}
   }
 
-  override isComplete(): boolean {
+  override isAnswered(_assessment: CsraAssessmentStageAnswers): boolean {
     return true
   }
 
-  override mutateAssessment(assessment: CsraAssessment): CsraAssessment {
-    return { ...assessment, assessmentComment: 'conditional was called' }
+  override mutateAssessmentAnswers(assessment: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
+    return { ...assessment, likelyToHarmCellmateDetail: 'conditional was called' }
   }
 }
 
-const makeAssessment = (overrides: Partial<CsraAssessment> = {}): CsraAssessment => ({
-  rating: 'STANDARD',
+const makeAssessment = (overrides: Partial<CsraAssessmentStageAnswers> = {}): CsraAssessmentStageAnswers => ({
+  stage: 'PROVISIONAL',
   prisonId: 'MDI',
-  assessmentComment: '',
-  dpsChecked: false,
-  perChecked: false,
-  warrantChecked: false,
-  pncChecked: false,
-  offenceMurderManslaughter: false,
-  offenceAssistingSuicide: false,
-  offenceSexualAssault: false,
-  offenceRepeatedViolence: false,
-  offencePrejudiceMotivated: false,
-  offenceArson: false,
-  offenceKidnapHostage: false,
   offenceEvidence: [],
-  officerSpokeToPrisoner: false,
-  likelyToHarmCellmate: false,
-  significantlyVulnerable: false,
-  causeForConcernSharing: false,
-  otherHighRiskIndicators: false,
-  seenByHealthcare: false,
-  healthcareIncreasedRisk: false,
   riskTo: [],
   vulnerabilities: [],
+  version: 1,
   ...overrides,
 })
 
@@ -56,14 +38,14 @@ describe('EvidenceCheckboxQuestion', () => {
   it('is complete when at least one source is checked', () => {
     const question = new EvidenceCheckboxQuestion()
 
-    expect(question.isComplete(makeAssessment())).toBe(false)
-    expect(question.isComplete(makeAssessment({ pncChecked: true }))).toBe(true)
+    expect(question.isAnswered(makeAssessment())).toBe(false)
+    expect(question.isAnswered(makeAssessment({ pncChecked: true }))).toBe(true)
   })
 
   it('mutates source flags from selected checkboxes', () => {
     const question = new EvidenceCheckboxQuestion()
 
-    const mutated = question.mutateAssessment(makeAssessment({ dpsChecked: true }), {
+    const mutated = question.mutateAssessmentAnswers(makeAssessment({ dpsChecked: true }), {
       evidenceSources: ['pncChecked', 'perChecked'],
     })
 
@@ -80,9 +62,9 @@ describe('EvidenceCheckboxQuestion', () => {
       conditional: new ConditionalQuestion('Conditional', 'conditionalField', 'govukInput'),
     }
 
-    const mutated = question.mutateAssessment(makeAssessment(), { evidenceSources: ['pncChecked'] })
+    const mutated = question.mutateAssessmentAnswers(makeAssessment(), { evidenceSources: ['pncChecked'] })
 
-    expect(mutated.assessmentComment).toBe('conditional was called')
+    expect(mutated.likelyToHarmCellmateDetail).toBe('conditional was called')
   })
 
   it('maps assessment values back to selected source values', () => {

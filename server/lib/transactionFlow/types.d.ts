@@ -12,7 +12,7 @@ declare type CheckboxItem = {
   hint?: { text: string } | { html: string }
   value: string
   conditional?: import('./questionTypes/base').default
-  removeIf?: (assessment: import('../../data/csraApiTypes').CsraAssessment) => boolean
+  removeIf?: (assessmentAnswers: import('../../data/csraApiTypes').CsraAssessmentStageAnswers) => boolean
 }
 
 declare type PickByType<T, Value> = {
