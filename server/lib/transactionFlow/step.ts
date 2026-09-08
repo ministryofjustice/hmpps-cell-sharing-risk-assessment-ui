@@ -1,4 +1,4 @@
-import { CsraAssessment } from '../../data/csraApiTypes'
+import { CsraAssessmentStageAnswers } from '../../data/csraApiTypes'
 import Question from './questionTypes/base'
 
 export default class Step {
@@ -8,31 +8,57 @@ export default class Step {
 
   questions: Question[]
 
+  protected dependants: { attribute: keyof CsraAssessmentStageAnswers; answer: string | boolean }[]
+
+  protected incompleteUnlessConditions: { attribute: keyof CsraAssessmentStageAnswers; answer: string | boolean }[]
+
   constructor({ questions, title, bodyHtml }: Pick<Step, 'questions' | 'title' | 'bodyHtml'>) {
     this.questions = questions
     this.title = title
     this.bodyHtml = bodyHtml
+    this.dependants = []
+    this.incompleteUnlessConditions = []
   }
 
-  removeIf(_assessment: CsraAssessment) {
-    return false
+  incompleteUnless(attribute: keyof CsraAssessmentStageAnswers, answer: string | boolean) {
+    this.incompleteUnlessConditions.push({ attribute, answer })
+    return this
   }
 
-  isComplete(assessment: CsraAssessment) {
-    return this.questions.every(q => q.isComplete(assessment))
+  dependsOn(attribute: keyof CsraAssessmentStageAnswers, answer: string | boolean) {
+    this.dependants.push({ attribute, answer })
+    return this
   }
 
-  mutateAssessment(assessment: CsraAssessment, formValues: Record<string, string | string[] | number | boolean>) {
-    let mutatedAssessment = assessment
+  removeIf(assessmentAnswers: CsraAssessmentStageAnswers) {
+    return this.dependants.some(({ attribute, answer }) => assessmentAnswers[attribute] !== answer)
+  }
+
+  isComplete(assessmentAnswers: CsraAssessmentStageAnswers) {
+    return (
+      this.questions.every(q => q.isComplete(assessmentAnswers)) &&
+      this.incompleteUnlessConditions.every(({ attribute, answer }) => assessmentAnswers[attribute] === answer)
+    )
+  }
+
+  isAnswered(assessmentAnswers: CsraAssessmentStageAnswers) {
+    return this.questions.every(q => q.isAnswered(assessmentAnswers))
+  }
+
+  mutateAssessmentAnswers(
+    assessmentAnswers: CsraAssessmentStageAnswers,
+    formValues: Record<string, string | string[] | number | boolean>,
+  ) {
+    let mutatedAssessmentAnswers = assessmentAnswers
 
     this.questions.forEach(question => {
-      mutatedAssessment = question.mutateAssessment(mutatedAssessment, formValues)
+      mutatedAssessmentAnswers = question.mutateAssessmentAnswers(mutatedAssessmentAnswers, formValues)
     })
 
-    return mutatedAssessment
+    return mutatedAssessmentAnswers
   }
 
-  getFormValues(assessment: CsraAssessment) {
-    return Object.fromEntries(this.questions.flatMap(q => Object.entries(q.getFormValues(assessment))))
+  getFormValues(assessmentAnswers: CsraAssessmentStageAnswers) {
+    return Object.fromEntries(this.questions.flatMap(q => Object.entries(q.getFormValues(assessmentAnswers))))
   }
 }

@@ -1,6 +1,7 @@
 import CsraService from './csraService'
 import { CsraApiClient } from '../data'
 import type {
+  CsraAssessment,
   CsraAssessmentsInProgress,
   CsraCurrentRating,
   CsraHighRiskDueForReview,
@@ -8,6 +9,7 @@ import type {
   CsraPrisonRatingSummary,
   CsraRecentArrivals,
   CsraReviewHistory,
+  CsraAssessmentStageAnswers,
 } from '../data/csraApiTypes'
 
 jest.mock('../data')
@@ -21,6 +23,10 @@ describe('CsraService', () => {
       getCurrentCsraRating: jest.fn(),
       getAssessmentsInProgress: jest.fn(),
       getCsraHistory: jest.fn(),
+      getCsraAssessment: jest.fn(),
+      updateCsraAssessment: jest.fn(),
+      startCsraAssessment: jest.fn(),
+      submitProvisionalRating: jest.fn(),
       getRatingSummary: jest.fn(),
       getHighRiskDueForReview: jest.fn(),
       getPrisonPrisoners: jest.fn(),
@@ -210,6 +216,56 @@ describe('CsraService', () => {
       await csraService.getRecentArrivals('AUSER_GEN', 'LEI')
 
       expect(csraApiClient.getRecentArrivals).toHaveBeenCalledWith('AUSER_GEN', { prisonId: 'LEI' })
+    })
+  })
+
+  describe('startCsraAssessment', () => {
+    it('delegates to the client, passing the username, prisoner number and prison id', async () => {
+      ;(csraApiClient.startCsraAssessment as unknown as jest.Mock).mockResolvedValue({ assessmentId: 'assessment-1' })
+
+      const result = await csraService.startCsraAssessment('AUSER_GEN', 'A1234BC', 'MDI')
+
+      expect(result).toEqual({ assessmentId: 'assessment-1' })
+      expect(csraApiClient.startCsraAssessment).toHaveBeenCalledWith(
+        'AUSER_GEN',
+        { prisonerNumber: 'A1234BC' },
+        { prisonId: 'MDI' },
+      )
+    })
+  })
+
+  describe('submitProvisionalRating', () => {
+    it('delegates to the client, passing the username, assessment id and provisional rating payload', async () => {
+      const stageAnswers: CsraAssessmentStageAnswers = {
+        stage: 'PROVISIONAL',
+        prisonId: 'MDI',
+        offenceEvidence: [],
+        riskTo: [],
+        vulnerabilities: [],
+        version: 1,
+        pncChecked: true,
+      }
+      ;(csraApiClient.submitProvisionalRating as unknown as jest.Mock).mockResolvedValue({
+        assessmentId: 'assessment-1',
+      } as CsraAssessment)
+
+      await csraService.submitProvisionalRating('AUSER_GEN', 'A1234BC', 'assessment-1', {
+        rating: 'HIGH_GENERAL',
+        assessmentComment: 'WIP generated comment',
+        ...stageAnswers,
+      })
+
+      expect(csraApiClient.submitProvisionalRating).toHaveBeenCalledWith(
+        'AUSER_GEN',
+        { prisonerNumber: 'A1234BC', assessmentId: 'assessment-1' },
+        expect.objectContaining({
+          rating: 'HIGH_GENERAL',
+          assessmentComment: 'WIP generated comment',
+          stage: 'PROVISIONAL',
+          prisonId: 'MDI',
+          pncChecked: true,
+        }),
+      )
     })
   })
 })

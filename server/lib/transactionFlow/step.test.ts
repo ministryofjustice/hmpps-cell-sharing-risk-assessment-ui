@@ -1,4 +1,4 @@
-import { CsraAssessment } from '../../data/csraApiTypes'
+import { CsraAssessmentStageAnswers } from '../../data/csraApiTypes'
 import Question from './questionTypes/base'
 import Step from './step'
 
@@ -24,40 +24,25 @@ class TestQuestion extends Question {
     return this.formValues
   }
 
-  override isComplete(): boolean {
+  override isAnswered(_assessment: CsraAssessmentStageAnswers): boolean {
     return this.complete
   }
 
-  override mutateAssessment(assessment: CsraAssessment): CsraAssessment {
-    return { ...assessment, assessmentComment: `${assessment.assessmentComment}${this.nextField}` }
+  override mutateAssessmentAnswers(assessment: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
+    return {
+      ...assessment,
+      likelyToHarmCellmateDetail: `${assessment.likelyToHarmCellmateDetail ?? ''}${this.nextField}`,
+    }
   }
 }
 
-const makeAssessment = (overrides: Partial<CsraAssessment> = {}): CsraAssessment => ({
-  rating: 'STANDARD',
+const makeAssessment = (overrides: Partial<CsraAssessmentStageAnswers> = {}): CsraAssessmentStageAnswers => ({
+  stage: 'PROVISIONAL',
   prisonId: 'MDI',
-  assessmentComment: '',
-  dpsChecked: false,
-  perChecked: false,
-  warrantChecked: false,
-  pncChecked: false,
-  offenceMurderManslaughter: false,
-  offenceAssistingSuicide: false,
-  offenceSexualAssault: false,
-  offenceRepeatedViolence: false,
-  offencePrejudiceMotivated: false,
-  offenceArson: false,
-  offenceKidnapHostage: false,
   offenceEvidence: [],
-  officerSpokeToPrisoner: false,
-  likelyToHarmCellmate: false,
-  significantlyVulnerable: false,
-  causeForConcernSharing: false,
-  otherHighRiskIndicators: false,
-  seenByHealthcare: false,
-  healthcareIncreasedRisk: false,
   riskTo: [],
   vulnerabilities: [],
+  version: 1,
   ...overrides,
 })
 
@@ -89,9 +74,9 @@ describe('Step', () => {
       questions: [new TestQuestion('a', true, 'A', {}), new TestQuestion('b', true, 'B', {})],
     })
 
-    const result = step.mutateAssessment(makeAssessment(), {})
+    const result = step.mutateAssessmentAnswers(makeAssessment(), {})
 
-    expect(result.assessmentComment).toBe('AB')
+    expect(result.likelyToHarmCellmateDetail).toBe('AB')
   })
 
   it('merges form values from all questions', () => {

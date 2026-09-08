@@ -1,4 +1,4 @@
-import { CsraAssessment } from '../../../data/csraApiTypes'
+import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 import Question from './base'
 
 class TestQuestion extends Question {
@@ -14,11 +14,11 @@ class TestQuestion extends Question {
     return { [this.id]: 'value' }
   }
 
-  override isComplete(_assessment: CsraAssessment): boolean {
+  override isAnswered(_assessment: CsraAssessmentStageAnswers): boolean {
     return true
   }
 
-  override mutateAssessment(assessment: CsraAssessment): CsraAssessment {
+  override mutateAssessmentAnswers(assessment: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
     return assessment
   }
 }

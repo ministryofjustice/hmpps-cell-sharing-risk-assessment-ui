@@ -1,6 +1,6 @@
 import Step from './step'
 import YesNoQuestion from './questionTypes/yesNo'
-import { CsraAssessment, OffenceType } from '../../data/csraApiTypes'
+import { CsraAssessmentStageAnswers, OffenceType } from '../../data/csraApiTypes'
 import OffenceEvidenceSourceCheckboxQuestion from './questionTypes/offenceEvidenceSourceCheckbox'
 import OffenceEvidenceDetailsQuestion from './questionTypes/offenceEvidenceDetails'
 
@@ -17,24 +17,27 @@ export default class OffenceEvidenceStep extends Step {
     })
   }
 
-  override removeIf(assessment: CsraAssessment): boolean {
-    return !assessment[this.question.id]
+  override removeIf(assessmentAnswers: CsraAssessmentStageAnswers): boolean {
+    return !assessmentAnswers[this.question.id]
   }
 
-  private getEvidenceData(assessment: CsraAssessment) {
-    return assessment.offenceEvidence?.find(e => e.offence === this.offenceType)
+  private getEvidenceData(assessmentAnswers: CsraAssessmentStageAnswers) {
+    return assessmentAnswers.offenceEvidence?.find(e => e.offence === this.offenceType)
   }
 
-  override mutateAssessment(assessment: CsraAssessment, formValues: FormValues): CsraAssessment {
-    const mutatedAssessment = {
-      ...assessment,
-      offenceEvidence: assessment.offenceEvidence ? assessment.offenceEvidence : [],
+  override mutateAssessmentAnswers(
+    assessmentAnswers: CsraAssessmentStageAnswers,
+    formValues: FormValues,
+  ): CsraAssessmentStageAnswers {
+    const mutatedAssessmentAnswers = {
+      ...assessmentAnswers,
+      offenceEvidence: assessmentAnswers.offenceEvidence ? assessmentAnswers.offenceEvidence : [],
     }
 
-    if (!this.getEvidenceData(mutatedAssessment)) {
-      mutatedAssessment.offenceEvidence.push({ offence: this.offenceType, sources: [], details: '' })
+    if (!this.getEvidenceData(mutatedAssessmentAnswers)) {
+      mutatedAssessmentAnswers.offenceEvidence.push({ offence: this.offenceType, sources: [], details: '' })
     }
 
-    return super.mutateAssessment(mutatedAssessment, formValues)
+    return super.mutateAssessmentAnswers(mutatedAssessmentAnswers, formValues)
   }
 }

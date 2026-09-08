@@ -1,34 +1,16 @@
-import { CsraAssessment } from '../../../data/csraApiTypes'
+import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 import OtherOffenceInputQuestion from './otherOffenceInput'
 
-const makeAssessment = (overrides: Partial<CsraAssessment> = {}): CsraAssessment => ({
-  rating: 'STANDARD',
+const makeAssessment = (overrides: Partial<CsraAssessmentStageAnswers> = {}): CsraAssessmentStageAnswers => ({
+  stage: 'PROVISIONAL',
   prisonId: 'MDI',
-  assessmentComment: '',
-  dpsChecked: false,
-  perChecked: false,
-  warrantChecked: false,
-  pncChecked: false,
-  offenceMurderManslaughter: false,
-  offenceAssistingSuicide: false,
-  offenceSexualAssault: false,
-  offenceRepeatedViolence: false,
-  offencePrejudiceMotivated: false,
-  offenceArson: false,
-  offenceKidnapHostage: false,
   offenceEvidence: [
     { offence: 'MURDER_MANSLAUGHTER', sources: [], details: '' },
     { offence: 'ASSISTING_SUICIDE', sources: [], details: 'keep me' },
   ],
-  officerSpokeToPrisoner: false,
-  likelyToHarmCellmate: false,
-  significantlyVulnerable: false,
-  causeForConcernSharing: false,
-  otherHighRiskIndicators: false,
-  seenByHealthcare: false,
-  healthcareIncreasedRisk: false,
   riskTo: [],
   vulnerabilities: [],
+  version: 1,
   ...overrides,
 })
 
@@ -55,7 +37,7 @@ describe('OtherOffenceInputQuestion', () => {
   })
 
   it('updates other source detail for the matching offence only', () => {
-    const mutated = question.mutateAssessment(makeAssessment(), { otherSource: 'Bodycam statement' })
+    const mutated = question.mutateAssessmentAnswers(makeAssessment(), { otherSource: 'Bodycam statement' })
 
     expect(mutated.offenceEvidence[0].otherSourceDetail).toBe('Bodycam statement')
     expect(mutated.offenceEvidence[1].otherSourceDetail).toBeUndefined()
@@ -73,14 +55,14 @@ describe('OtherOffenceInputQuestion', () => {
     ).toEqual({ otherSource: 'PER note' })
 
     expect(
-      question.isComplete(
+      question.isAnswered(
         makeAssessment({
           offenceEvidence: [{ offence: 'MURDER_MANSLAUGHTER', sources: [], details: '', otherSourceDetail: 'done' }],
         }),
       ),
     ).toBe(true)
     expect(
-      question.isComplete(
+      question.isAnswered(
         makeAssessment({ offenceEvidence: [{ offence: 'MURDER_MANSLAUGHTER', sources: [], details: '' }] }),
       ),
     ).toBe(false)

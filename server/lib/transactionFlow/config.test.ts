@@ -19,7 +19,7 @@ describe('transaction flow config', () => {
     const section = config.evidenceAndOffences
 
     expect(section.title).toBe('Offences')
-    expect(section.steps).toHaveLength(6)
+    expect(section.steps).toHaveLength(14)
 
     expect(section.steps[0]).toBeInstanceOf(Step)
     const evidenceStep = section.steps[0] as Step
@@ -42,12 +42,13 @@ describe('transaction flow config', () => {
     expect(secondYesNoGroup.questions[0]).toBeInstanceOf(YesNoQuestion)
 
     expect((section.steps[5] as OffenceEvidenceStep).offenceType).toBe('SEXUAL_ASSAULT')
+    expect((section.steps[13] as OffenceEvidenceStep).offenceType).toBe('KIDNAP_HOSTAGE')
   })
 
-  it('leaves remaining sections empty for now', () => {
-    expect(config.conversationAndVulnerability.steps).toEqual([])
-    expect(config.observation.steps).toEqual([])
-    expect(config.otherRisks.steps).toEqual([])
-    expect(config.healthcare.steps).toEqual([])
+  it('builds remaining sections', () => {
+    expect(config.conversationAndVulnerability.steps).toHaveLength(3)
+    expect(config.observation.steps).toHaveLength(1)
+    expect(config.otherRisks.steps).toHaveLength(1)
+    expect(config.healthcare.steps).toHaveLength(2)
   })
 })

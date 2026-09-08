@@ -8,17 +8,17 @@
 <div class="csra-prisoner-banner" data-qa="prisoner-banner">
   <img
     class="csra-prisoner-banner__photo"
-    src="/prisoner/{{ prisonerNumber }}/image"
+    src="/prisoner/{{ prisoner.prisonerNumber }}/image"
     alt="Photograph of {{ bannerPrisonerName }}"
   />
   <div class="csra-prisoner-banner__body">
     <p class="csra-prisoner-banner__name">
       {% if dpsUrl %}
-        <a class="govuk-link" href="{{ dpsUrl }}/prisoner/{{ prisonerNumber }}" data-qa="prisoner-name">{{ bannerPrisonerName }}</a>
+        <a class="govuk-link" href="{{ dpsUrl }}/prisoner/{{ prisoner.prisonerNumber }}" data-qa="prisoner-name">{{ bannerPrisonerName }}</a>
       {% else %}
         <span data-qa="prisoner-name">{{ bannerPrisonerName }}</span>
       {% endif %}
-      <span class="csra-prisoner-banner__number">{{ prisonerNumber }}</span>
+      <span class="csra-prisoner-banner__number">{{ prisoner.prisonerNumber }}</span>
     </p>
     <dl class="csra-prisoner-banner__grid">
       <div class="csra-prisoner-banner__item">

@@ -5,7 +5,7 @@ import { ORIGINS, resolveOrigin } from '../utils/breadcrumbOrigins'
 import { type Breadcrumb, pushBreadcrumbs } from './addBreadcrumb'
 
 /** Which of the prisoner's CSRA pages is being rendered, i.e. where the trail stops. */
-export type CsraPage = 'current' | 'history' | 'review'
+export type CsraPage = 'current' | 'history' | 'review' | 'taskList'
 
 /**
  * Builds the breadcrumb trail for a prisoner's CSRA pages, including the worklist they were reached

@@ -1,5 +1,5 @@
 // eslint-disable-next-line max-classes-per-file
-import { CsraAssessment } from '../../../data/csraApiTypes'
+import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 import FeComponentsService from '../../../services/feComponentsService'
 import Question from './base'
 import CheckboxQuestion from './checkbox'
@@ -17,11 +17,11 @@ class ConditionalQuestion extends Question {
     return { [this.id]: 'conditional value' }
   }
 
-  override isComplete(): boolean {
+  override isAnswered(_assessment: CsraAssessmentStageAnswers): boolean {
     return true
   }
 
-  override mutateAssessment(assessment: CsraAssessment): CsraAssessment {
+  override mutateAssessmentAnswers(assessment: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
     return assessment
   }
 }
@@ -35,40 +35,22 @@ class TestCheckboxQuestion extends CheckboxQuestion {
     return { [this.id]: [] }
   }
 
-  override isComplete(): boolean {
+  override isAnswered(_assessment: CsraAssessmentStageAnswers): boolean {
     return true
   }
 
-  override mutateAssessment(assessment: CsraAssessment): CsraAssessment {
+  override mutateAssessmentAnswers(assessment: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
     return assessment
   }
 }
 
-const makeAssessment = (overrides: Partial<CsraAssessment> = {}): CsraAssessment => ({
-  rating: 'STANDARD',
+const makeAssessment = (overrides: Partial<CsraAssessmentStageAnswers> = {}): CsraAssessmentStageAnswers => ({
+  stage: 'PROVISIONAL',
   prisonId: 'MDI',
-  assessmentComment: '',
-  dpsChecked: false,
-  perChecked: false,
-  warrantChecked: false,
-  pncChecked: false,
-  offenceMurderManslaughter: false,
-  offenceAssistingSuicide: false,
-  offenceSexualAssault: false,
-  offenceRepeatedViolence: false,
-  offencePrejudiceMotivated: false,
-  offenceArson: false,
-  offenceKidnapHostage: false,
   offenceEvidence: [],
-  officerSpokeToPrisoner: false,
-  likelyToHarmCellmate: false,
-  significantlyVulnerable: false,
-  causeForConcernSharing: false,
-  otherHighRiskIndicators: false,
-  seenByHealthcare: false,
-  healthcareIncreasedRisk: false,
   riskTo: [],
   vulnerabilities: [],
+  version: 1,
   ...overrides,
 })
 

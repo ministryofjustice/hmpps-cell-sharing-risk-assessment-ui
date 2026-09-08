@@ -1,0 +1,157 @@
+{% extends "../partials/layout.njk" %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/details/macro.njk" import govukDetails %}
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "govuk/components/task-list/macro.njk" import govukTaskList %}
+
+{% set prisonerName = (prisoner.firstName + " " + prisoner.lastName) | convertToTitleCase %}
+{% set title = "Check answers before you confirm a CSRA rating" %}
+{% set pageTitle = applicationName + " - " + title %}
+
+{% block outerHeading %}
+  {% include "../partials/compactPrisonerBanner.njk" %}
+
+  {{ super() }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h2 class="govuk-heading-m">Evidence sources</h2>
+
+      {{ govukSummaryList({
+        rows: [
+          {
+            key: {
+              text: "DPS"
+            },
+            value: {
+              text: "Checked" if assessmentAnswers.dpsChecked else "Not checked"
+            },
+            actions: {
+              items: [
+                {
+                  href: "/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/evidenceAndOffences/0",
+                  text: "Change",
+                  visuallyHiddenText: "DPS"
+                }
+              ]
+            }
+          },
+          {
+            key: {
+              text: "PER"
+            },
+            value: {
+              text: "Checked" if assessmentAnswers.perChecked else "Not checked"
+            },
+            actions: {
+              items: [
+                {
+                  href: "/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/evidenceAndOffences/0",
+                  text: "Change",
+                  visuallyHiddenText: "PER"
+                }
+              ]
+            }
+          },
+          {
+            key: {
+              text: "Warrant"
+            },
+            value: {
+              text: "Checked" if assessmentAnswers.warrantChecked else "Not checked"
+            },
+            actions: {
+              items: [
+                {
+                  href: "/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/evidenceAndOffences/0",
+                  text: "Change",
+                  visuallyHiddenText: "Warrant"
+                }
+              ]
+            }
+          },
+          {
+            key: {
+              text: "PNC"
+            },
+            value: {
+              text: "Checked" if assessmentAnswers.pncChecked else "Not checked"
+            },
+            actions: {
+              items: [
+                {
+                  href: "/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/evidenceAndOffences/0",
+                  text: "Change",
+                  visuallyHiddenText: "PNC"
+                }
+              ]
+            }
+          }
+        ]
+      }) }}
+
+      {% for sectionId in ['evidenceAndOffences',
+        'conversationAndVulnerability',
+        'observation',
+        'otherRisks',
+        'healthcare'] %}
+        {% set section = flowConfig[sectionId] %}
+
+        <h2 class="govuk-heading-m">{{ section.title }}</h2>
+
+        {% set sectionList = [] %}
+
+        {% for step in section.steps %}
+          {% set stepId = loop.index %}
+
+          {% if sectionId !== 'evidenceAndOffences' or stepId !== 1 %}
+            {% for question in step.questions %}
+              {% if question.question !== 'Provide details of the evidence' and not question.question.startsWith('Where did you find evidence of') %}
+                {% set sectionList = (sectionList.push(
+                  {
+                    key: {
+                      text: question.question
+                    },
+                    value: {
+                      text: assessmentAnswers[question.id] | yesNoValue
+                    },
+                    actions: {
+                      items: [
+                        {
+                          href: "/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/" + sectionId + "/" + stepId,
+                          text: "Change",
+                          visuallyHiddenText: "blah??"
+                        }
+                      ]
+                    }
+                  }
+                ), sectionList) %}
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+        {% endfor %}
+
+        {{ govukSummaryList({
+          rows: sectionList
+        }) }}
+
+        <br><br><br>
+      {% endfor %}
+
+      <form method="post" action>
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+
+        {{ govukButton({
+          text: "WIP: Save provisional rating",
+          classes: "govuk-!-margin-bottom-0",
+          attributes: { "data-qa": "prison-search-button" }
+        }) }}
+      </form>
+
+      <a href="#" class="govuk-link">Cancel</a>
+    </div>
+  </div>
+{% endblock %}

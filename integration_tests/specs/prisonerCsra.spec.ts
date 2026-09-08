@@ -64,4 +64,82 @@ test.describe('Prisoner CSRA', () => {
     const prisonerCsraPage = await PrisonerCsraPage.verifyOnPage(page, 'John Smith')
     await expect(prisonerCsraPage.noCsra).toContainText('does not have a current CSRA')
   })
+
+  test('starts a new assessment and lands on the task list', async ({ page }) => {
+    await login(page)
+    await prisonerSearchApi.stubGetPrisoner(prisoner)
+    await prisonApi.stubGetPrisonerImage('A1234BC')
+    await manageUsersApi.stubGetUserCaseloads(['MDI'])
+    await csraApi.stubGetCurrentRating('A1234BC', { status: 'NO_RATING', rating: null })
+    await csraApi.stubStartAssessment('A1234BC', 'assessment-123')
+    await csraApi.stubGetAssessment('A1234BC', 'assessment-123', {
+      status: 'IN_PROGRESS',
+      stages: [
+        {
+          stage: 'PROVISIONAL',
+          prisonId: 'MDI',
+          dpsChecked: true,
+          perChecked: false,
+          warrantChecked: false,
+          pncChecked: true,
+          offenceEvidence: [],
+          riskTo: [],
+          vulnerabilities: [],
+          version: 0,
+        },
+      ],
+    })
+
+    await page.goto('/prisoner/A1234BC')
+    await page.getByRole('link', { name: 'Start assessment' }).click()
+
+    await expect(page).toHaveURL(/\/prisoner\/A1234BC\/csra\/assessment-123$/)
+    await expect(page.getByRole('heading', { name: 'CSRA for John Smith' })).toBeVisible()
+    await expect(page.getByText('Evidence sources and offences')).toBeVisible()
+    await expect(page.getByText('Check answers and confirm rating')).toBeVisible()
+  })
+
+  test('can reach the confirm-rating page and submit the provisional rating', async ({ page }) => {
+    await login(page)
+    await prisonerSearchApi.stubGetPrisoner(prisoner)
+    await prisonApi.stubGetPrisonerImage('A1234BC')
+    await manageUsersApi.stubGetUserCaseloads(['MDI'])
+    await csraApi.stubGetCurrentRating('A1234BC', { status: 'NO_RATING', rating: null })
+    await csraApi.stubGetAssessment('A1234BC', 'assessment-123', {
+      status: 'IN_PROGRESS',
+      stages: [
+        {
+          stage: 'PROVISIONAL',
+          prisonId: 'MDI',
+          dpsChecked: true,
+          perChecked: true,
+          warrantChecked: false,
+          pncChecked: true,
+          officerSpokeToPrisoner: true,
+          likelyToHarmCellmate: true,
+          likelyToHarmCellmateDetail: 'Threatened to assault a cellmate.',
+          significantlyVulnerable: false,
+          causeForConcernSharing: false,
+          otherHighRiskIndicators: false,
+          seenByHealthcare: true,
+          healthcareIncreasedRisk: true,
+          healthcareIncreasedRiskDetail: 'Healthcare flagged an increased risk.',
+          offenceEvidence: [],
+          riskTo: [],
+          vulnerabilities: [],
+          version: 0,
+        },
+      ],
+    })
+    await csraApi.stubSubmitProvisionalRating('A1234BC', 'assessment-123')
+
+    await page.goto('/prisoner/A1234BC/csra/assessment-123/confirm-rating')
+
+    await expect(page.getByRole('heading', { name: 'Check answers before you confirm a CSRA rating' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'WIP: Save provisional rating' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'WIP: Save provisional rating' }).click()
+
+    await expect(page).toHaveURL('/prisoner/A1234BC')
+  })
 })

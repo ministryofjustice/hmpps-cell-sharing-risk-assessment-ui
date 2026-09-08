@@ -1,0 +1,76 @@
+{% extends "../partials/layout.njk" %}
+
+{% from "govuk/components/details/macro.njk" import govukDetails %}
+{% from "govuk/components/task-list/macro.njk" import govukTaskList %}
+
+{% set prisonerName = (prisoner.firstName + " " + prisoner.lastName) | convertToTitleCase %}
+{% set title = "CSRA for " + prisonerName %}
+{% set pageTitle = applicationName + " - " + title %}
+
+{% block outerHeading %}
+  {% include "../partials/prisonerBanner.njk" %}
+
+  {{ super() }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      {% call govukDetails({
+        summaryText: "Evidence you need to check",
+        open: true
+      }) %}
+        <p>
+          <strong>DPS profile</strong> - Current and historical adjudications, alerts and case notes.
+          <br>
+          <a href="{{ serviceUrls.digitalPrison }}/prisoner/{{ prisoner.prisonerNumber }}" target="_blank" class="govuk-link">View full DPS profile (opens in a new tab)</a>
+        </p>
+
+        <p>
+          <strong>Person escort record</strong> - Behaviour in court, custody and during transit.
+          <br>
+          <a href="{{ serviceUrls.bookASecureMove }}" target="_blank" class="govuk-link">View Book a secure move (opens in a new tab)</a>
+        </p>
+
+        <p>
+          <strong>Warrant</strong> - Current charge or offence.
+          <br>
+          {% if hasWarrants %}
+            <a href="{{ serviceUrls.warrants }}" target="_blank" class="govuk-link">View warrants from the last 30 days</a>
+          {% else %}
+            No warrant information could be found for {{ prisonerName }}.
+          {% endif %}
+        </p>
+
+        <p>
+          <strong>Police national computer (PNC)</strong> - Current and previous convictions.
+        </p>
+      {% endcall %}
+
+      {% for taskList in taskLists %}
+        <h2 class="govuk-heading-m">{{ taskList.title }}</h2>
+
+        {% set taskListItems = [] %}
+        {% for section in taskList.sections %}
+          {% set taskListItems = (taskListItems.push({
+            title: {
+              text: section.title
+            },
+            href: section.href,
+            status: section.status | taskListStatus,
+            hint: {
+              text: section.hint
+            } if section.hint else null
+          }), taskListItems) %}
+        {% endfor %}
+
+        {{ govukTaskList({
+          idPrefix: taskList.title,
+          items: taskListItems
+        }) }}
+      {% endfor %}
+
+      <a href="#" class="govuk-link">Cancel this assessment</a>
+    </div>
+  </div>
+{% endblock %}

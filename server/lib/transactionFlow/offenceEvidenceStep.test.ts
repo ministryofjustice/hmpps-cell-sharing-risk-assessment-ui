@@ -1,34 +1,16 @@
-import { CsraAssessment } from '../../data/csraApiTypes'
+import { CsraAssessmentStageAnswers } from '../../data/csraApiTypes'
 import OffenceEvidenceDetailsQuestion from './questionTypes/offenceEvidenceDetails'
 import OffenceEvidenceSourceCheckboxQuestion from './questionTypes/offenceEvidenceSourceCheckbox'
 import YesNoQuestion from './questionTypes/yesNo'
 import OffenceEvidenceStep from './offenceEvidenceStep'
 
-const makeAssessment = (overrides: Partial<CsraAssessment> = {}): CsraAssessment => ({
-  rating: 'STANDARD',
+const makeAssessment = (overrides: Partial<CsraAssessmentStageAnswers> = {}): CsraAssessmentStageAnswers => ({
+  stage: 'PROVISIONAL',
   prisonId: 'MDI',
-  assessmentComment: '',
-  dpsChecked: true,
-  perChecked: true,
-  warrantChecked: true,
-  pncChecked: true,
-  offenceMurderManslaughter: true,
-  offenceAssistingSuicide: false,
-  offenceSexualAssault: false,
-  offenceRepeatedViolence: false,
-  offencePrejudiceMotivated: false,
-  offenceArson: false,
-  offenceKidnapHostage: false,
   offenceEvidence: [],
-  officerSpokeToPrisoner: false,
-  likelyToHarmCellmate: false,
-  significantlyVulnerable: false,
-  causeForConcernSharing: false,
-  otherHighRiskIndicators: false,
-  seenByHealthcare: false,
-  healthcareIncreasedRisk: false,
   riskTo: [],
   vulnerabilities: [],
+  version: 1,
   ...overrides,
 })
 
@@ -53,9 +35,9 @@ describe('OffenceEvidenceStep', () => {
   it('initialises offence evidence entry when missing and mutates values', () => {
     const step = new OffenceEvidenceStep(yesNoQuestion, 'MURDER_MANSLAUGHTER')
 
-    const mutated = step.mutateAssessment(makeAssessment(), {
+    const mutated = step.mutateAssessmentAnswers(makeAssessment(), {
       evidenceSources: ['PNC'],
-      assessmentComment: 'Found in records',
+      likelyToHarmCellmateDetail: 'Found in records',
     })
 
     expect(mutated.offenceEvidence).toEqual([
@@ -74,7 +56,10 @@ describe('OffenceEvidenceStep', () => {
       offenceEvidence: [{ offence: 'MURDER_MANSLAUGHTER', sources: ['DPS'], details: 'existing' }],
     })
 
-    const mutated = step.mutateAssessment(existing, { evidenceSources: ['PER'], assessmentComment: 'updated' })
+    const mutated = step.mutateAssessmentAnswers(existing, {
+      evidenceSources: ['PER'],
+      likelyToHarmCellmateDetail: 'updated',
+    })
 
     expect(mutated.offenceEvidence).toHaveLength(1)
   })

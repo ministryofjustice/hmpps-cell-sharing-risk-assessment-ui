@@ -1,8 +1,8 @@
 import CheckboxQuestion from './checkbox'
-import { CsraAssessment } from '../../../data/csraApiTypes'
+import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 
 export default class EvidenceCheckboxQuestion extends CheckboxQuestion {
-  override items: (Omit<CheckboxItem, 'value'> & { value: keyof PickByType<CsraAssessment, boolean> })[] = [
+  override items: (Omit<CheckboxItem, 'value'> & { value: keyof PickByType<CsraAssessmentStageAnswers, boolean> })[] = [
     { text: 'PNC', hint: { text: 'Current and previous convictions' }, value: 'pncChecked' },
     { text: 'Warrant', hint: { text: 'Current charge or offence' }, value: 'warrantChecked' },
     { text: 'DPS', hint: { text: 'Current and historical adjudications' }, value: 'dpsChecked' },
@@ -13,28 +13,35 @@ export default class EvidenceCheckboxQuestion extends CheckboxQuestion {
     super('Which evidence sources have you checked?', 'evidenceSources', [])
   }
 
-  override isComplete(assessment: CsraAssessment): boolean {
-    return this.items.some(item => assessment[item.value])
+  override isComplete(assessmentAnswers: CsraAssessmentStageAnswers): boolean {
+    return this.items.every(item => assessmentAnswers[item.value])
   }
 
-  override mutateAssessment(assessment: CsraAssessment, formValues: FormValues): CsraAssessment {
-    let mutatedAssessment = { ...assessment }
+  override isAnswered(assessmentAnswers: CsraAssessmentStageAnswers): boolean {
+    return this.items.some(item => assessmentAnswers[item.value])
+  }
+
+  override mutateAssessmentAnswers(
+    assessmentAnswers: CsraAssessmentStageAnswers,
+    formValues: FormValues,
+  ): CsraAssessmentStageAnswers {
+    let mutatedAssessmentAnswers = { ...assessmentAnswers }
 
     this.items.forEach(item => {
       const checked = !!(formValues[this.id] as string[])?.includes(item.value)
-      mutatedAssessment[item.value] = checked
+      mutatedAssessmentAnswers[item.value] = checked
 
       if (checked && item.conditional) {
-        mutatedAssessment = item.conditional.mutateAssessment(mutatedAssessment, formValues)
+        mutatedAssessmentAnswers = item.conditional.mutateAssessmentAnswers(mutatedAssessmentAnswers, formValues)
       }
     })
 
-    return mutatedAssessment
+    return mutatedAssessmentAnswers
   }
 
-  override getFormValues(assessment: CsraAssessment) {
+  override getFormValues(assessmentAnswers: CsraAssessmentStageAnswers) {
     const values = this.items
-      .map(item => (assessment[item.value as keyof CsraAssessment] ? item.value : undefined))
+      .map(item => (assessmentAnswers[item.value as keyof CsraAssessmentStageAnswers] ? item.value : undefined))
       .filter(s => s)
 
     return { [this.id]: values }

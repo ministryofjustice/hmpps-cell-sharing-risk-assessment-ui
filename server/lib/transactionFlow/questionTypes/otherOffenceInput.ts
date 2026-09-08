@@ -1,4 +1,4 @@
-import { CsraAssessment, OffenceType } from '../../../data/csraApiTypes'
+import { CsraAssessment, CsraAssessmentStageAnswers, OffenceType } from '../../../data/csraApiTypes'
 import Question from './base'
 import required from '../validations/required'
 
@@ -14,7 +14,7 @@ export default class OtherOffenceInputQuestion extends Question {
   override componentAttributes(
     validationErrors: Record<string, { text: string }> | undefined,
     values: FormValues | undefined,
-    _assessment: CsraAssessment,
+    _assessmentAnswers: CsraAssessmentStageAnswers,
   ): object {
     return {
       id: this.id,
@@ -32,10 +32,13 @@ export default class OtherOffenceInputQuestion extends Question {
     return [required('TODO: enter a reason')]
   }
 
-  override mutateAssessment(assessment: CsraAssessment, formValues: FormValues): CsraAssessment {
+  override mutateAssessmentAnswers(
+    assessmentAnswers: CsraAssessmentStageAnswers,
+    formValues: FormValues,
+  ): CsraAssessmentStageAnswers {
     return {
-      ...assessment,
-      offenceEvidence: assessment.offenceEvidence.map(e => {
+      ...assessmentAnswers,
+      offenceEvidence: assessmentAnswers.offenceEvidence.map(e => {
         if (e.offence !== this.offenceType) {
           return e
         }
@@ -45,15 +48,15 @@ export default class OtherOffenceInputQuestion extends Question {
     }
   }
 
-  private getEvidenceData(assessment: CsraAssessment) {
-    return assessment.offenceEvidence?.find(e => e.offence === this.offenceType)
+  private getEvidenceData(assessmentAnswers: CsraAssessmentStageAnswers) {
+    return assessmentAnswers.offenceEvidence?.find(e => e.offence === this.offenceType)
   }
 
-  override getFormValues(assessment: CsraAssessment): FormValues {
-    return { [this.id]: this.getEvidenceData(assessment)?.otherSourceDetail || '' }
+  override getFormValues(assessmentAnswers: CsraAssessmentStageAnswers): FormValues {
+    return { [this.id]: this.getEvidenceData(assessmentAnswers)?.otherSourceDetail || '' }
   }
 
-  override isComplete(assessment: CsraAssessment): boolean {
-    return !!this.getEvidenceData(assessment)?.otherSourceDetail
+  override isAnswered(assessmentAnswers: CsraAssessmentStageAnswers): boolean {
+    return !!this.getEvidenceData(assessmentAnswers)?.otherSourceDetail
   }
 }

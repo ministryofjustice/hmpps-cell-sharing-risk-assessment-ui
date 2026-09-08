@@ -1,31 +1,13 @@
-import { CsraAssessment } from '../../../data/csraApiTypes'
+import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 import YesNoQuestion from './yesNo'
 
-const makeAssessment = (overrides: Partial<CsraAssessment> = {}): CsraAssessment => ({
-  rating: 'STANDARD',
+const makeAssessment = (overrides: Partial<CsraAssessmentStageAnswers> = {}): CsraAssessmentStageAnswers => ({
+  stage: 'PROVISIONAL',
   prisonId: 'MDI',
-  assessmentComment: '',
-  dpsChecked: false,
-  perChecked: false,
-  warrantChecked: false,
-  pncChecked: false,
-  offenceMurderManslaughter: false,
-  offenceAssistingSuicide: false,
-  offenceSexualAssault: false,
-  offenceRepeatedViolence: false,
-  offencePrejudiceMotivated: false,
-  offenceArson: false,
-  offenceKidnapHostage: false,
   offenceEvidence: [],
-  officerSpokeToPrisoner: false,
-  likelyToHarmCellmate: false,
-  significantlyVulnerable: false,
-  causeForConcernSharing: false,
-  otherHighRiskIndicators: false,
-  seenByHealthcare: false,
-  healthcareIncreasedRisk: false,
   riskTo: [],
   vulnerabilities: [],
+  version: 1,
   ...overrides,
 })
 
@@ -69,19 +51,23 @@ describe('YesNoQuestion', () => {
   })
 
   it('reports completion only when answered', () => {
-    expect(question.isComplete(makeAssessment({ offenceMurderManslaughter: true }))).toBe(true)
-    expect(question.isComplete(makeAssessment({ offenceMurderManslaughter: false }))).toBe(true)
+    expect(question.isAnswered(makeAssessment({ offenceMurderManslaughter: true }))).toBe(true)
+    expect(question.isAnswered(makeAssessment({ offenceMurderManslaughter: false }))).toBe(true)
 
-    const unanswered = { ...makeAssessment(), offenceMurderManslaughter: undefined } as unknown as CsraAssessment
-    expect(question.isComplete(unanswered)).toBe(false)
+    const unanswered = {
+      ...makeAssessment(),
+      offenceMurderManslaughter: undefined,
+    } as unknown as CsraAssessmentStageAnswers
+    expect(question.isAnswered(unanswered)).toBe(false)
   })
 
   it('maps form values back into boolean assessment values', () => {
     expect(
-      question.mutateAssessment(makeAssessment(), { offenceMurderManslaughter: 'YES' }).offenceMurderManslaughter,
+      question.mutateAssessmentAnswers(makeAssessment(), { offenceMurderManslaughter: 'YES' })
+        .offenceMurderManslaughter,
     ).toBe(true)
     expect(
-      question.mutateAssessment(makeAssessment(), { offenceMurderManslaughter: 'NO' }).offenceMurderManslaughter,
+      question.mutateAssessmentAnswers(makeAssessment(), { offenceMurderManslaughter: 'NO' }).offenceMurderManslaughter,
     ).toBe(false)
   })
 })
