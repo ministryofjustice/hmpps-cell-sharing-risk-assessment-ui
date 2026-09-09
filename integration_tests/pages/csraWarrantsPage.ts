@@ -20,7 +20,7 @@ export default class CsraWarrantsPage extends AbstractPage {
 
   private constructor(page: Page) {
     super(page)
-    this.heading = page.locator('h1')
+    this.heading = page.getByTestId('page-heading')
     this.prisonerBanner = page.getByTestId('compact-prisoner-banner')
     this.intro = page.getByTestId('warrants-intro')
     this.sort = page.getByTestId('warrants-sort')

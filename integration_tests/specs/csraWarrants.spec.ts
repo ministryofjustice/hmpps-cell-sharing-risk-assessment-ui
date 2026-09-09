@@ -170,7 +170,13 @@ test.describe('CSRA court warrants', () => {
     await documentApi.stubGetDocumentsMetadata([])
 
     await page.goto(TASK_LIST_URL)
-    await page.getByRole('link', { name: 'View warrants from the last 30 days' }).click()
+
+    // Asserted explicitly: the link has been repointed at a route that does not exist before now,
+    // and checking the href names the wrong URL rather than just 404ing on the click.
+    const warrantsLink = page.getByRole('link', { name: 'View warrants from the last 30 days' })
+    await expect(warrantsLink).toHaveAttribute('href', WARRANTS_URL)
+
+    await warrantsLink.click()
 
     const warrantsPage = await CsraWarrantsPage.verifyOnPage(page)
     await warrantsPage.returnToAssessment.click()
