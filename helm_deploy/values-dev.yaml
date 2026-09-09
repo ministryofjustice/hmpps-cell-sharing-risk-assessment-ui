@@ -15,6 +15,7 @@ generic-service:
     PRISONER_SEARCH_API_URL: 'https://prisoner-search-dev.prison.service.justice.gov.uk'
     COMPONENT_API_URL: 'https://frontend-components-dev.hmpps.service.justice.gov.uk'
     DPS_URL: 'https://prisoner-dev.digital.prison.service.justice.gov.uk'
+    BASM_URL: 'https://hmpps-book-secure-move-frontend-staging.apps.cloud-platform.service.justice.gov.uk'
     PRISON_API_URL: 'https://prison-api-dev.prison.service.justice.gov.uk'
     MANAGE_USERS_API_URL: 'https://manage-users-api-dev.hmpps.service.justice.gov.uk'
     ENVIRONMENT_NAME: DEV

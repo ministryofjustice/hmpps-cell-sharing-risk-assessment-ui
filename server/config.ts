@@ -160,7 +160,6 @@ export default {
       'https://hmpps-book-secure-move-frontend-staging.apps.cloud-platform.service.justice.gov.uk',
       requiredInProduction,
     ),
-    warrants: get('WARRANTS_URL', 'https://??', requiredInProduction),
   },
   ingressUrl: get('INGRESS_URL', 'http://localhost:3000', requiredInProduction),
   environmentName: get('ENVIRONMENT_NAME', ''),
