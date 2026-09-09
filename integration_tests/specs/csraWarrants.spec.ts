@@ -9,9 +9,12 @@ import { login, resetStubs } from '../testUtils'
 import CsraWarrantsPage from '../pages/csraWarrantsPage'
 import type { CourtHearing } from '../../server/data/courtDataApiTypes'
 
+const ADMIN_ROLES = ['ROLE_CSRA__ADMIN']
 const ASSESSMENT_ID = 'a1b2c3d4-0000-4000-a000-000000000001'
 const TASK_LIST_URL = `/prisoner/A1234BC/csra/${ASSESSMENT_ID}`
 const WARRANTS_URL = `${TASK_LIST_URL}/warrants`
+// Reachable without an assessment id, for testing before any assessments exist.
+const STANDALONE_URL = '/prisoner/A1234BC/warrants'
 
 const SENTENCING_DOC = '11111111-1111-4111-a111-111111111111'
 const REMAND_DOC = '22222222-2222-4222-a222-222222222222'
@@ -179,9 +182,89 @@ test.describe('CSRA court warrants', () => {
     await warrantsLink.click()
 
     const warrantsPage = await CsraWarrantsPage.verifyOnPage(page)
-    await warrantsPage.returnToAssessment.click()
+    await warrantsPage.returnLink.click()
 
     await expect(page).toHaveURL(new RegExp(`${TASK_LIST_URL}$`))
+  })
+
+  test.describe('reached without an assessment id', () => {
+    test('an admin sees the same warrants as the assessment-scoped page', async ({ page }) => {
+      await login(page, { roles: ADMIN_ROLES })
+      await stubCommonPageData()
+      await courtDataApi.stubGetCourtHearings('A1234BC', hearings())
+      await documentApi.stubGetDocumentsMetadata([
+        { documentUuid: SENTENCING_DOC, fileSize: 58634 },
+        { documentUuid: REMAND_DOC, fileSize: 66765 },
+      ])
+
+      await page.goto(STANDALONE_URL)
+
+      const warrantsPage = await CsraWarrantsPage.verifyOnPage(page)
+      await expect(warrantsPage.warrants).toHaveCount(2)
+      await expect(warrantsPage.warrants.first().getByTestId('warrant-court')).toHaveText('Burnley Crown Court')
+    })
+
+    test('its sort, PDF and return links all stay under the standalone path', async ({ page }) => {
+      await login(page, { roles: ADMIN_ROLES })
+      await stubCommonPageData()
+      await courtDataApi.stubGetCourtHearings('A1234BC', hearings())
+      await documentApi.stubGetDocumentsMetadata([])
+
+      await page.goto(STANDALONE_URL)
+
+      const warrantsPage = await CsraWarrantsPage.verifyOnPage(page)
+      await expect(page.getByRole('link', { name: 'Earliest' })).toHaveAttribute(
+        'href',
+        `${STANDALONE_URL}?sort=earliest`,
+      )
+      await expect(warrantsPage.warrants.first().getByTestId('warrant-link')).toHaveAttribute(
+        'href',
+        `${STANDALONE_URL}/${SENTENCING_DOC}/file`,
+      )
+      // There is no assessment to return to, so it offers the prisoner's CSRA page instead.
+      await expect(warrantsPage.returnLink).toHaveText('Return to CSRA')
+      await expect(warrantsPage.returnLink).toHaveAttribute('href', '/prisoner/A1234BC')
+    })
+
+    test('serves the warrant PDF inline', async ({ page }) => {
+      await login(page, { roles: ADMIN_ROLES })
+      await stubCommonPageData()
+      await courtDataApi.stubGetCourtHearings('A1234BC', hearings())
+      await documentApi.stubGetDocumentsMetadata([])
+      await documentApi.stubGetDocumentFile(SENTENCING_DOC)
+
+      const response = await page.request.get(`${STANDALONE_URL}/${SENTENCING_DOC}/file`)
+
+      expect(response.status()).toEqual(200)
+      expect(response.headers()['content-disposition']).toEqual('inline')
+    })
+
+    test('is refused to a user without the admin role', async ({ page }) => {
+      // Deliberately not open to every officer: this is a proof of concept, and in production it is
+      // currently the only way to reach warrants at all.
+      await login(page)
+      await stubCommonPageData()
+      await courtDataApi.stubGetCourtHearings('A1234BC', hearings())
+
+      const response = await page.request.get(STANDALONE_URL)
+
+      expect(response.status()).toEqual(403)
+      await page.goto(STANDALONE_URL)
+      await expect(page.getByTestId('page-heading')).toHaveCount(0)
+    })
+
+    test('still applies the caseload rules', async ({ page }) => {
+      await login(page, { roles: ADMIN_ROLES })
+      await prisonerSearchApi.stubGetPrisoner({ ...prisoner, prisonId: 'LEI', prisonName: 'Leeds (HMP)' })
+      await prisonApi.stubGetPrisonerImage('A1234BC')
+      // The admin role is national; it does not grant sight of a prisoner outside your caseload.
+      await manageUsersApi.stubGetUserCaseloads(['MDI'])
+      await csraApi.stubGetAssessment('A1234BC', ASSESSMENT_ID)
+
+      const response = await page.request.get(STANDALONE_URL)
+
+      expect(response.status()).toEqual(404)
+    })
   })
 
   test('shows the no-warrant message on the task list when the court API is unavailable', async ({ page }) => {

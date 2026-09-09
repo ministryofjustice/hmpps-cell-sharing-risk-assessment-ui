@@ -16,7 +16,7 @@ export default class CsraWarrantsPage extends AbstractPage {
 
   readonly emptyMessage: Locator
 
-  readonly returnToAssessment: Locator
+  readonly returnLink: Locator
 
   private constructor(page: Page) {
     super(page)
@@ -27,7 +27,7 @@ export default class CsraWarrantsPage extends AbstractPage {
     this.count = page.getByTestId('warrants-count')
     this.warrants = page.getByTestId('warrant')
     this.emptyMessage = page.getByTestId('warrants-empty')
-    this.returnToAssessment = page.getByTestId('return-to-assessment')
+    this.returnLink = page.getByTestId('return-link')
   }
 
   static async verifyOnPage(page: Page): Promise<CsraWarrantsPage> {
