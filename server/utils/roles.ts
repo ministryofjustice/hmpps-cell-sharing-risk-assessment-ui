@@ -20,11 +20,16 @@ export const Role = {
    * Allows a user to create and update CSRA assessments. Viewing needs no role, so a user without
    * this one is read-only.
    *
-   * Not enforced yet: the assessment write journeys do not exist. When they do, the gate is this role
-   * **and** the establishment being switched on for CSRA in DPS — see the note in server/routes/index.ts.
+   * Consulted today only to show or hide edit affordances — see assessmentsInProgressController. It does
+   * **not** yet guard any route, so it is not what stops someone reaching a write journey by typing its
+   * URL; that gate is this role **and** the establishment being switched on for CSRA in DPS, and it still
+   * needs adding — see the note in server/routes/index.ts.
+   *
+   * The API cannot help here: every call is made asSystem, so a user's own roles never reach it. It does
+   * independently enforce the rollout half (403 PrisonNotActive).
    */
   CSRA__ASSESSMENT_EDIT: 'CSRA__ASSESSMENT_EDIT',
-  /** The same, for CSRA reviews rather than assessments. Also not enforced yet. */
+  /** The same, for CSRA reviews rather than assessments — see reviewsInProgressController. */
   CSRA__REVIEW_EDIT: 'CSRA__REVIEW_EDIT',
 } as const
 
