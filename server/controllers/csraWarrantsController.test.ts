@@ -65,6 +65,7 @@ describe('csraWarrantsController', () => {
           basePath: BASE_PATH,
           // The design offers a back link rather than a breadcrumb trail.
           backLink: BASE_PATH,
+          returnLinkText: 'Return to assessment',
         }),
       )
     })
@@ -107,6 +108,56 @@ describe('csraWarrantsController', () => {
 
       await expect(controller()(request(), response(), jest.fn())).rejects.toMatchObject({ status: 404 })
       expect(warrantsService.getRecentWarrants).not.toHaveBeenCalled()
+    })
+
+    describe('reached without an assessment id', () => {
+      // The standalone entry point: there are no in-progress assessments in production until
+      // go-live, so the page has to be reachable from the prison number alone.
+      const requestWithoutAssessment = () =>
+        ({
+          id: 'request-id-123',
+          query: {},
+          params: { prisonerNumber: 'A1234BC' },
+        }) as any
+
+      it('hangs every link off the prisoner rather than an assessment', async () => {
+        const res = response()
+
+        await controller()(requestWithoutAssessment(), res, jest.fn())
+
+        expect(res.render).toHaveBeenCalledWith(
+          'pages/csraWarrants',
+          expect.objectContaining({
+            basePath: '/prisoner/A1234BC',
+            backLink: '/prisoner/A1234BC',
+          }),
+        )
+      })
+
+      it('offers a return to CSRA rather than to an assessment that does not exist', async () => {
+        const res = response()
+
+        await controller()(requestWithoutAssessment(), res, jest.fn())
+
+        expect(res.render).toHaveBeenCalledWith(
+          'pages/csraWarrants',
+          expect.objectContaining({ returnLinkText: 'Return to CSRA' }),
+        )
+      })
+
+      it('still looks the warrants up by prison number', async () => {
+        await controller()(requestWithoutAssessment(), response(), jest.fn())
+
+        expect(warrantsService.getRecentWarrants).toHaveBeenCalledWith('user1', 'A1234BC', 'recent')
+      })
+
+      it('still 404s when the feature flag is off', async () => {
+        config.warrants.enabled = false
+
+        await expect(controller()(requestWithoutAssessment(), response(), jest.fn())).rejects.toMatchObject({
+          status: 404,
+        })
+      })
     })
   })
 
@@ -152,6 +203,21 @@ describe('csraWarrantsController', () => {
         status: 404,
       })
       expect(warrantsService.getWarrantFile).not.toHaveBeenCalled()
+    })
+
+    it('serves the file when reached without an assessment id', async () => {
+      warrantsService.getWarrantFile.mockResolvedValue({
+        body: Buffer.from('pdf bytes'),
+        contentType: 'application/pdf',
+      })
+      const res = response()
+      const req = { id: 'request-id-123', query: {}, params: { prisonerNumber: 'A1234BC', documentId: 'doc-1' } } as any
+
+      await controller()(req, res, jest.fn())
+
+      // The ownership check is on the prisoner, never the assessment, so nothing is lost here.
+      expect(warrantsService.getWarrantFile).toHaveBeenCalledWith('user1', 'A1234BC', 'doc-1')
+      expect(res.set).toHaveBeenCalledWith('Content-Disposition', 'inline')
     })
   })
 })
