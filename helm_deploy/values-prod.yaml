@@ -14,6 +14,7 @@ generic-service:
     PRISONER_SEARCH_API_URL: 'https://prisoner-search.prison.service.justice.gov.uk'
     COMPONENT_API_URL: 'https://frontend-components.hmpps.service.justice.gov.uk'
     DPS_URL: 'https://prisoner.hmpps.service.justice.gov.uk'
+    BASM_URL: 'https://bookasecuremove.service.justice.gov.uk'
     MANAGE_USERS_API_URL: 'https://manage-users-api.hmpps.service.justice.gov.uk'
     PRISON_API_URL: 'https://prison-api.prison.service.justice.gov.uk'
     COURT_DATA_INGESTION_API_URL: 'https://court-data-ingestion-api.hmpps.service.justice.gov.uk'
