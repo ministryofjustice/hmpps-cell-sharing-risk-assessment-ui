@@ -6,6 +6,8 @@ import prisonerSearchApi from '../mockApis/prisonerSearchApi'
 import prisonApi from '../mockApis/prisonApi'
 import manageUsersApi from '../mockApis/manageUsersApi'
 import componentApi from '../mockApis/componentApi'
+import courtDataApi from '../mockApis/courtDataApi'
+import documentApi from '../mockApis/documentApi'
 
 import { resetStubs } from '../testUtils'
 
@@ -24,6 +26,8 @@ test.describe('Health', () => {
         prisonApi.stubPing(),
         manageUsersApi.stubPing(),
         componentApi.stubPing(),
+        courtDataApi.stubPing(),
+        documentApi.stubPing(),
       ])
     })
 

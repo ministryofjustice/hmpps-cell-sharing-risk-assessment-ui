@@ -36,7 +36,7 @@
           <strong>Warrant</strong> - Current charge or offence.
           <br>
           {% if hasWarrants %}
-            <a href="/prisoner/{{ prisoner.prisonerNumber }}/warrants" class="govuk-link">View warrants from the last 30 days</a>
+            <a href="{{ warrantsUrl }}" class="govuk-link">View warrants from the last 30 days</a>
           {% else %}
             No warrant information could be found for {{ prisonerName }}.
           {% endif %}

@@ -1,5 +1,6 @@
 import { CsraAssessment, CsraAssessmentStageAnswers } from '../data/csraApiTypes'
 import csraTaskListController from './csraTaskListController'
+import config from '../config'
 
 const ASSESSMENT_ID = 'assessment-123'
 
@@ -32,7 +33,11 @@ describe('csraTaskListController', () => {
     logPageView: jest.fn().mockResolvedValue(null),
   }
 
-  const controller = () => csraTaskListController({ auditService, csraService } as never)
+  const warrantsService = {
+    hasRecentWarrants: jest.fn().mockResolvedValue(false),
+  }
+
+  const controller = () => csraTaskListController({ auditService, csraService, warrantsService } as never)
 
   const request = () =>
     ({ id: 'request-id-123', params: { prisonerNumber: 'A1234BC', assessmentId: ASSESSMENT_ID } }) as any
@@ -49,6 +54,50 @@ describe('csraTaskListController', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     csraService.getCsraAssessment.mockResolvedValue(makeAssessment())
+    warrantsService.hasRecentWarrants.mockResolvedValue(false)
+    config.warrants.enabled = false
+  })
+
+  afterAll(() => {
+    config.warrants.enabled = false
+  })
+
+  describe('the warrant evidence source', () => {
+    it('does not look for warrants at all while the feature flag is off', async () => {
+      const res = response()
+
+      await controller()(request(), res, jest.fn())
+
+      expect(warrantsService.hasRecentWarrants).not.toHaveBeenCalled()
+      expect(res.render).toHaveBeenCalledWith('pages/csraTaskList', expect.objectContaining({ hasWarrants: false }))
+    })
+
+    it('offers the warrants link when the prisoner has recent warrants', async () => {
+      config.warrants.enabled = true
+      warrantsService.hasRecentWarrants.mockResolvedValue(true)
+      const res = response()
+
+      await controller()(request(), res, jest.fn())
+
+      expect(res.render).toHaveBeenCalledWith(
+        'pages/csraTaskList',
+        expect.objectContaining({
+          hasWarrants: true,
+          warrantsUrl: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}/warrants`,
+        }),
+      )
+    })
+
+    it('falls back to no warrants when the court API cannot be reached', async () => {
+      config.warrants.enabled = true
+      // hasRecentWarrants swallows its own failures; the task list must still render.
+      warrantsService.hasRecentWarrants.mockResolvedValue(false)
+      const res = response()
+
+      await controller()(request(), res, jest.fn())
+
+      expect(res.render).toHaveBeenCalledWith('pages/csraTaskList', expect.objectContaining({ hasWarrants: false }))
+    })
   })
 
   it('renders the task list with a provisional rating link when the prerequisite sections are in progress', async () => {

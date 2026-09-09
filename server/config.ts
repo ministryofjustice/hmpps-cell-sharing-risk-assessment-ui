@@ -121,6 +121,29 @@ export default {
       },
       agent: new AgentConfig(Number(get('COMPONENT_API_TIMEOUT_RESPONSE', 5000))),
     },
+    courtDataIngestionApi: {
+      url: get('COURT_DATA_INGESTION_API_URL', 'http://localhost:9091', requiredInProduction),
+      healthPath: '/health/ping',
+      timeout: {
+        response: Number(get('COURT_DATA_INGESTION_API_TIMEOUT_RESPONSE', 5000)),
+        deadline: Number(get('COURT_DATA_INGESTION_API_TIMEOUT_DEADLINE', 5000)),
+      },
+      agent: new AgentConfig(Number(get('COURT_DATA_INGESTION_API_TIMEOUT_RESPONSE', 5000))),
+    },
+    documentApi: {
+      url: get('DOCUMENT_API_URL', 'http://localhost:9091', requiredInProduction),
+      healthPath: '/health/ping',
+      /**
+       * document-api requires a Service-Name header on every call, identifying the caller by its
+       * product name in the developer portal. CSRA is DPS126 (see helm_deploy values.yaml).
+       */
+      serviceName: get('DOCUMENT_API_SERVICE_NAME', 'DPS126'),
+      timeout: {
+        response: Number(get('DOCUMENT_API_TIMEOUT_RESPONSE', 10000)),
+        deadline: Number(get('DOCUMENT_API_TIMEOUT_DEADLINE', 10000)),
+      },
+      agent: new AgentConfig(Number(get('DOCUMENT_API_TIMEOUT_RESPONSE', 10000))),
+    },
   },
   sqs: {
     audit: auditConfig(),
@@ -136,6 +159,14 @@ export default {
      * and results would depend on the order they ran in.
      */
     ttlMs: Number(get('ACTIVE_AGENCIES_TTL_MS', 5 * 60 * 1000)),
+  },
+  /**
+   * Court warrants (MAPA-349 spike). Off by default: this is a proof of concept sitting behind a
+   * flag rather than a role, so it can be switched on per environment and removed cleanly if the
+   * spike does not lead to a build.
+   */
+  warrants: {
+    enabled: get('WARRANTS_ENABLED', 'false') === 'true',
   },
   // Deliberately not under `apis`: setUpHealthChecks treats every entry there as a service to ping.
   nomis: {

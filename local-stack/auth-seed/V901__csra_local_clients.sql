@@ -10,7 +10,9 @@
 --   * hmpps-cell-sharing-risk-assessment-ui-system  - client_credentials (UI->API calls),
 --       granted the CSRA API roles ROLE_CSRA_REVIEW__R / ROLE_CSRA_REVIEW__RW / the rollout
 --       admin role ROLE_PRISONER_CSRA__ADMIN, the prison-api splash-screen roles used by the
---       rollout console, and the prisoner-search read role PRISONER_SEARCH__PRISONER__RO.
+--       rollout console, the prisoner-search read role PRISONER_SEARCH__PRISONER__RO, and the
+--       court-warrant roles ROLE_COURT_DATA_INGESTION__COURT_DATA_RO / ROLE_DOCUMENT_READER
+--       (MAPA-349 proof of concept).
 --   * hmpps-cell-sharing-risk-assessment-api        - client_credentials, the API's *own*
 --       registration (SYSTEM_CLIENT_ID/SYSTEM_CLIENT_SECRET) used to call prisoner-search and
 --       prison-api. Without it the API cannot get a token and every downstream call 401s.
@@ -45,7 +47,7 @@ INSERT INTO oauth_client_details (client_id, access_token_validity, additional_i
                                   authorized_grant_types, autoapprove, client_secret, refresh_token_validity,
                                   resource_ids, scope, web_server_redirect_uri)
 SELECT 'hmpps-cell-sharing-risk-assessment-ui-system', access_token_validity, additional_information,
-       'ROLE_CSRA_REVIEW__R,ROLE_CSRA_REVIEW__RW,ROLE_PRISONER_CSRA__ADMIN,ROLE_PRISON_API__SPLASH_SCREEN__RO,ROLE_PRISON_API__SPLASH_SCREEN__RW',
+       'ROLE_CSRA_REVIEW__R,ROLE_CSRA_REVIEW__RW,ROLE_PRISONER_CSRA__ADMIN,ROLE_PRISON_API__SPLASH_SCREEN__RO,ROLE_PRISON_API__SPLASH_SCREEN__RW,ROLE_COURT_DATA_INGESTION__COURT_DATA_RO,ROLE_DOCUMENT_READER',
        authorized_grant_types, autoapprove, client_secret, refresh_token_validity,
        resource_ids, scope, web_server_redirect_uri
 FROM oauth_client_details
@@ -121,7 +123,8 @@ INSERT INTO oauth2_authorization_consent (registered_client_id, principal_name, 
 VALUES ('c57a0002-0000-4000-a000-000000000002', 'hmpps-cell-sharing-risk-assessment-ui-system',
         'ROLE_CSRA_REVIEW__R,ROLE_CSRA_REVIEW__RW,ROLE_PRISONER_CSRA__ADMIN,'
             || 'ROLE_PRISON_API__SPLASH_SCREEN__RO,ROLE_PRISON_API__SPLASH_SCREEN__RW,'
-            || 'PRISONER_SEARCH__PRISONER__RO');
+            || 'PRISONER_SEARCH__PRISONER__RO,'
+            || 'ROLE_COURT_DATA_INGESTION__COURT_DATA_RO,ROLE_DOCUMENT_READER');
 
 -- The API's own client: prisoner-search roll reads and prison-api movements (ROLE_ESTABLISHMENT_ROLL).
 -- The local WireMock stubs don't check the token, but the roles keep the local JWT the same shape as

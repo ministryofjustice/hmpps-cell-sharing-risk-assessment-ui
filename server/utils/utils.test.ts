@@ -16,6 +16,8 @@ import {
   formatLocation,
   formatMonthYear,
   formatTime,
+  formatLocalDate,
+  formatFileSize,
   initialiseName,
   isPrisonerNumber,
   parseCsraHistoryQuery,
@@ -207,6 +209,40 @@ describe('formatDayMonthYear', () => {
     ['thursday', '2026-08-06', 'Thursday 6 August 2026'],
   ])('%s formatDayMonthYear(%s) === %s', (_: string, input: string, expected: string) => {
     expect(formatDayMonthYear(input)).toEqual(expected)
+  })
+})
+
+describe('formatLocalDate', () => {
+  it('formats a zoneless date-time as a date', () => {
+    expect(formatLocalDate('2026-08-11T09:00:00')).toEqual('11 August 2026')
+  })
+
+  it('keeps the date the API wrote for a time that UTC formatting would shift back a day', () => {
+    // The court API returns zoneless LocalDateTimes; formatDate would read this as local time and
+    // then render it in UTC, moving it to 10 August during British Summer Time.
+    expect(formatLocalDate('2026-08-11T00:30:00')).toEqual('11 August 2026')
+  })
+
+  it.each([[undefined], [null], [''], ['not a date']])('returns an empty string for %p', value => {
+    expect(formatLocalDate(value)).toEqual('')
+  })
+})
+
+describe('formatFileSize', () => {
+  it.each([
+    [58634, '57.26 KB'],
+    [66765, '65.2 KB'],
+    [86630, '84.6 KB'],
+    [1024, '1 KB'],
+    [512, '512 bytes'],
+    [0, '0 bytes'],
+    [5 * 1024 * 1024, '5 MB'],
+  ])('formats %p as %p', (bytes, expected) => {
+    expect(formatFileSize(bytes)).toEqual(expected)
+  })
+
+  it.each([[undefined], [null], [-1], [Number.NaN]])('returns an empty string for %p', value => {
+    expect(formatFileSize(value)).toEqual('')
   })
 })
 

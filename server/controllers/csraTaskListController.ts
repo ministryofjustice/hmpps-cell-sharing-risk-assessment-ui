@@ -8,7 +8,7 @@ import { CsraAssessmentStageAnswers } from '../data/csraApiTypes'
 import config from '../config'
 import { Page } from '../services/auditService'
 
-type Dependencies = Pick<Services, 'auditService' | 'csraService'>
+type Dependencies = Pick<Services, 'auditService' | 'csraService' | 'warrantsService'>
 
 type SectionStatus = 'LOCKED' | 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETE'
 
@@ -46,6 +46,7 @@ function getSectionForTaskList(title: string, status: SectionStatus, href: strin
 export default function csraTaskListController({
   auditService,
   csraService,
+  warrantsService,
 }: Dependencies): RequestHandler<{ prisonerNumber: string; assessmentId: string }> {
   return async (req, res, _next) => {
     const { assessmentId } = req.params
@@ -137,11 +138,19 @@ export default function csraTaskListController({
 
     const { serviceUrls } = config
 
+    // Court warrants are a proof of concept behind a flag (MAPA-349). hasRecentWarrants swallows its
+    // own failures, so the evidence panel falls back to "no warrant information" and the task list
+    // itself — the primary journey — is never held up by a downstream spike integration.
+    const hasWarrants =
+      config.warrants.enabled && (await warrantsService.hasRecentWarrants(username, prisoner.prisonerNumber))
+
     res.render('pages/csraTaskList', {
       prisoner,
       assessment,
       taskLists,
       serviceUrls,
+      hasWarrants,
+      warrantsUrl: `/prisoner/${prisoner.prisonerNumber}/csra/${assessment.assessmentId}/warrants`,
     })
   }
 }

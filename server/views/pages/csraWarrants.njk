@@ -1,0 +1,95 @@
+{% extends "../partials/layout.njk" %}
+
+{% set prisonerName = (prisoner.firstName + " " + prisoner.lastName) | convertToTitleCase %}
+{% set title = "Warrants from the last " + windowDays + " days" %}
+{% set pageTitle = applicationName + " - " + title %}
+{% set mainClasses = "govuk-body" %}
+
+{% block outerHeading %}
+  {% include "../partials/compactPrisonerBanner.njk" %}
+
+  {{ super() }}
+{% endblock %}
+
+{% block heading %}
+  <h1 class="govuk-heading-l" data-qa="page-heading">{{ title }}</h1>
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <p class="govuk-body" data-qa="warrants-intro">
+        These warrants were found by searching the prisoner&rsquo;s details on the court system.
+      </p>
+    </div>
+  </div>
+
+  {% if warrants.length %}
+    <div class="govuk-grid-row govuk-!-margin-bottom-4">
+      <div class="govuk-grid-column-one-half">
+        <p class="govuk-body govuk-!-margin-bottom-0" data-qa="warrants-sort">
+          Sort by:
+          {% if sort == "recent" %}
+            <strong>Most recent</strong>
+          {% else %}
+            <a class="govuk-link" href="{{ basePath }}/warrants?sort=recent">Most recent</a>
+          {% endif %}
+          |
+          {% if sort == "earliest" %}
+            <strong>Earliest</strong>
+          {% else %}
+            <a class="govuk-link" href="{{ basePath }}/warrants?sort=earliest">Earliest</a>
+          {% endif %}
+        </p>
+      </div>
+      <div class="govuk-grid-column-one-half govuk-!-text-align-right">
+        <p class="govuk-body govuk-!-margin-bottom-0" data-qa="warrants-count">
+          Showing <strong>1</strong> to <strong>{{ warrants.length }}</strong>
+          of <strong>{{ warrants.length }}</strong> warrant{{ "s" if warrants.length != 1 }}
+        </p>
+      </div>
+    </div>
+
+    {% for warrant in warrants %}
+      <div class="csra-warrant" data-qa="warrant">
+        <h2 class="govuk-heading-s govuk-!-margin-bottom-2">
+          {# Opens in the browser's own PDF viewer: the proxy route responds Content-Disposition: inline. #}
+          {# Text kept tight against the tags: whitespace inside the anchor gets underlined too. #}
+          <a class="govuk-link" href="{{ basePath }}/warrants/{{ warrant.documentId }}/file" target="_blank" data-qa="warrant-link">{{ warrant.documentType | enumLabel }}</a>
+          {% if warrant.fileSize %}
+            <span class="govuk-body govuk-!-font-weight-regular" data-qa="warrant-size">PDF {{ warrant.fileSize | formatFileSize }}</span>
+          {% endif %}
+        </h2>
+
+        <dl class="csra-warrant__details">
+          <div class="csra-warrant__detail">
+            <dt class="govuk-!-font-weight-bold">Court name</dt>
+            <dd data-qa="warrant-court">{{ warrant.courtName }}</dd>
+          </div>
+          <div class="csra-warrant__detail">
+            <dt class="govuk-!-font-weight-bold">Hearing type</dt>
+            <dd data-qa="warrant-hearing-type">{{ warrant.hearingType }}</dd>
+          </div>
+          <div class="csra-warrant__detail">
+            <dt class="govuk-!-font-weight-bold">Date added</dt>
+            <dd data-qa="warrant-date-added">{{ warrant.ingestionAt | formatLocalDate }}</dd>
+          </div>
+          <div class="csra-warrant__detail">
+            <dt class="govuk-!-font-weight-bold">Source</dt>
+            {# Hardcoded: neither the court API nor document-api returns a usable source field.
+               Flagged on MAPA-361 as needing a real field before any production build. #}
+            <dd data-qa="warrant-source">Common platform</dd>
+          </div>
+        </dl>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="govuk-body" data-qa="warrants-empty">
+      No warrant information could be found for {{ prisonerName }}.
+    </p>
+  {% endif %}
+
+  <p class="govuk-body govuk-!-margin-top-6">
+    <a class="govuk-link" href="{{ basePath }}" data-qa="return-to-assessment">Return to assessment</a>
+  </p>
+{% endblock %}
