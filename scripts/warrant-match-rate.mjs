@@ -23,6 +23,7 @@
  * Credentials (client_credentials, prod) — put in .env, which is gitignored:
  *   WARRANT_SPIKE_CLIENT_ID=...
  *   WARRANT_SPIKE_CLIENT_SECRET=...
+ *   WARRANT_SPIKE_USERNAME=...        # optional NOMIS username, stamped onto the token for audit
  *
  * Roles needed, both already held by the CSRA UI system client:
  *   ROLE_CSRA_REVIEW__R                        (CSRA API recent arrivals)
@@ -92,8 +93,20 @@ async function getToken() {
   if (!clientId || !clientSecret) {
     throw new Error('Set WARRANT_SPIKE_CLIENT_ID and WARRANT_SPIKE_CLIENT_SECRET (see .env, which is gitignored)')
   }
+
+  /**
+   * Optional NOMIS username to stamp onto the client-credentials token. Both downstream APIs record
+   * it, so the reads land against a person in the audit trail rather than an anonymous client. Worth
+   * setting whenever the script is run with someone's personal credentials.
+   */
+  const username = process.env.WARRANT_SPIKE_USERNAME
+  const usernameParam = username ? `&username=${encodeURIComponent(username)}` : ''
+  console.log(
+    username ? `Stamping username ${username} onto the token` : 'No username stamped (set WARRANT_SPIKE_USERNAME)',
+  )
+
   const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
-  const response = await fetch(`${AUTH_URL}/oauth/token?grant_type=client_credentials`, {
+  const response = await fetch(`${AUTH_URL}/oauth/token?grant_type=client_credentials${usernameParam}`, {
     method: 'POST',
     headers: { Authorization: `Basic ${credentials}`, 'Content-Type': 'application/x-www-form-urlencoded' },
   })
