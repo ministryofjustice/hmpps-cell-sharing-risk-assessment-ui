@@ -27,7 +27,7 @@ function assertEnabled() {
 export default function csraWarrantsController({
   auditService,
   warrantsService,
-}: Dependencies): RequestHandler<{ prisonerNumber: string; assessmentId: string }> {
+}: Dependencies): RequestHandler<{ prisonerNumber: string; assessmentId?: string }> {
   return async (req, res) => {
     assertEnabled()
 
@@ -47,7 +47,15 @@ export default function csraWarrantsController({
       correlationId: req.id,
     })
 
-    const basePath = `/prisoner/${prisoner.prisonerNumber}/csra/${assessmentId}`
+    /**
+     * Every link on the page hangs off this: the sort links, the PDF links, the back link and the
+     * return link. Reached from a task list it stays within that assessment; reached standalone
+     * (see prisonerRouter) it sits directly under the prisoner, which is what lets the page work
+     * before any assessment exists.
+     */
+    const basePath = assessmentId
+      ? `/prisoner/${prisoner.prisonerNumber}/csra/${assessmentId}`
+      : `/prisoner/${prisoner.prisonerNumber}`
 
     res.render('pages/csraWarrants', {
       prisoner,
@@ -56,6 +64,7 @@ export default function csraWarrantsController({
       windowDays: WARRANT_WINDOW_DAYS,
       basePath,
       backLink: basePath,
+      returnLinkText: assessmentId ? 'Return to assessment' : 'Return to CSRA',
     })
   }
 }
@@ -69,7 +78,7 @@ export default function csraWarrantsController({
  */
 export function csraWarrantFileController({ warrantsService }: Pick<Services, 'warrantsService'>): RequestHandler<{
   prisonerNumber: string
-  assessmentId: string
+  assessmentId?: string
   documentId: string
 }> {
   return async (req, res) => {
