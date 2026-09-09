@@ -13,20 +13,25 @@
  * means match rate is a function of time since reception, and reporting a single
  * average would hide exactly the effect the spike is meant to measure.
  *
- * Usage:
- *   node scripts/warrant-match-rate.mjs                  # default prisons, 30-day window
- *   node scripts/warrant-match-rate.mjs --days 14        # narrower reception window
- *   node scripts/warrant-match-rate.mjs --prisons LEI,DNI
- *   node scripts/warrant-match-rate.mjs --limit 50       # cap prisoners per prison (dry run)
- *   node scripts/warrant-match-rate.mjs --no-cache       # ignore the on-disk cache
+ * Usage (--env-file is needed for the credentials below to be picked up):
+ *   node --env-file=.env scripts/warrant-match-rate.mjs                 # default prisons, 30 days
+ *   node --env-file=.env scripts/warrant-match-rate.mjs --days 14       # narrower arrival window
+ *   node --env-file=.env scripts/warrant-match-rate.mjs --prisons LEI,DNI
+ *   node --env-file=.env scripts/warrant-match-rate.mjs --limit 50      # cap per prison (dry run)
+ *   node --env-file=.env scripts/warrant-match-rate.mjs --no-cache      # ignore the on-disk cache
  *
  * Credentials (client_credentials, prod) — put in .env, which is gitignored:
  *   WARRANT_SPIKE_CLIENT_ID=...
  *   WARRANT_SPIKE_CLIENT_SECRET=...
  *
- * The client needs, on top of whatever it already has:
+ * Roles needed, both already held by the CSRA UI system client:
+ *   ROLE_CSRA_REVIEW__R                        (CSRA API recent arrivals)
  *   ROLE_COURT_DATA_INGESTION__COURT_DATA_RO   (court API)
- *   ROLE_PRISONER_SEARCH or ROLE_GLOBAL_SEARCH (attribute search)
+ *
+ * Arrivals come from the CSRA API rather than prisoner-search attribute search: attribute search
+ * requires ROLE_PRISONER_SEARCH or ROLE_GLOBAL_SEARCH, which this client does not have, and the
+ * CSRA endpoint is a better fit anyway — it is arrivals at an establishment rather than a reception
+ * date, and it carries an arrival type, so the match rate can be split by how the person got there.
  *
  * Output goes to scripts/.warrant-match-rate/ (gitignored): a per-prisoner CSV and the
  * summary tables below. That directory holds real prison numbers — it must not be
@@ -38,7 +43,7 @@ import path from 'node:path'
 import process from 'node:process'
 
 const AUTH_URL = 'https://sign-in.hmpps.service.justice.gov.uk/auth'
-const PRISONER_SEARCH_URL = 'https://prisoner-search.prison.service.justice.gov.uk'
+const CSRA_API_URL = 'https://cell-sharing-risk-assessment-api.hmpps.service.justice.gov.uk'
 const COURT_API_URL = 'https://court-data-ingestion-api.hmpps.service.justice.gov.uk'
 
 // Busy locals/remand prisons spread across regions, per the story's "sample across a few
@@ -132,38 +137,35 @@ async function cached(key, useCache, fn) {
 
 // ---------------------------------------------------------------- upstream calls
 
-/** Recent receptions at one prison, via prisoner-search attribute search. */
-async function getRecentReceptions(token, prisonId, sinceDate, limit) {
-  const pageSize = 500
-  const collected = []
-  for (let page = 0; ; page += 1) {
-    const response = await fetch(
-      `${PRISONER_SEARCH_URL}/attribute-search?page=${page}&size=${pageSize}` +
-        `&responseFields=prisonerNumber&responseFields=receptionDate&responseFields=prisonId`,
-      {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          joinType: 'AND',
-          queries: [
-            {
-              joinType: 'AND',
-              matchers: [
-                { type: 'String', attribute: 'prisonId', condition: 'IS', searchTerm: prisonId },
-                { type: 'Date', attribute: 'receptionDate', minValue: sinceDate },
-              ],
-            },
-          ],
-        }),
-      },
-    )
-    if (!response.ok)
-      throw new Error(`Attribute search failed for ${prisonId}: ${response.status} ${await response.text()}`)
-    const body = await response.json()
-    collected.push(...(body.content ?? []))
-    if (body.last !== false || (limit && collected.length >= limit)) break
+/**
+ * Recent arrivals at one prison, from the CSRA API.
+ *
+ * The response is grouped into one section per calendar day (every day present, even when empty),
+ * so it is flattened back into a single list. One row per prisoner per day, so someone who arrived
+ * more than once in the window appears more than once; deduplicated on prison number below, keeping
+ * their most recent arrival, since that is the one an officer would be assessing against.
+ */
+async function getRecentArrivals(token, prisonId, days, limit) {
+  const response = await fetch(`${CSRA_API_URL}/csra-review/prison/${prisonId}/recent-arrivals?days=${days}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+  })
+  if (!response.ok) {
+    throw new Error(`Recent arrivals failed for ${prisonId}: ${response.status} ${await response.text()}`)
   }
-  return limit ? collected.slice(0, limit) : collected
+  const body = await response.json()
+
+  const latestByPrisoner = new Map()
+  for (const day of body.days ?? []) {
+    for (const arrival of day.arrivals ?? []) {
+      const existing = latestByPrisoner.get(arrival.prisonerNumber)
+      if (!existing || Date.parse(arrival.arrivedAt) > Date.parse(existing.arrivedAt)) {
+        latestByPrisoner.set(arrival.prisonerNumber, { ...arrival, prisonId })
+      }
+    }
+  }
+
+  const arrivals = [...latestByPrisoner.values()].sort((a, b) => Date.parse(b.arrivedAt) - Date.parse(a.arrivedAt))
+  return limit ? arrivals.slice(0, limit) : arrivals
 }
 
 /** Court hearings for one prisoner. A 404 or empty list is a normal "no match", not an error. */
@@ -194,15 +196,16 @@ function summarisePrisoner(prisoner, hearings) {
   const now = Date.now()
   const warrantsInWindow = warrants.filter(w => (now - Date.parse(w.ingestionAt)) / 86_400_000 <= 30)
 
-  const daysSinceReception = prisoner.receptionDate
-    ? Math.floor(daysBetween(new Date().toISOString(), prisoner.receptionDate))
+  const daysSinceArrival = prisoner.arrivedAt
+    ? Math.floor(daysBetween(new Date().toISOString(), prisoner.arrivedAt))
     : null
 
   return {
     prisonerNumber: prisoner.prisonerNumber,
     prisonId: prisoner.prisonId,
-    receptionDate: prisoner.receptionDate ?? '',
-    daysSinceReception,
+    arrivedAt: prisoner.arrivedAt ?? '',
+    arrivalType: prisoner.arrivalType ?? '',
+    daysSinceArrival,
     matched: hearings.length > 0,
     hearingCount: hearings.length,
     documentCount: documents.length,
@@ -240,7 +243,7 @@ function report(results, prisons) {
   const matched = results.filter(r => r.matched)
 
   console.log(`\n${'='.repeat(72)}`)
-  console.log(`Sampled ${total} recent receptions across ${prisons.length} prisons`)
+  console.log(`Sampled ${total} recent arrivals across ${prisons.length} prisons`)
   console.log(`Matched by the court API: ${matched.length} (${percent(matched.length, total)})`)
   console.log(
     `With at least one warrant in the last 30 days: ` +
@@ -251,19 +254,19 @@ function report(results, prisons) {
 
   // The headline of the spike: does the match rate hold up on day one?
   const buckets = [
-    ['0 (day of reception)', r => r.daysSinceReception === 0],
-    ['1', r => r.daysSinceReception === 1],
-    ['2', r => r.daysSinceReception === 2],
-    ['3-6', r => r.daysSinceReception >= 3 && r.daysSinceReception <= 6],
-    ['7-13', r => r.daysSinceReception >= 7 && r.daysSinceReception <= 13],
-    ['14-29', r => r.daysSinceReception >= 14 && r.daysSinceReception <= 29],
-    ['30+', r => r.daysSinceReception >= 30],
+    ['0 (day of arrival)', r => r.daysSinceArrival === 0],
+    ['1', r => r.daysSinceArrival === 1],
+    ['2', r => r.daysSinceArrival === 2],
+    ['3-6', r => r.daysSinceArrival >= 3 && r.daysSinceArrival <= 6],
+    ['7-13', r => r.daysSinceArrival >= 7 && r.daysSinceArrival <= 13],
+    ['14-29', r => r.daysSinceArrival >= 14 && r.daysSinceArrival <= 29],
+    ['30+', r => r.daysSinceArrival >= 30],
   ]
   table(
-    'Match rate by days since reception  (the question the story actually asks)',
-    ['Days since reception', 'Sampled', 'Matched', 'Match rate', 'Has 30-day warrant', 'Warrant rate'],
+    'Match rate by days since arrival  (the question the story actually asks)',
+    ['Days since arrival', 'Sampled', 'Matched', 'Match rate', 'Has 30-day warrant', 'Warrant rate'],
     buckets.map(([label, predicate]) => {
-      const cohort = results.filter(r => r.daysSinceReception !== null && predicate(r))
+      const cohort = results.filter(r => r.daysSinceArrival !== null && predicate(r))
       const cohortMatched = cohort.filter(r => r.matched).length
       const cohortWarrants = cohort.filter(r => r.warrantsInLast30Days > 0).length
       return [
@@ -286,6 +289,26 @@ function report(results, prisons) {
       const cohortWarrants = cohort.filter(r => r.warrantsInLast30Days > 0).length
       return [
         `${prisonId} ${DEFAULT_PRISONS[prisonId] ?? ''}`.trim(),
+        cohort.length,
+        cohortMatched,
+        percent(cohortMatched, cohort.length),
+        percent(cohortWarrants, cohort.length),
+      ]
+    }),
+  )
+
+  // A new admission or a court return follows a hearing, so a warrant is plausible. A transfer in
+  // does not, so a low match rate there is expected rather than a failure of the integration.
+  const arrivalTypes = [...new Set(results.map(r => r.arrivalType).filter(Boolean))].sort()
+  table(
+    'Match rate by arrival type',
+    ['Arrival type', 'Sampled', 'Matched', 'Match rate', 'Warrant rate'],
+    arrivalTypes.map(arrivalType => {
+      const cohort = results.filter(r => r.arrivalType === arrivalType)
+      const cohortMatched = cohort.filter(r => r.matched).length
+      const cohortWarrants = cohort.filter(r => r.warrantsInLast30Days > 0).length
+      return [
+        arrivalType,
         cohort.length,
         cohortMatched,
         percent(cohortMatched, cohort.length),
@@ -328,22 +351,21 @@ function report(results, prisons) {
 async function main() {
   const args = parseArgs(process.argv.slice(2))
 
-  const since = new Date(Date.now() - args.days * 86_400_000).toISOString().slice(0, 10)
-  console.log(`Sampling receptions since ${since} at: ${args.prisons.join(', ')}`)
+  console.log(`Sampling arrivals in the last ${args.days} days at: ${args.prisons.join(', ')}`)
   if (args.limit) console.log(`Capped at ${args.limit} prisoners per prison (dry run)`)
 
   const token = await getToken()
 
   const prisoners = (
     await mapWithLimit(args.prisons, 2, async prisonId => {
-      const found = await getRecentReceptions(token, prisonId, since, args.limit)
-      console.log(`  ${prisonId}: ${found.length} recent receptions`)
+      const found = await getRecentArrivals(token, prisonId, args.days, args.limit)
+      console.log(`  ${prisonId}: ${found.length} recent arrivals`)
       return found
     })
   ).flat()
 
   if (prisoners.length === 0) {
-    console.log('\nNo receptions found — widen --days or check the prison codes.')
+    console.log('\nNo arrivals found — widen --days or check the prison codes.')
     return
   }
 
@@ -362,8 +384,9 @@ async function main() {
   const columns = [
     'prisonerNumber',
     'prisonId',
-    'receptionDate',
-    'daysSinceReception',
+    'arrivedAt',
+    'arrivalType',
+    'daysSinceArrival',
     'matched',
     'hearingCount',
     'documentCount',
