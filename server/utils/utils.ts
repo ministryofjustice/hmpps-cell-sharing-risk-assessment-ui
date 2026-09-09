@@ -86,6 +86,40 @@ export const formatDayMonthYear = (isoDate?: string | null): string => {
 }
 
 /**
+ * Format an ISO date-time as a date only, e.g. "11 August 2026".
+ *
+ * Deliberately not formatDate: like the CSRA API's audit stamps, the court API's timestamps are
+ * zoneless LocalDateTimes, which `new Date()` reads as local time. Formatting those in UTC as
+ * formatDate does would shift anything before 01:00 back a day during British Summer Time.
+ */
+export const formatLocalDate = (isoDateTime?: string | null): string => {
+  if (!isoDateTime) return ''
+  const dateTime = parseISO(isoDateTime)
+  if (!isValid(dateTime)) return ''
+  return format(dateTime, 'd MMMM yyyy')
+}
+
+/**
+ * Format a byte count the way the warrants page shows it, e.g. "57.26 KB", "65.2 KB".
+ *
+ * Trailing zeroes are trimmed rather than padded to a fixed two decimal places, which is how the
+ * designs read. Returns '' when the size is unknown, so the template can simply omit it.
+ */
+export const formatFileSize = (bytes?: number | null): string => {
+  if (bytes === undefined || bytes === null || !Number.isFinite(bytes) || bytes < 0) return ''
+  if (bytes < 1024) return `${bytes} bytes`
+
+  const units = ['KB', 'MB', 'GB']
+  let size = bytes / 1024
+  let unitIndex = 0
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024
+    unitIndex += 1
+  }
+  return `${Number(size.toFixed(2))} ${units[unitIndex]}`
+}
+
+/**
  * Format an ISO date-time as a time, e.g. "09:30". Returns '' for a missing/invalid value.
  */
 export const formatTime = (isoDateTime?: string | null): string => {

@@ -16,6 +16,10 @@ generic-service:
     COMPONENT_API_URL: 'https://frontend-components-dev.hmpps.service.justice.gov.uk'
     DPS_URL: 'https://prisoner-dev.digital.prison.service.justice.gov.uk'
     PRISON_API_URL: 'https://prison-api-dev.prison.service.justice.gov.uk'
+    COURT_DATA_INGESTION_API_URL: 'https://court-data-ingestion-api-dev.hmpps.service.justice.gov.uk'
+    DOCUMENT_API_URL: 'https://document-api-dev.hmpps.service.justice.gov.uk'
+    # Court warrants proof of concept (MAPA-349). Dev only until the spike reports back.
+    WARRANTS_ENABLED: 'true'
     MANAGE_USERS_API_URL: 'https://manage-users-api-dev.hmpps.service.justice.gov.uk'
     ENVIRONMENT_NAME: DEV
     AUDIT_ENABLED: "false"

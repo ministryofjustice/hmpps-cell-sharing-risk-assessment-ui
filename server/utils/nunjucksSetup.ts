@@ -18,6 +18,8 @@ import {
   formatDate,
   formatDateTime,
   formatTime,
+  formatLocalDate,
+  formatFileSize,
   formatMonthYear,
   initialiseName,
   formatDayMonth,
@@ -112,6 +114,8 @@ export default function nunjucksSetup(app: express.Express): void {
   njkEnv.addFilter('formatDate', formatDate)
   njkEnv.addFilter('formatDateTime', formatDateTime)
   njkEnv.addFilter('formatTime', formatTime)
+  njkEnv.addFilter('formatLocalDate', formatLocalDate)
+  njkEnv.addFilter('formatFileSize', formatFileSize)
   njkEnv.addFilter('formatMonthYear', formatMonthYear)
   njkEnv.addFilter('formatDayMonth', formatDayMonth)
   njkEnv.addFilter('formatDayMonthYear', formatDayMonthYear)

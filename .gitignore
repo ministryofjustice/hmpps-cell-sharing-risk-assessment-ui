@@ -127,3 +127,6 @@ integration_tests/screenshots/
 */*.iml
 **/Chart.lock
 **/.DS_Store
+
+# MAPA-361 warrant match-rate spike output (contains real prison numbers)
+scripts/.warrant-match-rate/
