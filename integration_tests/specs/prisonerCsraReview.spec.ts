@@ -104,7 +104,7 @@ test.describe('CSRA review detail', () => {
   test('says the captured answers are not available for a review created in this service', async ({ page }) => {
     await signInAs(page)
     await csraApi.stubGetCsraReview(REVIEW_ID, {
-      type: 'CSRA_INITIAL_REVIEW',
+      type: 'CSRA_INITIAL_ASSESSMENT',
       interimResult: 'STANDARD',
       interimResultDate: '2026-08-03',
       legacy: null,
@@ -113,7 +113,7 @@ test.describe('CSRA review detail', () => {
     await page.goto(`/prisoner/A5197BD/history/${REVIEW_ID}`)
 
     const reviewPage = await PrisonerCsraReviewPage.verifyOnPage(page)
-    await expect(reviewPage.details).toContainText('CSRA initial review')
+    await expect(reviewPage.details).toContainText('CSRA initial assessment')
     await expect(reviewPage.dpsAnswersNote).toContainText('not available in this service yet')
     await expect(reviewPage.questions).toHaveCount(0)
   })

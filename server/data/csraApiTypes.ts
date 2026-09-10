@@ -70,24 +70,28 @@ export interface CsraVulnerabilityDetail {
 /**
  * The kind of CSRA record (mirrors jpa.CsraType): legacy NOMIS types plus the new DPS ones.
  *
- * Two names mislead. **`CSRA_INITIAL_REVIEW` is an assessment**, not a review — it is the new DPS
- * initial assessment journey. `REVIEW` is the *legacy NOMIS* review, not the new-model `CSRA_REVIEW`.
- * Renaming both is MAPA-367.
+ * MAPA-367 renamed the two that misled: `CSRA_INITIAL_REVIEW` (an assessment, despite the name) became
+ * `CSRA_INITIAL_ASSESSMENT`, and the legacy `REVIEW` became `NOMIS_REVIEW` so it cannot be read as the
+ * new-model `CSRA_REVIEW`. Both old names are still listed below — see the note there.
  *
  * Prefer `assessmentType` (`CsraAssessmentTypeBucket`) wherever you only need "assessment or review" —
  * it is returned alongside every `type` and needs none of this decoded.
  */
 export type CsraReviewType =
-  // Legacy NOMIS types, all of which are assessments except REVIEW.
+  // Legacy NOMIS types, all of which are assessments except NOMIS_REVIEW.
   | 'FULL'
   | 'HEALTH'
   | 'LOCATE'
   | 'RATING'
   | 'RECEPTION'
-  | 'REVIEW'
+  | 'NOMIS_REVIEW'
   // New DPS types.
-  | 'CSRA_INITIAL_REVIEW' // an ASSESSMENT, despite the name
-  | 'CSRA_REVIEW' // a REVIEW
+  | 'CSRA_INITIAL_ASSESSMENT'
+  | 'CSRA_REVIEW'
+  // Pre-MAPA-367 names, kept so this stays correct against an API that has not been deployed yet or
+  // has been rolled back. Removable once every environment is past V20.
+  | 'REVIEW'
+  | 'CSRA_INITIAL_REVIEW'
 
 /**
  * The legacy NOMIS detail carried by a *history row* (mirrors dto.CsraLegacyDetail).

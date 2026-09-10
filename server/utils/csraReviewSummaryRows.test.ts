@@ -97,7 +97,7 @@ describe('buildDpsReviewRows', () => {
   it('shows the review fields the API does return', () => {
     const rows = buildDpsReviewRows(
       review({
-        type: 'CSRA_INITIAL_REVIEW',
+        type: 'CSRA_INITIAL_ASSESSMENT',
         interimResult: 'STANDARD',
         interimResultDate: '2026-08-03',
         finalResult: 'HIGH_GENERAL',
@@ -106,7 +106,7 @@ describe('buildDpsReviewRows', () => {
     )
 
     expect(valueOf(rows, 'Assessment date')).toBe('31 October 2016')
-    expect(valueOf(rows, 'Type')).toBe('CSRA initial review')
+    expect(valueOf(rows, 'Type')).toBe('CSRA initial assessment')
     expect(valueOf(rows, 'Location')).toBe('Leeds (HMP)')
     expect(valueOf(rows, 'Provisional result')).toBe('Standard')
     expect(valueOf(rows, 'Provisional result date')).toBe('3 August 2026')
@@ -117,7 +117,7 @@ describe('buildDpsReviewRows', () => {
   })
 
   it('omits a result block that has not been given yet', () => {
-    const rows = buildDpsReviewRows(review({ type: 'CSRA_INITIAL_REVIEW' }))
+    const rows = buildDpsReviewRows(review({ type: 'CSRA_INITIAL_ASSESSMENT' }))
 
     expect(labels(rows)).not.toContain('Provisional result')
     expect(labels(rows)).not.toContain('Final result')

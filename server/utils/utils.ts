@@ -256,14 +256,22 @@ export const enumLabel = (value?: string | null): string => {
 
 /**
  * Human-readable label for a CSRA record type (mirrors the API's CsraType enum). The new-model values
- * need spelling out; enumLabel alone would render them "Csra initial review".
+ * need spelling out; enumLabel alone would render them "Csra initial assessment".
+ *
+ * Both the pre- and post-rename names are handled on purpose (MAPA-367 renamed CSRA_INITIAL_REVIEW to
+ * CSRA_INITIAL_ASSESSMENT and the legacy REVIEW to NOMIS_REVIEW). Shipping this ahead of the API means
+ * there is no window where a deployed page renders "Csra initial assessment" at a user, and it keeps
+ * the page correct if the API is ever rolled back. The old cases cost nothing; leave them.
  */
 export const csraTypeLabel = (type?: string | null): string => {
   switch (type) {
+    case 'CSRA_INITIAL_ASSESSMENT':
     case 'CSRA_INITIAL_REVIEW':
-      return 'CSRA initial review'
+      return 'CSRA initial assessment'
     case 'CSRA_REVIEW':
       return 'CSRA review'
+    case 'NOMIS_REVIEW':
+      return 'Review'
     default:
       return enumLabel(type)
   }
