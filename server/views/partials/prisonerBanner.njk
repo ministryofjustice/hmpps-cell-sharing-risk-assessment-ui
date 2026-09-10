@@ -12,15 +12,15 @@
     alt="Photograph of {{ bannerPrisonerName }}"
   />
   <div class="csra-prisoner-banner__body">
-    <p class="csra-prisoner-banner__name">
-      {% if dpsUrl %}
-        <a class="govuk-link" href="{{ dpsUrl }}/prisoner/{{ prisoner.prisonerNumber }}" data-qa="prisoner-name">{{ bannerPrisonerName }}</a>
-      {% else %}
-        <span data-qa="prisoner-name">{{ bannerPrisonerName }}</span>
-      {% endif %}
-      <span class="csra-prisoner-banner__number">{{ prisoner.prisonerNumber }}</span>
-    </p>
     <dl class="csra-prisoner-banner__grid">
+      <div class="csra-prisoner-banner__item csra-prisoner-banner__name">
+        {% if dpsUrl %}
+          <a class="govuk-link" href="{{ dpsUrl }}/prisoner/{{ prisonerNumber }}" data-qa="prisoner-name">{{ bannerPrisonerName }}</a>
+        {% else %}
+          <span data-qa="prisoner-name">{{ bannerPrisonerName }}</span>
+        {% endif %}
+        <span class="csra-prisoner-banner__number">{{ prisonerNumber }}</span>
+      </div>
       <div class="csra-prisoner-banner__item">
         <dt>Date of birth</dt>
         <dd data-qa="prisoner-dob">{{ (prisoner.dateOfBirth | formatDate) or "Not entered" }}</dd>

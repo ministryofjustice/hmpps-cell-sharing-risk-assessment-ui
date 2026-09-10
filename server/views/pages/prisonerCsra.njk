@@ -17,75 +17,163 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
-      <h1 class="govuk-heading-xl govuk-!-margin-bottom-2" data-qa="page-heading">Current CSRA rating</h1>
+      <h1 class="govuk-heading-l" data-qa="page-heading">Current CSRA rating</h1>
+
       {% if csra.status == "NO_RATING" %}
-        {{ govukInsetText({
-          attributes: { "data-qa": "no-csra" },
-          html: "<strong>This person does not have a current CSRA.</strong><br>A cell sharing risk assessment needs to be carried out."
-        }) }}
+
+        <div class="csra-rating-panel" data-qa="no-csra">
+          <h2 class="csra-rating-panel__title">
+            No rating
+          </h2>
+          <p class="csra-rating-panel__body">
+            This person requires an assessment.
+          </p>
+        </div>
+
       {% else %}
-        <p class="govuk-body">
-          {{ govukTag({
-            text: csra.rating | csraRatingLabel or (csra.status | csraStatusLabel),
-            classes: csra.rating | csraRatingTagClass,
-            attributes: { "data-qa": "csra-rating" }
-          }) }}
+
+        <div class="csra-rating-panel govuk-!-margin-bottom-4 {{ csra.rating | csraRatingPanelClass }}" data-qa="csra-rating-panel">
+          <span class="govuk-caption-m">{{ "Provisional assessment" if csra.provisional else "Assessment" }}</span>
+          <h2 class="csra-rating-panel__title">
+            {{ csra.rating | csraRatingLabel or (csra.status | csraStatusLabel) }}
+          </h2>
+
           {% if csra.provisional %}
-            {{ govukTag({ text: "Provisional", classes: "govuk-tag--yellow", attributes: { "data-qa": "csra-provisional" } }) }}
+            <p class="govuk-body csra-not-complete-text">
+              {% if csra.ratingStage == "INTERIM" %}
+                Review
+              {% else %}
+                Full assessment
+              {% endif %}
+              not completed due to prisoner transfer.
+            </p>
           {% endif %}
-        </p>
 
-        {% set ratingRows = [
-          { key: { text: "Status" }, value: { text: csra.status | csraStatusLabel } },
-          { key: { text: "Assessment comment" }, value: { text: csra.assessmentComment or "None recorded" } }
-        ] %}
-        {% if csra.provisionalAssessmentComment %}
-          {% set ratingRows = (ratingRows.push({ key: { text: "Provisional (Day 1) comment" }, value: { text: csra.provisionalAssessmentComment } }), ratingRows) %}
-        {% endif %}
-        {% if csra.provisionalDate %}
-          {% set ratingRows = (ratingRows.push({ key: { text: "Provisional rating date" }, value: { text: csra.provisionalDate | formatDate } }), ratingRows) %}
-        {% endif %}
-        {% if csra.finalDate %}
-          {% set ratingRows = (ratingRows.push({ key: { text: "Final rating date" }, value: { text: csra.finalDate | formatDate } }), ratingRows) %}
-        {% endif %}
-        {% if csra.nextReviewDate %}
-          {% set ratingRows = (ratingRows.push({ key: { text: "Next review due" }, value: { text: csra.nextReviewDate | formatDate } }), ratingRows) %}
-        {% endif %}
+          {% if csra.riskTo.length %}
+            <p class="govuk-body govuk-!-margin-bottom-0">Risk to:</p>
+            <ul class="govuk-list govuk-list--bullet" data-qa="csra-risk-to">
+              {% for risk in csra.riskTo %}
+                <li>{{ risk.category | enumLabel }}{% if risk.details %} — {{ risk.details }}{% endif %}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
 
-        {{ govukSummaryList({ rows: ratingRows, attributes: { "data-qa": "csra-summary" } }) }}
+          {% if csra.vulnerabilities.length %}
+            <h2 class="govuk-body govuk-!-margin-bottom-0">Vulnerable due to:</h2>
+            <ul class="govuk-list govuk-list--bullet" data-qa="csra-vulnerabilities">
+              {% for vulnerability in csra.vulnerabilities %}
+                <li>{{ vulnerability.category | enumLabel }}{% if vulnerability.details %} — {{ vulnerability.details }}{% endif %}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
 
-        {% if csra.riskTo.length %}
-          <h2 class="govuk-heading-m govuk-!-margin-top-6">Who this person is a risk to</h2>
-          <ul class="govuk-list govuk-list--bullet" data-qa="csra-risk-to">
-            {% for risk in csra.riskTo %}
-              <li>{{ risk.category | enumLabel }}{% if risk.details %} — {{ risk.details }}{% endif %}</li>
-            {% endfor %}
-          </ul>
-        {% endif %}
+          {% if csra.assessmentComment %}
+            <p id="csra-assessment-comment" class="govuk-body csra-comment">
+              Assessment comment: {{ csra.assessmentComment }}
+            </p>
+          {% endif %}
 
-        {% if csra.vulnerabilities.length %}
-          <h2 class="govuk-heading-m govuk-!-margin-top-6">Vulnerabilities</h2>
-          <ul class="govuk-list govuk-list--bullet" data-qa="csra-vulnerabilities">
-            {% for vulnerability in csra.vulnerabilities %}
-              <li>{{ vulnerability.category | enumLabel }}{% if vulnerability.details %} — {{ vulnerability.details }}{% endif %}</li>
-            {% endfor %}
-          </ul>
-        {% endif %}
+          {% if csra.provisionalAssessmentComment %}
+            <p id="csra-provisional-assessment-comment" class="govuk-body csra-comment">
+              Provisional assessment comment: {{ csra.provisionalAssessmentComment }}
+            </p>
+          {% endif %}
+
+          {% if csra.finalDate or csra.provisionalDate %}
+            <p class="govuk-body csra-secondary-text govuk-!-margin-bottom-3">
+              Assessed at {{ csra.prisonName }} on
+              {% if csra.provisionalDate %}
+                {{ csra.provisionalDate | formatDate }}{{ ' and ' ~ csra.finalDate | formatDate if csra.finalDate else '' }}.
+              {% else %}
+                {{ csra.finalDate | formatDate or 'unknown date' }}.
+              {% endif %}
+            </p>
+          {% endif %}
+
+          {% if csra.ratingStage != "INTERIM" %}
+            {% set viewLinkText %}
+              {% if csra.type == "CSRA_REVIEW" %}
+                View full review
+              {% elif csra.ratingStage == "PROVISIONAL" %}
+                View full provisional assessment
+              {% else %}
+                View full assessment
+              {% endif %}
+            {% endset %}
+            <p class="govuk-body govuk-!-margin-bottom-0">
+              <a href="#" class="govuk-link">{{ viewLinkText }}</a>
+            </p>
+          {% endif %}
+        </div>
       {% endif %}
 
-      <hr>
+      <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
 
-      <h2 class="govuk-heading-m">Assessment</h2>
-
-      {% if csra.reviewId %}
-        <p>Continue the in progress cell sharing risk assessment.</p>
-
-        <a href="/prisoner/{{ prisoner.prisonerNumber }}/csra/{{ csra.reviewId }}" class="govuk-button govuk-button--primary">Continue assessment</a>
-      {% else %}
-        <p>Start a new cell sharing risk assessment.</p>
-
-        <a href="/prisoner/{{ prisoner.prisonerNumber }}/csra/start" class="govuk-button govuk-button--primary">Start assessment</a>
+      {% set reviewInProgress = csra.inProgress and csra.inProgress.type == "CSRA_REVIEW" %}
+      {% if hasRole('CSRA__ASSESSMENT_EDIT') and not reviewInProgress %}
+        <div id="csra-assessment-section">
+          <h2 class="govuk-heading-m">
+            Assessment
+            {% if csra.inProgress %}
+              in progress
+            {% endif %}
+          </h2>
+          {% if csra.inProgress%}
+            <p class="govuk-body">
+              {% if csra.ratingStage == "PROVISIONAL" %}
+                A provisional rating has been entered. Complete the assessment to confirm a final rating.
+              {% elif csra.inProgress %}
+                An assessment was started by {{ csra.inProgress.startedBy | userDisplayName }} on {{ csra.startedAt | formatDate }}.
+              {% else %}
+                Start a new cell sharing risk assessment.
+              {% endif %}
+            </p>
+            <a class="govuk-button govuk-!-margin-bottom-0" href="/prisoner/{{ prisoner.prisonerNumber }}/csra/{{ csra.reviewId }}" data-qa="start-assessment">
+              Continue assessment
+            </a>
+          {% else %}
+            <p class="govuk-body">
+              Start a new cell sharing risk assessment.
+            </p>
+            <a class="govuk-button govuk-!-margin-bottom-0" href="/prisoner/{{ prisoner.prisonerNumber }}/csra/start" data-qa="start-assessment">
+              Start assessment
+            </a>
+          {% endif %}
+        </div>
       {% endif %}
+
+      {% if csra.nextReviewDate and not reviewInProgress %}
+        <div id="csra-review-due-date-section" class="govuk-!-margin-top-6">
+          <h2 class="govuk-heading-m">Review due by</h2>
+          <p class="govuk-body">
+            {{ csra.nextReviewDate | formatDayMonthYear }}
+          </p>
+        </div>
+      {% endif %}
+
+      {% if hasRole('CSRA__REVIEW_EDIT') %}
+        <div id="csra-review-csra-section" class="govuk-!-margin-top-6">
+          <h2 class="govuk-heading-m">Review cell sharing risk</h2>
+          <p class="govuk-body">
+            Start a review when the prisoner’s risk requires reassessment.
+          </p>
+          <a class="govuk-button govuk-button--secondary govuk-!-margin-bottom-1" href="/prisoner/{{ prisonerNumber }}/csra/start-review" data-qa="start-review">
+            Start review
+          </a>
+        </div>
+      {% endif %}
+
+      <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+
+      <div id="csra-history-section">
+          <h2 class="govuk-heading-m">View complete CSRA history</h2>
+          <p class="govuk-body">
+            See information from all CSRA assessments and reviews.
+          </p>
+          <a class="govuk-button govuk-button--secondary" href="{{"/prisoner/" + prisonerNumber + "/history" + (fromQuery or "")}}" data-qa="view-history">
+            View CSRA history
+          </a>
+      </div>
     </div>
   </div>
 {% endblock %}

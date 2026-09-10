@@ -178,6 +178,21 @@ export const csraRatingTagClass = (rating?: string | null): string => {
   }
 }
 
+/** GOV.UK tag colour modifier class for a CSRA result: high ratings red, standard blue, unknown grey. */
+export const csraRatingPanelClass = (rating?: string | null): string => {
+  switch (rating) {
+    case 'HIGH':
+    case 'HIGH_GENERAL':
+      return 'csra-rating-panel--dark-red'
+    case 'HIGH_SPECIFIC':
+      return 'csra-rating-panel--red'
+    case 'STANDARD':
+      return 'csra-rating-panel--green'
+    default:
+      return 'csra-rating-panel--grey'
+  }
+}
+
 /** Human-readable label for a CSRA rating status (mirrors the API's CsraRatingStatus enum). */
 export const csraStatusLabel = (status?: string | null): string => {
   switch (status) {
