@@ -48,6 +48,7 @@ const history: CsraReviewHistory = {
     {
       id: REVIEW_ID,
       type: 'REVIEW',
+      assessmentType: 'REVIEW',
       rating: 'HIGH',
       reviewComment: 'Previous violence towards cellmates.',
       prisonId: 'LEI',
