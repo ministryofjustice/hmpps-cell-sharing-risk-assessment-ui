@@ -173,6 +173,49 @@ to self-seed a few standard and high-risk CSRA reviews (see
 [docs/running-locally.md](./docs/running-locally.md) for what it does), or add data through the
 API's Swagger UI at http://localhost:8090/swagger-ui/index.html.
 
+## Roles
+
+Two separate sets, and mixing them up is the easy mistake.
+
+### User roles
+
+Granted to people in HMPPS Auth, and gate what a signed-in user sees and may do. The app stores them
+with the `ROLE_` prefix stripped (see `server/middleware/setUpCurrentUser.ts`), which is how they appear
+in `server/utils/roles.ts` and on `res.locals.user.userRoles`.
+
+| Auth role | Grants |
+| --- | --- |
+| `ROLE_CSRA__ASSESSMENT_EDIT` | Create and update CSRA **assessments** |
+| `ROLE_CSRA__REVIEW_EDIT` | Create and update CSRA **reviews** |
+| `ROLE_CSRA__ADMIN` | The rollout console — switch prisons on and off for CSRA in DPS, and control the legacy NOMIS CSRA screens. National, not caseload-scoped |
+| `ROLE_GLOBAL_SEARCH` | View a prisoner regardless of caseload |
+| `ROLE_INACTIVE_BOOKINGS` | View prisoners no longer in an establishment (released or transferred out) |
+
+**Viewing CSRA information needs no role at all.** Reads are gated by caseload, not by role
+(`server/middleware/checkPrisonerAccess.ts`), so a user with neither edit role is read-only.
+
+A write needs **both** the relevant edit role **and** the establishment to be switched on for CSRA in
+DPS. Those are independent conditions, and the second is enforced by the API as well as here — see below.
+
+### System roles
+
+Held by this service's client-credentials client, not by any person. Every call to the CSRA API is made
+`asSystem` — a client-credentials token stamped with the acting username, so the username reaches the API
+for auditing but **the user's own roles and caseloads never do**.
+
+| Auth role | Used for |
+| --- | --- |
+| `ROLE_CSRA_REVIEW__R` | All CSRA reads |
+| `ROLE_CSRA_REVIEW__RW` | The assessment and review write journeys |
+| `ROLE_PRISONER_CSRA__ADMIN` | The `/active-agencies` rollout endpoints behind the admin console |
+
+The consequence is worth stating plainly, because it is not obvious and it constrains what can be built:
+**the API cannot enforce a per-user rule.** It cannot check `ROLE_CSRA__ASSESSMENT_EDIT`, and it cannot
+check caseload, because neither reaches it. Both are this service's responsibility. The API does enforce
+the rollout rule independently — a write for a prison that is not switched on is refused with `403` and
+`errorCode` `PrisonNotActive`, distinct from the role-less `403`, so the two can be told apart and
+worded differently for the user.
+
 ### Logging in with a test user
 
 Once the application is running you should then be able to login with:
