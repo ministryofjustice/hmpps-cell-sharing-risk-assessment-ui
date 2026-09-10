@@ -1,4 +1,4 @@
-import { RequestHandler } from 'express';
+import { RequestHandler } from 'express'
 
 const setHasRole: RequestHandler = (_req, res, next) => {
   res.locals.hasRole = (role: string) => {

@@ -25,7 +25,9 @@ export default class PrisonerCsraController {
     const csra = await csraService.getCurrentRating(username, prisonerNumber)
 
     if (csra.inProgress) {
-      await populateUserDisplayNames(res.locals, manageUsersService, res.locals.user.username, [csra.inProgress.startedBy])
+      await populateUserDisplayNames(res.locals, manageUsersService, res.locals.user.username, [
+        csra.inProgress.startedBy,
+      ])
     }
 
     return res.render('pages/prisonerCsra', { prisoner, csra, prisonerNumber })
