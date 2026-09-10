@@ -126,6 +126,7 @@ describe('CsraApiClient', () => {
         {
           id: 'de91dfa7-821f-4552-a427-bf2f32eafeb0',
           type: 'REVIEW',
+          assessmentType: 'REVIEW',
           rating: 'HIGH_SPECIFIC',
           recordedDate: '2024-07-23',
         },
@@ -192,6 +193,7 @@ describe('CsraApiClient', () => {
         prisonName: 'Leeds (HMP)',
         assessmentDate: '2016-10-31',
         type: 'REVIEW',
+        assessmentType: 'REVIEW',
         createdAt: '2016-10-31T09:15:00',
         createdBy: 'NQP56Y',
         legacy: {

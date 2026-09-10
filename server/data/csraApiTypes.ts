@@ -67,16 +67,27 @@ export interface CsraVulnerabilityDetail {
   details?: string | null
 }
 
-/** The kind of CSRA record (mirrors jpa.CsraType): legacy NOMIS types plus the new DPS review types. */
+/**
+ * The kind of CSRA record (mirrors jpa.CsraType): legacy NOMIS types plus the new DPS ones.
+ *
+ * Two names mislead. **`CSRA_INITIAL_REVIEW` is an assessment**, not a review — it is the new DPS
+ * initial assessment journey. `REVIEW` is the *legacy NOMIS* review, not the new-model `CSRA_REVIEW`.
+ * Renaming both is MAPA-367.
+ *
+ * Prefer `assessmentType` (`CsraAssessmentTypeBucket`) wherever you only need "assessment or review" —
+ * it is returned alongside every `type` and needs none of this decoded.
+ */
 export type CsraReviewType =
+  // Legacy NOMIS types, all of which are assessments except REVIEW.
   | 'FULL'
   | 'HEALTH'
   | 'LOCATE'
   | 'RATING'
   | 'RECEPTION'
   | 'REVIEW'
-  | 'CSRA_INITIAL_REVIEW'
-  | 'CSRA_REVIEW'
+  // New DPS types.
+  | 'CSRA_INITIAL_REVIEW' // an ASSESSMENT, despite the name
+  | 'CSRA_REVIEW' // a REVIEW
 
 /**
  * The legacy NOMIS detail carried by a *history row* (mirrors dto.CsraLegacyDetail).
@@ -99,6 +110,7 @@ export interface CsraLegacyDetail {
 export interface CsraReviewSummary {
   id: string
   type: CsraReviewType
+  assessmentType: CsraAssessmentTypeBucket
   rating: CsraResult
   reviewComment?: string | null
   prisonId?: string | null
@@ -189,6 +201,7 @@ export interface CsraReviewDetail {
   prisonName?: string | null
   assessmentDate: string
   type: CsraReviewType
+  assessmentType: CsraAssessmentTypeBucket
   interimResult?: CsraResult | null
   interimResultDate?: string | null
   finalResult?: CsraResult | null

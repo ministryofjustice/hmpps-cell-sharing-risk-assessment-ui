@@ -189,6 +189,7 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
       {
         id: 'de91dfa7-821f-4552-a427-bf2f32eafeb0',
         type: 'REVIEW',
+        assessmentType: 'REVIEW',
         rating: 'HIGH_SPECIFIC',
         reviewComment: 'Cannot share with specific groups.',
         prisonId: 'LEI',
@@ -418,6 +419,7 @@ describe('GET /prisoner/:prisonerNumber/history/:reviewId', () => {
     prisonName: 'Leeds (HMP)',
     assessmentDate: '2016-10-31',
     type: 'REVIEW',
+    assessmentType: 'REVIEW',
     finalResult: 'HIGH',
     finalResultDate: '2016-10-31',
     createdAt: '2016-10-31T09:15:00',

@@ -12,6 +12,7 @@ const review = (overrides: Partial<CsraReviewDetail> = {}): CsraReviewDetail => 
   prisonName: 'Leeds (HMP)',
   assessmentDate: '2016-10-31',
   type: 'REVIEW',
+  assessmentType: 'REVIEW',
   createdAt: '2016-10-31T09:15:00',
   createdBy: 'NQP56Y',
   ...overrides,

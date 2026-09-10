@@ -35,6 +35,7 @@ const history: CsraReviewHistory = {
     {
       id: 'de91dfa7-821f-4552-a427-bf2f32eafeb0',
       type: 'REVIEW',
+      assessmentType: 'REVIEW',
       rating: 'STANDARD',
       reviewComment: 'No concerns identified at this review.',
       prisonId: 'LEI',
@@ -43,6 +44,7 @@ const history: CsraReviewHistory = {
     {
       id: 'a2b3c4d5-e6f7-4890-a123-b456c789d012',
       type: 'REVIEW',
+      assessmentType: 'REVIEW',
       rating: 'HIGH_SPECIFIC',
       reviewComment: 'Cannot share with specific groups.',
       prisonId: 'LEI',
