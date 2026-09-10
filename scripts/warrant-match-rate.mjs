@@ -23,6 +23,7 @@
  * Credentials (client_credentials, prod) — put in .env, which is gitignored:
  *   WARRANT_SPIKE_CLIENT_ID=...
  *   WARRANT_SPIKE_CLIENT_SECRET=...
+ *   WARRANT_SPIKE_USERNAME=...        # optional NOMIS username, stamped onto the token for audit
  *
  * Roles needed, both already held by the CSRA UI system client:
  *   ROLE_CSRA_REVIEW__R                        (CSRA API recent arrivals)
@@ -92,8 +93,20 @@ async function getToken() {
   if (!clientId || !clientSecret) {
     throw new Error('Set WARRANT_SPIKE_CLIENT_ID and WARRANT_SPIKE_CLIENT_SECRET (see .env, which is gitignored)')
   }
+
+  /**
+   * Optional NOMIS username to stamp onto the client-credentials token. Both downstream APIs record
+   * it, so the reads land against a person in the audit trail rather than an anonymous client. Worth
+   * setting whenever the script is run with someone's personal credentials.
+   */
+  const username = process.env.WARRANT_SPIKE_USERNAME
+  const usernameParam = username ? `&username=${encodeURIComponent(username)}` : ''
+  console.log(
+    username ? `Stamping username ${username} onto the token` : 'No username stamped (set WARRANT_SPIKE_USERNAME)',
+  )
+
   const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
-  const response = await fetch(`${AUTH_URL}/oauth/token?grant_type=client_credentials`, {
+  const response = await fetch(`${AUTH_URL}/oauth/token?grant_type=client_credentials${usernameParam}`, {
     method: 'POST',
     headers: { Authorization: `Basic ${credentials}`, 'Content-Type': 'application/x-www-form-urlencoded' },
   })
@@ -114,6 +127,27 @@ async function mapWithLimit(items, limit, fn) {
   })
   await Promise.all(workers)
   return results
+}
+
+/**
+ * Retry a call a few times with backoff.
+ *
+ * The CSRA API intermittently returns a 500 with an empty error body on recent-arrivals; the same
+ * call succeeds moments later. Without this a single blip loses the whole sample.
+ */
+async function withRetry(label, attempts, fn) {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await fn()
+    } catch (error) {
+      if (attempt >= attempts) throw error
+      const waitMs = 1000 * 2 ** (attempt - 1)
+      console.log(`  ${label} failed (attempt ${attempt}/${attempts}), retrying in ${waitMs}ms`)
+      await new Promise(resolve => {
+        setTimeout(resolve, waitMs)
+      })
+    }
+  }
 }
 
 /**
@@ -356,11 +390,19 @@ async function main() {
 
   const token = await getToken()
 
+  const skippedPrisons = []
   const prisoners = (
     await mapWithLimit(args.prisons, 2, async prisonId => {
-      const found = await getRecentArrivals(token, prisonId, args.days, args.limit)
-      console.log(`  ${prisonId}: ${found.length} recent arrivals`)
-      return found
+      try {
+        const found = await withRetry(prisonId, 3, () => getRecentArrivals(token, prisonId, args.days, args.limit))
+        console.log(`  ${prisonId}: ${found.length} recent arrivals`)
+        return found
+      } catch (error) {
+        // One prison being unavailable should not cost us the other four.
+        console.log(`  ${prisonId}: SKIPPED - ${error.message}`)
+        skippedPrisons.push(prisonId)
+        return []
+      }
     })
   ).flat()
 
@@ -371,14 +413,35 @@ async function main() {
 
   console.log(`\nQuerying the court API for ${prisoners.length} prisoners...`)
   let done = 0
-  const results = await mapWithLimit(prisoners, CONCURRENCY, async prisoner => {
-    const hearings = await getCourtHearings(token, prisoner.prisonerNumber, args.cache)
-    done += 1
-    if (done % 100 === 0) process.stdout.write(`  ${done}/${prisoners.length}\n`)
-    return summarisePrisoner(prisoner, hearings)
-  })
+  let failedLookups = 0
+  const results = (
+    await mapWithLimit(prisoners, CONCURRENCY, async prisoner => {
+      done += 1
+      if (done % 100 === 0) process.stdout.write(`  ${done}/${prisoners.length}\n`)
+      try {
+        const hearings = await withRetry('court lookup', 3, () =>
+          getCourtHearings(token, prisoner.prisonerNumber, args.cache),
+        )
+        return summarisePrisoner(prisoner, hearings)
+      } catch {
+        // Counted rather than logged: the message would carry a prison number.
+        failedLookups += 1
+        return null
+      }
+    })
+  ).filter(Boolean)
 
-  report(results, args.prisons)
+  if (skippedPrisons.length) {
+    console.log(`\nWARNING: no arrivals collected for ${skippedPrisons.join(', ')} - figures below exclude them.`)
+  }
+  if (failedLookups) {
+    console.log(`WARNING: ${failedLookups} prisoners dropped after repeated court API failures.`)
+  }
+
+  report(
+    results,
+    args.prisons.filter(prisonId => !skippedPrisons.includes(prisonId)),
+  )
 
   const csvPath = path.join(CACHE_DIR, 'results.csv')
   const columns = [
