@@ -117,9 +117,13 @@ describe('csraLevelLabel', () => {
 
 describe('csraTypeLabel', () => {
   it.each([
-    ['CSRA_INITIAL_REVIEW', 'CSRA initial review'],
+    ['CSRA_INITIAL_ASSESSMENT', 'CSRA initial assessment'],
     ['CSRA_REVIEW', 'CSRA review'],
+    ['NOMIS_REVIEW', 'Review'],
     ['RECEPTION', 'Reception'],
+    // The pre-MAPA-367 names, which this must keep rendering identically until every environment is
+    // past V20 — and afterwards, so a rollback of the API does not change what a user sees.
+    ['CSRA_INITIAL_REVIEW', 'CSRA initial assessment'],
     ['REVIEW', 'Review'],
     [null, ''],
   ])('csraTypeLabel(%s) === %s', (input: string, expected: string) => {

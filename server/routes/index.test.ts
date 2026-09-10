@@ -500,7 +500,7 @@ describe('GET /prisoner/:prisonerNumber/history/:reviewId', () => {
   it('tells the user the captured answers are not available for a DPS-created review', () => {
     csraService.getReview.mockResolvedValue({
       ...legacyReview,
-      type: 'CSRA_INITIAL_REVIEW',
+      type: 'CSRA_INITIAL_ASSESSMENT',
       legacy: null,
     })
 
@@ -508,7 +508,7 @@ describe('GET /prisoner/:prisonerNumber/history/:reviewId', () => {
       .get(`/prisoner/A1234BC/history/${reviewId}`)
       .expect(200)
       .expect(res => {
-        expect(res.text).toContain('CSRA initial review')
+        expect(res.text).toContain('CSRA initial assessment')
         expect(res.text).toContain('not available in this service yet')
         expect(res.text).not.toContain('Review questions')
       })
