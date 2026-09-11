@@ -7,14 +7,20 @@ $card-tint: #f3f2f1;
 $moj-page-width: 1170px;
 $govuk-page-width: $moj-page-width;
 
+$csra-secondary-text-colour: #505a5f;
+
 $risk-badge-dark-red: #942514;
 $risk-badge-dark-red-text: #711a0d;
+$risk-panel-dark-red-background: #fcf5f5;
 $risk-badge-red: #d4351c;
 $risk-badge-red-text: #942514;
+$risk-panel-red-background: #fcf5f5;
 $risk-badge-green: #85994b;
 $risk-badge-green-text: #485b10;
+$risk-panel-green-background: #f3f8f6;
 $risk-badge-grey: #505a5f;
 $risk-badge-grey-text: #0b0c0c;
+$risk-panel-grey-background: #f3f3f3;
 
 @import "govuk-frontend/dist/govuk/index";
 @import "@ministryofjustice/frontend/moj/all";

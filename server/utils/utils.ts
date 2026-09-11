@@ -143,16 +143,22 @@ export const daysOverdue = (isoDate?: string | null, now: Date = new Date()): nu
 }
 
 /** Human-readable label for a CSRA result (mirrors the API's CsraResult enum). */
-export const csraRatingLabel = (rating?: string | null): string => {
+export const csraRatingLabel = (rating?: string | null, ratingStage?: string | null): string => {
+  const suffix = (() => {
+    if (ratingStage === 'PROVISIONAL') return ' (provisional)'
+    if (ratingStage === 'INTERIM') return ' (interim)'
+    return ''
+  })()
+
   switch (rating) {
     case 'HIGH':
-      return 'High'
+      return `High${suffix}`
     case 'HIGH_GENERAL':
-      return 'High risk – general'
+      return `High risk – general${suffix}`
     case 'HIGH_SPECIFIC':
-      return 'High risk – specific'
+      return `High risk – specific${suffix}`
     case 'STANDARD':
-      return 'Standard'
+      return `Standard${suffix}`
     case 'NO_RATING':
       return 'No rating'
     default:
@@ -209,6 +215,21 @@ export const csraRatingTagClass = (rating?: string | null): string => {
       return 'govuk-tag--green'
     default:
       return 'govuk-tag--grey'
+  }
+}
+
+/** GOV.UK tag colour modifier class for a CSRA result: high ratings red, standard blue, unknown grey. */
+export const csraRatingPanelClass = (rating?: string | null): string => {
+  switch (rating) {
+    case 'HIGH':
+    case 'HIGH_GENERAL':
+      return 'csra-rating-panel--dark-red'
+    case 'HIGH_SPECIFIC':
+      return 'csra-rating-panel--red'
+    case 'STANDARD':
+      return 'csra-rating-panel--green'
+    default:
+      return 'csra-rating-panel--grey'
   }
 }
 

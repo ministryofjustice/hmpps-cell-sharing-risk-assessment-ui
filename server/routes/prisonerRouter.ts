@@ -11,7 +11,10 @@ import type { Services } from '../services'
 import csraRouter from './csraRouter'
 
 export default function prisonerRouter(
-  services: Pick<Services, 'auditService' | 'csraService' | 'prisonApiService' | 'warrantsService'>,
+  services: Pick<
+    Services,
+    'auditService' | 'csraService' | 'manageUsersService' | 'prisonApiService' | 'warrantsService'
+  >,
 ): Router {
   const router = Router({ mergeParams: true })
   const csraController = new PrisonerCsraController(services)

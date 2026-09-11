@@ -18,10 +18,11 @@ import setUpStaticResources from './middleware/setUpStaticResources'
 import setUpWebRequestParsing from './middleware/setupRequestParsing'
 import setUpWebSecurity from './middleware/setUpWebSecurity'
 import setUpWebSession from './middleware/setUpWebSession'
+import addBreadcrumb from './middleware/addBreadcrumb'
+import setHasRole from './middleware/setHasRole'
 
 import routes from './routes'
 import type { Services } from './services'
-import addBreadcrumb from './middleware/addBreadcrumb'
 
 export default function createApp(services: Services): express.Application {
   const app = express()
@@ -41,6 +42,7 @@ export default function createApp(services: Services): express.Application {
   app.use(authorisationMiddleware())
   app.use(setUpCsrf())
   app.use(setUpCurrentUser())
+  app.use(setHasRole)
 
   app.get(
     '*allPaths',

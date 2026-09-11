@@ -20,6 +20,7 @@ import {
   formatFileSize,
   initialiseName,
   isPrisonerNumber,
+  csraRatingPanelClass,
   parseCsraHistoryQuery,
   parseUkDate,
   validateUkDate,
@@ -142,6 +143,15 @@ describe('csraRatingLabel', () => {
   ])('csraRatingLabel(%s) === %s', (input: string, expected: string) => {
     expect(csraRatingLabel(input)).toEqual(expected)
   })
+
+  it.each([
+    ['HIGH', 'PROVISIONAL', 'High (provisional)'],
+    ['HIGH_GENERAL', 'INTERIM', 'High risk – general (interim)'],
+    ['HIGH_SPECIFIC', 'PROVISIONAL', 'High risk – specific (provisional)'],
+    ['STANDARD', 'PROVISIONAL', 'Standard (provisional)'],
+  ])('csraRatingLabel(%s, %s) === %s', (input: string, stage: string, expected: string) => {
+    expect(csraRatingLabel(input, stage)).toEqual(expected)
+  })
 })
 
 describe('csraRatingTagClass', () => {
@@ -153,6 +163,18 @@ describe('csraRatingTagClass', () => {
     [null, 'govuk-tag--grey'],
   ])('csraRatingTagClass(%s) === %s', (input: string, expected: string) => {
     expect(csraRatingTagClass(input)).toEqual(expected)
+  })
+})
+
+describe('csraRatingPanelClass', () => {
+  it.each([
+    ['HIGH', 'csra-rating-panel--dark-red'],
+    ['HIGH_GENERAL', 'csra-rating-panel--dark-red'],
+    ['HIGH_SPECIFIC', 'csra-rating-panel--red'],
+    ['STANDARD', 'csra-rating-panel--green'],
+    [null, 'csra-rating-panel--grey'],
+  ])('csraRatingPanelClass(%s) === %s', (input: string, expected: string) => {
+    expect(csraRatingPanelClass(input)).toEqual(expected)
   })
 })
 

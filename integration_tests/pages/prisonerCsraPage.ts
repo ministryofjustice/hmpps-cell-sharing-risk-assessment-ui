@@ -16,15 +16,33 @@ export default class PrisonerCsraPage extends AbstractPage {
 
   readonly noCsra: Locator
 
+  readonly assessmentSection: Locator
+
+  readonly reviewSection: Locator
+
+  readonly reviewDueDateSection: Locator
+
+  readonly overdueMessage: Locator
+
+  readonly transferMessage: Locator
+
+  readonly assessmentComment: Locator
+
   private constructor(page: Page) {
     super(page)
     this.prisonerName = page.getByTestId('prisoner-name')
     this.prisonerBanner = page.getByTestId('prisoner-banner')
-    this.rating = page.getByTestId('csra-rating')
-    this.summary = page.getByTestId('csra-summary')
+    this.rating = page.locator('[data-qa="csra-rating-panel"] .csra-rating-panel__title')
+    this.summary = page.getByTestId('csra-rating-panel')
     this.riskTo = page.getByTestId('csra-risk-to')
     this.vulnerabilities = page.getByTestId('csra-vulnerabilities')
     this.noCsra = page.getByTestId('no-csra')
+    this.assessmentSection = page.locator('#csra-assessment-section')
+    this.reviewSection = page.locator('#csra-review-csra-section')
+    this.reviewDueDateSection = page.locator('#csra-review-due-date-section')
+    this.overdueMessage = this.reviewDueDateSection.getByText(/days overdue/)
+    this.transferMessage = page.locator('.csra-not-complete-text')
+    this.assessmentComment = page.locator('#csra-assessment-comment')
   }
 
   static async verifyOnPage(page: Page, prisonerName: string): Promise<PrisonerCsraPage> {
