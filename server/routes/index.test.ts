@@ -161,7 +161,8 @@ describe('GET /prisoner/:prisonerNumber', () => {
       .get('/prisoner/A1234BC')
       .expect(200)
       .expect(res => {
-        expect(res.text).toContain('does not have a current CSRA')
+        expect(res.text).toContain('No rating')
+        expect(res.text).toContain('This person requires an assessment.')
       })
   })
 })

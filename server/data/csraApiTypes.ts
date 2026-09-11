@@ -191,6 +191,16 @@ export interface CsraLegacyReviewDetail {
   questions: CsraReviewQuestion[]
 }
 
+/** A CSRA review currently in progress for the prisoner. */
+export interface CsraInProgress {
+  reviewId: string
+  type: CsraReviewType
+  startedBy?: string | null
+  startedAt?: string | null
+  prisonId?: string | null
+  prisonName?: string | null
+}
+
 /**
  * A single CSRA review with everything needed to render its detail page (mirrors dto.CsraReviewDetail).
  *
@@ -237,6 +247,7 @@ export interface CsraCurrentRating {
   status: CsraRatingStatus
   rating?: CsraResult | null
   provisional: boolean
+  type?: CsraReviewType | null
   /** Which stage the rating came from; distinguishes a review's interim from an assessment's provisional. */
   ratingStage?: CsraRatingStage | null
   reviewId?: string | null
@@ -245,6 +256,7 @@ export interface CsraCurrentRating {
   prisonName?: string | null
   assessmentComment?: string | null
   provisionalAssessmentComment?: string | null
+  inheritedAfterTransfer?: boolean
   riskTo: CsraRiskToDetail[]
   vulnerabilities: CsraVulnerabilityDetail[]
   provisionalDate?: string | null
@@ -252,6 +264,7 @@ export interface CsraCurrentRating {
   nextReviewDate?: string | null
   startedBy?: string | null
   startedAt?: string | null
+  inProgress?: CsraInProgress | null
 }
 
 /** A started assessment with no provisional/final rating entered yet. */

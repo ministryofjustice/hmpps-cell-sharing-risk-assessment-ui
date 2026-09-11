@@ -24,6 +24,7 @@ import {
   initialiseName,
   formatDayMonth,
   formatDayMonthYear,
+  csraRatingPanelClass,
 } from './utils'
 import { userDisplayName } from './populateUserDisplayNames'
 import { yesNoValue } from './yesNoValue'
@@ -124,6 +125,7 @@ export default function nunjucksSetup(app: express.Express): void {
   njkEnv.addFilter('csraRatingLabel', csraRatingLabel)
   njkEnv.addFilter('csraLevelLabel', csraLevelLabel)
   njkEnv.addFilter('csraRatingTagClass', csraRatingTagClass)
+  njkEnv.addFilter('csraRatingPanelClass', csraRatingPanelClass)
   njkEnv.addFilter('csraStatusLabel', csraStatusLabel)
   njkEnv.addFilter('csraTypeLabel', csraTypeLabel)
   njkEnv.addFilter('arrivalTypeLabel', arrivalTypeLabel)

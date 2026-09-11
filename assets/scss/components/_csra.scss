@@ -44,8 +44,8 @@
 
   &__photo {
     flex: 0 0 auto;
-    width: 90px;
-    height: 110px;
+    width: 104px;
+    height: 130px;
     object-fit: cover;
     background-color: govuk-colour("black", $variant: "tint-80");
   }
@@ -55,7 +55,7 @@
   }
 
   &__name {
-    @include govuk-font($size: 24, $weight: bold);
+    @include govuk-font($size: 19, $weight: bold);
     margin: 0 0 govuk-spacing(2);
   }
 
@@ -68,13 +68,13 @@
   &__grid {
     display: flex;
     flex-wrap: wrap;
-    gap: govuk-spacing(3) govuk-spacing(6);
+    gap: govuk-spacing(3) govuk-spacing(9);
     margin: 0;
   }
 
   &__item {
     dt {
-      @include govuk-font($size: 16, $weight: bold);
+      @include govuk-font($size: 19, $weight: bold);
       margin: 0;
     }
 
@@ -85,10 +85,62 @@
   }
 }
 
+.csra-rating-panel {
+  background-color: $risk-panel-grey-background;
+  border: 1px solid $risk-badge-grey;
+  padding: govuk-spacing(4);
+
+  &__title {
+    @include govuk-font($size: 24, $weight: bold);
+    margin: 0 0 govuk-spacing(2);
+  }
+
+  &__body {
+    @include govuk-font($size: 19);
+    margin: 0;
+  }
+
+  &--dark-red {
+    background-color: $risk-panel-dark-red-background;
+    border-color: $risk-badge-dark-red;
+    color: $risk-badge-dark-red-text;
+  }
+
+  &--red {
+    background-color: $risk-panel-red-background;
+    border-color: $risk-badge-red;
+    color: $risk-badge-red-text;
+  }
+
+  &--green {
+    background-color: $risk-panel-green-background;
+    border-color: $risk-badge-green;
+    color: $risk-badge-green-text;
+  }
+
+  &--grey {
+    background-color: $risk-panel-grey-background;
+    border-color: $risk-badge-grey;
+    color: $risk-badge-grey-text;
+  }
+}
+
 .compact-prisoner-banner {
   border-bottom: 1px solid #B1B4B6;
   padding-bottom: 12px;
   margin-bottom: 30px;
+}
+
+.csra-secondary-text {
+  color: $csra-secondary-text-colour;
+}
+
+.csra-comment {
+  word-break: break-word;
+}
+
+.csra-not-complete-text {
+  font-weight: bold;
 }
 
 // Summary tiles
