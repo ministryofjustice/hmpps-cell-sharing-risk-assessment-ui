@@ -57,7 +57,7 @@ test.describe('Prisoner CSRA', () => {
     await expect(prisonerCsraPage.rating).toHaveText('High risk – specific')
     await expect(prisonerCsraPage.summary).toContainText('PNC checked. No issues found.')
     await expect(prisonerCsraPage.summary).toContainText('1 July 2026')
-    await expect(prisonerCsraPage.reviewDueDateSection).toContainText('6 May 2027')
+    await expect(prisonerCsraPage.nextReviewDue).toContainText('6 May 2027')
     await expect(prisonerCsraPage.riskTo).toContainText('Different ethnicity')
     await expect(prisonerCsraPage.vulnerabilities).toContainText('Neurodiversity')
   })
@@ -288,7 +288,7 @@ test.describe('Prisoner CSRA', () => {
   })
 
   test('can reach the confirm-rating page and submit the provisional rating', async ({ page }) => {
-    await login(page)
+    await login(page, { roles: ['ROLE_CSRA__ASSESSMENT_EDIT'] })
     await prisonerSearchApi.stubGetPrisoner(prisoner)
     await prisonApi.stubGetPrisonerImage('A1234BC')
     await manageUsersApi.stubGetUserCaseloads(['MDI'])

@@ -34,7 +34,7 @@
 
         <div class="csra-rating-panel govuk-!-margin-bottom-4 {{ csra.rating | csraRatingPanelClass }}" data-qa="csra-rating-panel">
           <span class="govuk-caption-m">{{ "Provisional assessment" if csra.provisional else "Assessment" }}</span>
-          <h2 class="csra-rating-panel__title">
+          <h2 class="csra-rating-panel__title" data-qa="csra-rating">
             {{ csra.rating | csraRatingLabel(csra.ratingStage) or (csra.status | csraStatusLabel) }}
           </h2>
 
@@ -68,7 +68,7 @@
           {% endif %}
 
           {% if csra.assessmentComment %}
-            <p id="csra-assessment-comment" class="govuk-body csra-comment">
+            <p id="csra-assessment-comment" class="govuk-body csra-comment" data-qa="csra-assessment-comment">
               Assessment comment: {{ csra.assessmentComment }}
             </p>
           {% endif %}
@@ -80,7 +80,7 @@
           {% endif %}
 
           {% if csra.finalDate or csra.provisionalDate %}
-            <p class="govuk-body csra-secondary-text govuk-!-margin-bottom-3">
+            <p class="govuk-body csra-secondary-text govuk-!-margin-bottom-3" data-qa="csra-assessment-date">
               Assessed at {{ csra.prisonName }} on
               {% if csra.provisionalDate %}
                 {{ csra.provisionalDate | formatDate }}{{ ' and ' ~ csra.finalDate | formatDate if csra.finalDate else '' }}.
@@ -148,7 +148,7 @@
       {% if csra.rating and csra.rating != "STANDARD" and csra.nextReviewDate and not assessmentInProgress and not csra.inheritedAfterTransfer %}
         <div id="csra-review-due-date-section" class="govuk-!-margin-top-6">
           <h2 class="govuk-heading-m">Review due by</h2>
-          <p class="govuk-body">
+          <p class="govuk-body" data-qa="csra-review-due-date">
             {{ csra.nextReviewDate | formatDayMonthYear }}
             {% set overdueDays = csra.nextReviewDate | daysOverdue %}
             {% if overdueDays > 0 %}
@@ -156,7 +156,7 @@
               <span class="govuk-error-message govuk-!-margin-0">{{ overdueDays }} days overdue</span>
             {% endif %}
           </p>
-                  
+
         </div>
       {% endif %}
 
