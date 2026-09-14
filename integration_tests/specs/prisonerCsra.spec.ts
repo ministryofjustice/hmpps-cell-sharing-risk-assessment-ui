@@ -57,7 +57,7 @@ test.describe('Prisoner CSRA', () => {
     await expect(prisonerCsraPage.rating).toHaveText('High risk – specific')
     await expect(prisonerCsraPage.summary).toContainText('PNC checked. No issues found.')
     await expect(prisonerCsraPage.summary).toContainText('1 July 2026')
-    await expect(prisonerCsraPage.nextReviewDue).toContainText('6 May 2027')
+    await expect(prisonerCsraPage.reviewDueDateSection).toContainText('6 May 2027')
     await expect(prisonerCsraPage.riskTo).toContainText('Different ethnicity')
     await expect(prisonerCsraPage.vulnerabilities).toContainText('Neurodiversity')
   })
