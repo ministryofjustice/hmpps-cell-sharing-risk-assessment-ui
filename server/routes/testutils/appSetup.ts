@@ -47,6 +47,7 @@ function appSetup(services: Services, production: boolean, userSupplier: () => H
     }
     next()
   })
+  app.use(setHasRole)
   app.use((req, res, next) => {
     req.id = randomUUID()
     next()

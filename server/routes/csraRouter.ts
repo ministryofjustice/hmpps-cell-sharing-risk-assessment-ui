@@ -6,11 +6,14 @@ import csraTaskListController from '../controllers/csraTaskListController'
 import csraBreadcrumbs from '../middleware/csraBreadcrumbs'
 import csraConfirmRatingController from '../controllers/csraConfirmRatingController'
 import csraWarrantsController, { csraWarrantFileController } from '../controllers/csraWarrantsController'
+import roleGuard from '../middleware/roleGuard'
 
 export default function csraRouter(
   services: Pick<Services, 'auditService' | 'csraService' | 'prisonApiService' | 'warrantsService'>,
 ): Router {
   const router = Router({ mergeParams: true })
+
+  router.use(roleGuard('CSRA__ASSESSMENT_EDIT'))
 
   router.get('/start', csraStartController(services))
 

@@ -288,7 +288,7 @@ test.describe('Prisoner CSRA', () => {
   })
 
   test('can reach the confirm-rating page and submit the provisional rating', async ({ page }) => {
-    await login(page)
+    await login(page, { roles: ['ROLE_CSRA__ASSESSMENT_EDIT'] })
     await prisonerSearchApi.stubGetPrisoner(prisoner)
     await prisonApi.stubGetPrisonerImage('A1234BC')
     await manageUsersApi.stubGetUserCaseloads(['MDI'])
