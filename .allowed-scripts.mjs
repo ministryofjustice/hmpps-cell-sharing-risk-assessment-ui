@@ -9,7 +9,7 @@ export default configureAllowedScripts({
     // Needed by esbuild for watching files during development
     'node_modules/@parcel/watcher@2.6.0': 'ALLOW',
     // Native solution to quickly resolve module paths, used by jest and eslint
+    'node_modules/jest-resolve/node_modules/unrs-resolver@1.12.2': 'ALLOW',
     'node_modules/unrs-resolver@1.11.1': 'ALLOW',
-    'node_modules/playwright/node_modules/fsevents@2.3.2': 'ALLOW',
   },
 })
