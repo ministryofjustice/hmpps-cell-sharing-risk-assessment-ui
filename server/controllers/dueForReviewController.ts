@@ -1,10 +1,10 @@
 import { type RequestHandler } from 'express'
-import { getRatingOptions } from '../utils/utils'
+import { getHighRiskRatingOptions } from '../utils/utils'
 
 import type { Services } from '../services'
 import { Page } from '../services/auditService'
 import logger from '../../logger'
-import { parseUkDate, validateUkDate, type UkDateValidationError } from '../utils/utils'
+import { parseUkDate, validateUkDate, REVIEWABLE_RATING_TYPES, type UkDateValidationError } from '../utils/utils'
 import { firstQueryValue, toArray } from '../utils/queryUtils'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
@@ -71,7 +71,7 @@ export default class DueForReviewController {
         res.locals.user.username,
         res.locals.feComponents?.sharedData?.activeCaseLoad?.caseLoadId,
         {
-          ratingTypes: selectedRatingTypes.length ? selectedRatingTypes : undefined,
+          ratingTypes: selectedRatingTypes.length ? selectedRatingTypes : REVIEWABLE_RATING_TYPES,
           reviewDateFrom: parseUkDate(reviewDateFromRaw),
           reviewDateTo: parseUkDate(reviewDateToRaw),
           sort,
@@ -79,7 +79,7 @@ export default class DueForReviewController {
         },
       )
 
-      const ratingTypeOptions = getRatingOptions(selectedRatingTypes, prisonersResult.availableRatingTypes)
+      const ratingTypeOptions = getHighRiskRatingOptions(selectedRatingTypes, prisonersResult.availableRatingTypes)
 
       return res.render('pages/dueForReview', {
         title: 'High risk prisoners due for review',
