@@ -47,7 +47,7 @@ describe('dueForReviewController', () => {
     })
 
     expect(csraService.getHighRiskDueForReview).toHaveBeenCalledWith('USER1', 'MDI', {
-      ratingTypes: undefined,
+      ratingTypes: ['HIGH_GENERAL', 'HIGH_GENERAL_INTERIM', 'HIGH_SPECIFIC', 'HIGH_SPECIFIC_INTERIM', 'HIGH'],
       reviewDateFrom: undefined,
       reviewDateTo: undefined,
       sort: 'REVIEW_DUE_BY',
