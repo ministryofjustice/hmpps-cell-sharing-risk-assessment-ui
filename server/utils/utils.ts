@@ -166,8 +166,28 @@ export const csraRatingLabel = (rating?: string | null, ratingStage?: string | n
   }
 }
 
+export const highRiskLabel = (rating: string): string => {
+  switch (rating) {
+    case 'HIGH':
+      return 'High'
+    case 'HIGH_GENERAL':
+      return 'High – general'
+    case 'HIGH_GENERAL_INTERIM':
+      return 'High – general (interim)'
+    case 'HIGH_GENERAL_PROVISIONAL':
+      return 'High – general (provisional)'
+    case 'HIGH_SPECIFIC':
+      return 'High – specific'
+    case 'HIGH_SPECIFIC_INTERIM':
+      return 'High – specific (interim)'
+    case 'HIGH_SPECIFIC_PROVISIONAL':
+      return 'High – specific (provisional)'
+    default:
+      return ''
+  }
+}
+
 export const RATING_VALUES = ['HIGH_GENERAL', 'HIGH_SPECIFIC', 'HIGH', 'STANDARD', 'NO_RATING'] as const
-export type RatingValue = (typeof RATING_VALUES)[number]
 
 const RATING_OPTIONS = RATING_VALUES.map(rating => ({
   value: rating,
@@ -176,6 +196,34 @@ const RATING_OPTIONS = RATING_VALUES.map(rating => ({
 
 export const getRatingOptions = (selectedRatings: string[], allowedRatings: readonly string[] = RATING_VALUES) =>
   RATING_OPTIONS.filter(option => allowedRatings.includes(option.value)).map(option => ({
+    ...option,
+    checked: selectedRatings.includes(option.value),
+  }))
+
+export const HIGH_RISK_RATING_VALUES = [
+  'HIGH_GENERAL',
+  'HIGH_GENERAL_INTERIM',
+  'HIGH_GENERAL_PROVISIONAL',
+  'HIGH_SPECIFIC',
+  'HIGH_SPECIFIC_INTERIM',
+  'HIGH_SPECIFIC_PROVISIONAL',
+  'HIGH',
+] as const
+
+export const REVIEWABLE_RATING_TYPES = HIGH_RISK_RATING_VALUES.filter(key => !key.endsWith('_PROVISIONAL'))
+
+const HIGH_RISK_REVIEWABLE_OPTIONS = REVIEWABLE_RATING_TYPES.filter(key => !key.endsWith('_PROVISIONAL')).map(
+  rating => ({
+    value: rating,
+    text: highRiskLabel(rating),
+  }),
+)
+
+export const getHighRiskRatingOptions = (
+  selectedRatings: string[],
+  allowedRatings: readonly string[] = REVIEWABLE_RATING_TYPES,
+) =>
+  HIGH_RISK_REVIEWABLE_OPTIONS.filter(option => allowedRatings.includes(option.value)).map(option => ({
     ...option,
     checked: selectedRatings.includes(option.value),
   }))

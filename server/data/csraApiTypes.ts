@@ -7,6 +7,16 @@
 /** The outcome of a CSRA review (mirrors jpa.CsraResult). */
 export type CsraResult = 'HIGH' | 'HIGH_GENERAL' | 'HIGH_SPECIFIC' | 'STANDARD'
 
+/** A high-risk rating type used by the due-for-review worklist and its filters. */
+export type CsraHighRiskType =
+  | 'HIGH'
+  | 'HIGH_GENERAL'
+  | 'HIGH_GENERAL_PROVISIONAL'
+  | 'HIGH_GENERAL_INTERIM'
+  | 'HIGH_SPECIFIC'
+  | 'HIGH_SPECIFIC_PROVISIONAL'
+  | 'HIGH_SPECIFIC_INTERIM'
+
 /** The status of a CSRA review (mirrors jpa.CsraReviewStatus). */
 export type CsraReviewStatus = 'IN_PROGRESS' | 'COMPLETE' | 'CLOSED' | 'ARCHIVED'
 
@@ -403,7 +413,7 @@ export interface CsraHighRiskReviewRow {
   firstName?: string | null
   lastName?: string | null
   reviewDueBy: string
-  ratingType: CsraResult
+  ratingType: CsraHighRiskType
   rating: CsraResult
   provisional: boolean
   /** Which stage the rating came from; distinguishes a review's interim from an assessment's provisional. */
@@ -425,7 +435,7 @@ export type CsraHighRiskDueForReviewQuery = {
 export interface CsraHighRiskDueForReview {
   content: CsraHighRiskReviewRow[]
   totalResults: number
-  availableRatingTypes: CsraResult[]
+  availableRatingTypes: CsraHighRiskType[]
 }
 
 /** CSRA rating counts for a prison's current population (mirrors dto.CsraPrisonRatingSummary). */

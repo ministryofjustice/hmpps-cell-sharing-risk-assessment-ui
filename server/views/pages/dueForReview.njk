@@ -101,7 +101,7 @@
                   {% set overdueDays = prisoner.reviewDueBy | daysOverdue %}
                   {% set reviewDueByHtml = prisoner.reviewDueBy | formatDate %}
                   {% set ratingSourceLabel = 'Last reviewed' if prisoner.lastRatingSource == 'REVIEW' else 'Last assessed' %}
-                  {% set ratingHtml = (prisoner.rating | csraRatingLabel) + '<br><span class="csra-due-for-review-table__rating-meta govuk-body-s">' + ratingSourceLabel + ': ' + (prisoner.lastRatingDate | formatDate) + '</span>' %}
+                  {% set ratingHtml = (prisoner.rating | csraRatingLabel(prisoner.ratingStage)) + '<br><span class="csra-due-for-review-table__rating-meta govuk-body-s">' + ratingSourceLabel + ': ' + (prisoner.lastRatingDate | formatDate) + '</span>' %}
                   {% if overdueDays > 0 %}
                     {% set reviewDueByHtml = reviewDueByHtml + '<br><span class="govuk-error-message govuk-!-margin-0">' + overdueDays + ' days overdue</span>' %}
                   {% endif %}
