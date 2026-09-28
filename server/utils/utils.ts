@@ -548,7 +548,7 @@ export interface PaginationItem {
   number?: number
   href?: string
   current?: boolean
-  type?: 'ellipsis'
+  ellipsis?: boolean
 }
 
 export interface Pagination {
@@ -585,7 +585,7 @@ export const buildPagination = (
       items.push({ number: page, href: href(page), current: page === currentPage })
       previousWasGap = false
     } else if (!previousWasGap) {
-      items.push({ type: 'ellipsis' })
+      items.push({ ellipsis: true })
       previousWasGap = true
     }
   }

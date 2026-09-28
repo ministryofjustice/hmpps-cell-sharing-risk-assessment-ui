@@ -32,7 +32,7 @@ export default class PrisonerCsraHistoryPage extends AbstractPage {
     this.totalCsras = page.getByTestId('summary-total')
     this.highCount = page.getByTestId('summary-high')
     this.standardCount = page.getByTestId('summary-standard')
-    this.reviews = page.getByTestId('csra-review')
+    this.reviews = page.getByTestId('csra-history-entry')
     this.filters = page.getByTestId('csra-filters')
     this.pagination = page.getByTestId('pagination').first()
     this.noResults = page.getByTestId('no-results')

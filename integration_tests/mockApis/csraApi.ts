@@ -100,6 +100,19 @@ export default {
       },
     }),
 
+  stubSubmitFinalRating: (prisonerNumber: string, assessmentId: string): SuperAgentRequest =>
+    stubFor({
+      request: {
+        method: 'PUT',
+        urlPattern: `/csra-api/csra-review/prisoner/${prisonerNumber}/assessment/${assessmentId}/final`,
+      },
+      response: {
+        status: 200,
+        headers: { 'Content-Type': 'application/json;charset=UTF-8' },
+        jsonBody: {},
+      },
+    }),
+
   stubGetCsraHistory: (prisonerNumber: string, history: Partial<CsraReviewHistory> = {}): SuperAgentRequest =>
     stubFor({
       request: {
@@ -110,7 +123,16 @@ export default {
         status: 200,
         headers: { 'Content-Type': 'application/json;charset=UTF-8' },
         jsonBody: {
-          summary: { totalCsras: 0, highCount: 0, standardCount: 0 },
+          summary: {
+            totalCsras: 0,
+            highCount: 0,
+            standardCount: 0,
+            firstAssessmentDate: null,
+            lastAssessmentDate: null,
+            lastHighDate: null,
+            ratings: [],
+            establishments: [],
+          },
           content: [],
           page: 0,
           size: 10,

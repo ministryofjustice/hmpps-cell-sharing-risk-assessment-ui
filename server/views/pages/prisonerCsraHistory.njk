@@ -38,8 +38,8 @@
 {% macro csraHistoryEntry(review) %}
   {% set isLegacy = review.legacy %}
   {% set isAssessment = review.assessmentType == "ASSESSMENT" %}
-  {% set isInterim = review.ratingStage == "INTERIM" %}
-  {% set isProvisionalAssessment = isAssessment and not review.finalRating and review.provisionalRating %}
+  {% set isInterim = not isLegacy and not isAssessment and not review.finalRating and review.provisionalRating %}
+  {% set isProvisionalAssessment = not isLegacy and isAssessment and not review.finalRating and review.provisionalRating %}
   {% set establishment = review.prisonName or establishmentNames[review.prisonId] or review.prisonId %}
   {% set reviewType = 'Review' %}
 
@@ -73,7 +73,7 @@
           {% if isLegacy %}
             {% if review.legacy.approvalStatus == "NOT_APPROVED" %}
               {{ govukTag({ text: "Not approved", classes: "govuk-tag--orange", attributes: { "data-qa": "approval-state" } }) }}
-              {% elif review.legacy.level and review.legacy.calculatedLevel and review.legacy.level != review.legacy.calculatedLevel %}
+              {% elif review.legacy.approvalStatus == "APPROVED" and review.legacy.level and review.legacy.calculatedLevel and review.legacy.level != review.legacy.calculatedLevel %}
               {{ govukTag({ text: "Level changed at approval", classes: "govuk-tag--blue", attributes: { "data-qa": "approval-state" } }) }}
               {% elif review.legacy.approvalStatus == "APPROVED" %}
               {{ govukTag({ text: "Approved", classes: "govuk-tag--green", attributes: { "data-qa": "approval-state" } }) }}
@@ -98,9 +98,11 @@
     {% if isLegacy %}
       {% set finalRatingLabel = 'Approval comment' %}
       {% set finalRatingComment = review.legacy.approvalComment or review.legacy.approvalCommitteeComment %}
+      {% set finalRatingCommentType = 'Recorded' %}
       {% set finalRatingDate = review.legacy.approvalDate %}
       {% set provisionalRatingLabel = 'Assessment comment' %}
       {% set provisionalRatingComment = review.legacy.assessmentComment %}
+      {% set provisionalRatingCommentType = 'Recorded' %}
       {% set provisionalRatingDate = review.legacy.assessmentDate %}
     {% else %}
       {% set approvalTagStatus = review.approvalStatus %}
@@ -124,7 +126,7 @@
     {% if review.closureReason %}
       <p class="govuk-body csra-review__comment">
         <strong>
-          {% if review.type === 'CSRA_REVIEW' %}
+          {% if not isAssessment %}
             Review
           {% else %}
             Full assessment

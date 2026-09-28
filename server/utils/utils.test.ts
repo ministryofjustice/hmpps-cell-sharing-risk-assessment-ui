@@ -444,7 +444,7 @@ describe('buildPagination', () => {
     expect(pagination.results).toEqual({ from: 1, to: 3, count: 3 })
     expect(pagination.previous).toBeUndefined()
     expect(pagination.next).toBeUndefined()
-    expect(pagination.items).toEqual([{ text: 1, href: '?page=1', selected: true }])
+    expect(pagination.items).toEqual([{ number: 1, href: '?page=1', current: true }])
   })
 
   it('computes the from/to window and preserves the base query in links', () => {
@@ -452,7 +452,7 @@ describe('buildPagination', () => {
     expect(pagination.results).toEqual({ from: 21, to: 40, count: 55 })
     expect(pagination.previous?.href).toBe('?ratings=HIGH&page=1')
     expect(pagination.next?.href).toBe('?ratings=HIGH&page=3')
-    expect(pagination.items.map(item => item.text)).toEqual([1, 2, 3])
+    expect(pagination.items.map(item => item.number)).toEqual([1, 2, 3])
   })
 
   it('reports zero results for an empty list', () => {

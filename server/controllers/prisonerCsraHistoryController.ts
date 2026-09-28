@@ -1,6 +1,6 @@
 import { type RequestHandler } from 'express'
 
-import type { CsraReviewSummary, CsraReviewHistory } from '../data/csraApiTypes'
+import type { CsraReviewHistory } from '../data/csraApiTypes'
 import type { Services } from '../services'
 import { Page } from '../services/auditService'
 import {
@@ -29,60 +29,6 @@ const buildDateValidationMessage = (
     default:
       return null
   }
-}
-
-const historyRatingValue = (review: CsraReviewSummary): string | undefined => {
-  if (review.legacy) {
-    switch (review.legacy.level) {
-      case 'HI':
-        return 'HIGH'
-      case 'STANDARD':
-        return 'STANDARD_LEGACY'
-      case 'LOW':
-      case 'MED':
-      case 'PEND':
-        return review.legacy.level
-      default:
-        return review.legacy.approvedResult || review.legacy.calculatedResult || undefined
-    }
-  }
-
-  if (review.ratingStage === 'PROVISIONAL') {
-    if (review.rating === 'HIGH_GENERAL') return 'HIGH_GENERAL_PROVISIONAL'
-    if (review.rating === 'HIGH_SPECIFIC') return 'HIGH_SPECIFIC_PROVISIONAL'
-  }
-
-  if (review.ratingStage === 'INTERIM' && review.rating === 'HIGH_GENERAL') {
-    return 'HIGH_GENERAL_INTERIM'
-  }
-
-  return review.rating
-}
-
-const buildAvailableRatings = (history: CsraReviewHistory): string[] => {
-  const explicit = history.summary.ratings ?? []
-  if (explicit.length) return explicit
-
-  const values = new Set<string>()
-  history.content.forEach(review => {
-    const value = historyRatingValue(review)
-    if (value) values.add(value)
-  })
-
-  return [...values]
-}
-
-const buildAvailableEstablishments = (history: CsraReviewHistory): { prisonId: string; prisonName: string }[] => {
-  const explicit = history.summary.establishments ?? []
-  if (explicit.length) return explicit
-
-  const seen = new Set<string>()
-  return history.content.flatMap(review => {
-    const prisonId = review.prisonId?.toUpperCase()
-    if (!prisonId || seen.has(prisonId)) return []
-    seen.add(prisonId)
-    return [{ prisonId, prisonName: review.prisonName || prisonId }]
-  })
 }
 
 const buildSummaryRange = (history: CsraReviewHistory): string | undefined => {
@@ -131,9 +77,6 @@ export default class PrisonerCsraHistoryController {
       res.locals.validationErrors = validationErrors
     }
 
-    // TODO: replace this with values from API call instead
-    const fullHistory = await csraService.getHistory(username, prisonerNumber, { page: '0', size: '100' })
-
     const history = await csraService.getHistory(
       username,
       prisonerNumber,
@@ -162,8 +105,8 @@ export default class PrisonerCsraHistoryController {
     const selectedRatings = ratings
     const selectedEstablishments = establishments
 
-    const availableRatings = buildAvailableRatings(fullHistory)
-    const availableEstablishments = buildAvailableEstablishments(fullHistory)
+    const availableRatings = history.summary.ratings
+    const availableEstablishments = history.summary.establishments
     const establishmentNames = Object.fromEntries(
       availableEstablishments.map(({ prisonId, prisonName }) => [prisonId, prisonName]),
     )
@@ -176,7 +119,6 @@ export default class PrisonerCsraHistoryController {
     return res.render('pages/prisonerCsraHistory', {
       prisonerNumber,
       prisoner,
-      fullHistory,
       history,
       summaryRange: buildSummaryRange(history),
       ratingOptions: getCsraHistoryRatingOptions(selectedRatings, availableRatings),

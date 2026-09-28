@@ -43,7 +43,16 @@ const legacy: Partial<CsraReviewDetail> = {
 }
 
 const history: CsraReviewHistory = {
-  summary: { totalCsras: 1, highCount: 1, standardCount: 0 },
+  summary: {
+    totalCsras: 1,
+    highCount: 1,
+    standardCount: 0,
+    firstAssessmentDate: '2016-10-31',
+    lastAssessmentDate: '2016-10-31',
+    lastHighDate: '2016-10-31',
+    ratings: ['HIGH'],
+    establishments: [{ prisonId: 'LEI', prisonName: 'Leeds (HMP)' }],
+  },
   content: [
     {
       id: REVIEW_ID,
@@ -51,8 +60,23 @@ const history: CsraReviewHistory = {
       assessmentType: 'REVIEW',
       rating: 'HIGH',
       reviewComment: 'Previous violence towards cellmates.',
-      prisonId: 'LEI',
       recordedDate: '2016-10-31',
+      finalRating: 'HIGH',
+      finalReviewComment: 'Previous violence towards cellmates.',
+      finalRecordedDate: '2016-10-31',
+      provisionalRating: null,
+      provisionalRecordedDate: null,
+      closureReason: null,
+      riskTo: [],
+      vulnerabilities: [],
+      prisonId: 'LEI',
+      prisonName: 'Leeds (HMP)',
+      legacy: {
+        level: 'HI',
+        calculatedLevel: null,
+        assessmentDate: '2016-10-31',
+        assessmentComment: 'Previous violence towards cellmates.',
+      },
     },
   ],
   page: 0,
@@ -126,7 +150,7 @@ test.describe('CSRA review detail', () => {
     await page.goto('/prisoner/A5197BD/history?from=due-for-review')
 
     const historyPage = await PrisonerCsraHistoryPage.verifyOnPage(page)
-    await historyPage.reviews.first().getByTestId('view-full-review').click()
+    await historyPage.reviews.first().getByTestId('view-full-link').click()
 
     const reviewPage = await PrisonerCsraReviewPage.verifyOnPage(page)
     await expect(reviewPage.breadcrumbs).toContainText('High risk prisoners due for review')
