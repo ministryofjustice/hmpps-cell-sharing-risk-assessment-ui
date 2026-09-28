@@ -763,11 +763,11 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
     const text = visibleText(response.text)
     for (const label of [
       'Standard risk',
-      'High risk - general',
-      'High risk - specific',
-      'High risk - general (provisional)',
-      'High risk - specific (provisional)',
-      'High risk - general (interim)',
+      'High risk – general',
+      'High risk – specific',
+      'High risk – general (provisional)',
+      'High risk – specific (provisional)',
+      'High risk – general (interim)',
       'High risk',
       'Standard risk (legacy)',
       'Low',
