@@ -113,7 +113,7 @@ export default {
           summary: { totalCsras: 0, highCount: 0, standardCount: 0 },
           content: [],
           page: 0,
-          size: 20,
+          size: 10,
           totalElements: 0,
           totalPages: 0,
           ...history,

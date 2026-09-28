@@ -187,6 +187,36 @@ export const highRiskLabel = (rating: string): string => {
   }
 }
 
+/** Human-readable label for the history page's richer rating filter values. */
+export const csraHistoryRatingLabel = (rating?: string | null): string => {
+  switch (rating) {
+    case 'HIGH':
+      return 'High risk'
+    case 'HIGH_GENERAL':
+      return 'High risk – general'
+    case 'HIGH_SPECIFIC':
+      return 'High risk – specific'
+    case 'HIGH_GENERAL_PROVISIONAL':
+      return 'High risk – general (provisional)'
+    case 'HIGH_SPECIFIC_PROVISIONAL':
+      return 'High risk – specific (provisional)'
+    case 'HIGH_GENERAL_INTERIM':
+      return 'High risk – general (interim)'
+    case 'STANDARD':
+      return 'Standard risk'
+    case 'STANDARD_LEGACY':
+      return 'Standard risk (legacy)'
+    case 'LOW':
+      return 'Low'
+    case 'MED':
+      return 'Medium'
+    case 'PEND':
+      return 'Pending'
+    default:
+      return ''
+  }
+}
+
 export const RATING_VALUES = ['HIGH_GENERAL', 'HIGH_SPECIFIC', 'HIGH', 'STANDARD', 'NO_RATING'] as const
 
 const RATING_OPTIONS = RATING_VALUES.map(rating => ({
@@ -212,12 +242,10 @@ export const HIGH_RISK_RATING_VALUES = [
 
 export const REVIEWABLE_RATING_TYPES = HIGH_RISK_RATING_VALUES.filter(key => !key.endsWith('_PROVISIONAL'))
 
-const HIGH_RISK_REVIEWABLE_OPTIONS = REVIEWABLE_RATING_TYPES.filter(key => !key.endsWith('_PROVISIONAL')).map(
-  rating => ({
-    value: rating,
-    text: highRiskLabel(rating),
-  }),
-)
+const HIGH_RISK_REVIEWABLE_OPTIONS = REVIEWABLE_RATING_TYPES.map(rating => ({
+  value: rating,
+  text: highRiskLabel(rating),
+}))
 
 export const getHighRiskRatingOptions = (
   selectedRatings: string[],
@@ -367,7 +395,7 @@ export const ALL_RATING_BUCKETS = ['HIGH', 'STANDARD'] as const
 export type RatingBucket = (typeof ALL_RATING_BUCKETS)[number]
 
 /** Default page size for the CSRA history list (matches the API default). */
-export const HISTORY_PAGE_SIZE = 20
+export const HISTORY_PAGE_SIZE = 10
 
 const firstValue = (value: ParsedQs[string]): string | undefined =>
   (Array.isArray(value) ? value[0] : value)?.toString().trim() || undefined
@@ -450,7 +478,7 @@ export const parseUkDate = (value?: string): string | undefined => {
 }
 
 export interface ParsedCsraHistoryQuery {
-  ratings: RatingBucket[]
+  ratings: string[]
   establishments: string[]
   fromDateRaw?: string
   toDateRaw?: string
@@ -460,10 +488,30 @@ export interface ParsedCsraHistoryQuery {
   apiQuery: CsraHistoryQuery
 }
 
+export interface HistoryRatingOption {
+  value: string
+  text: string
+  checked?: boolean
+}
+
+const HISTORY_RATING_VALUES = [
+  'HIGH',
+  'HIGH_GENERAL',
+  'HIGH_SPECIFIC',
+  'HIGH_GENERAL_PROVISIONAL',
+  'HIGH_SPECIFIC_PROVISIONAL',
+  'HIGH_GENERAL_INTERIM',
+  'STANDARD',
+  'STANDARD_LEGACY',
+  'LOW',
+  'MED',
+  'PEND',
+] as const
+
 /** Parse and whitelist the CSRA history request query into filter + paging values for the API. */
 export const parseCsraHistoryQuery = (reqQuery: ParsedQs, size = HISTORY_PAGE_SIZE): ParsedCsraHistoryQuery => {
-  const ratings = toArray(reqQuery.ratings).filter((rating): rating is RatingBucket =>
-    (ALL_RATING_BUCKETS as readonly string[]).includes(rating),
+  const ratings = toArray(reqQuery.ratings).filter((rating): rating is string =>
+    (HISTORY_RATING_VALUES as readonly string[]).includes(rating),
   )
   // Establishments are prison ids (e.g. "LEI"); there is no fixed set, so normalise and pass through.
   const establishments = toArray(reqQuery.establishments).map(prisonId => prisonId.toUpperCase())
@@ -486,11 +534,21 @@ export const parseCsraHistoryQuery = (reqQuery: ParsedQs, size = HISTORY_PAGE_SI
   return { ratings, establishments, fromDateRaw, toDateRaw, fromDate, toDate, page, apiQuery }
 }
 
+export const getCsraHistoryRatingOptions = (
+  selectedRatings: string[],
+  availableRatings: readonly string[],
+): HistoryRatingOption[] =>
+  availableRatings.map(rating => ({
+    value: rating,
+    text: csraHistoryRatingLabel(rating) || rating,
+    checked: selectedRatings.includes(rating),
+  }))
+
 export interface PaginationItem {
-  text?: number
+  number?: number
   href?: string
-  selected?: boolean
-  type?: 'dots'
+  current?: boolean
+  type?: 'ellipsis'
 }
 
 export interface Pagination {
@@ -506,7 +564,7 @@ export interface Pagination {
  * MOJ pagination component, with a condensed window of page links around the current page.
  */
 export const buildPagination = (
-  page: number,
+  currentPage: number,
   totalPages: number,
   totalElements: number,
   size: number,
@@ -520,25 +578,25 @@ export const buildPagination = (
 
   const items: PaginationItem[] = []
   let previousWasGap = false
-  for (let candidate = 1; candidate <= totalPages; candidate += 1) {
-    const nearEnds = candidate === 1 || candidate === totalPages
-    const nearCurrent = Math.abs(candidate - page) <= 1
+  for (let page = 1; page <= totalPages; page += 1) {
+    const nearEnds = page === 1 || page === totalPages
+    const nearCurrent = Math.abs(page - currentPage) <= 1
     if (nearEnds || nearCurrent) {
-      items.push({ text: candidate, href: href(candidate), selected: candidate === page })
+      items.push({ number: page, href: href(page), current: page === currentPage })
       previousWasGap = false
     } else if (!previousWasGap) {
-      items.push({ type: 'dots' })
+      items.push({ type: 'ellipsis' })
       previousWasGap = true
     }
   }
 
-  const from = totalElements === 0 ? 0 : (page - 1) * size + 1
-  const to = Math.min(page * size, totalElements)
+  const from = totalElements === 0 ? 0 : (currentPage - 1) * size + 1
+  const to = Math.min(currentPage * size, totalElements)
 
   return {
     results: { from, to, count: totalElements },
-    previous: page > 1 ? { href: href(page - 1) } : undefined,
-    next: page < totalPages ? { href: href(page + 1) } : undefined,
+    previous: currentPage > 1 ? { href: href(currentPage - 1) } : undefined,
+    next: currentPage < totalPages ? { href: href(currentPage + 1) } : undefined,
     items,
   }
 }

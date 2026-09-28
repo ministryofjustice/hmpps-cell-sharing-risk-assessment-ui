@@ -22,6 +22,8 @@ export default class PrisonerCsraHistoryPage extends AbstractPage {
 
   readonly noResults: Locator
 
+  readonly noHistory: Locator
+
   private constructor(page: Page) {
     super(page)
     this.heading = page.getByTestId('page-heading')
@@ -34,6 +36,7 @@ export default class PrisonerCsraHistoryPage extends AbstractPage {
     this.filters = page.getByTestId('csra-filters')
     this.pagination = page.getByTestId('pagination').first()
     this.noResults = page.getByTestId('no-results')
+    this.noHistory = page.getByTestId('no-history')
   }
 
   static async verifyOnPage(page: Page): Promise<PrisonerCsraHistoryPage> {

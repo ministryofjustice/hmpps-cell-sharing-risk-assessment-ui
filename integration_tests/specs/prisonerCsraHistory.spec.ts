@@ -26,6 +26,7 @@ const history: CsraReviewHistory = {
     firstAssessmentDate: '2011-06-15',
     lastAssessmentDate: '2025-10-11',
     lastHighDate: '2013-07-14',
+    availableRatings: ['HIGH', 'HIGH_SPECIFIC', 'STANDARD'],
     establishments: [
       { prisonId: 'HLI', prisonName: 'Hull (HMP)' },
       { prisonId: 'LEI', prisonName: 'Leeds (HMP)' },
@@ -52,9 +53,9 @@ const history: CsraReviewHistory = {
     },
   ],
   page: 0,
-  size: 20,
+  size: 10,
   totalElements: 13,
-  totalPages: 5,
+  totalPages: 2,
 }
 
 test.describe('Prisoner CSRA history', () => {
@@ -80,14 +81,14 @@ test.describe('Prisoner CSRA history', () => {
     await expect(historyPage.summary).toContainText('June 2011')
     await expect(historyPage.summary).toContainText('Last high 14 July 2013')
     await expect(historyPage.reviews).toHaveCount(2)
-    await expect(historyPage.reviews.first()).toContainText('Standard')
+    await expect(historyPage.reviews.first()).toContainText('STANDARD RISK')
     await expect(historyPage.reviews.first()).toContainText('No concerns identified at this review.')
-    await expect(historyPage.reviews.nth(1)).toContainText('High risk – specific')
+    await expect(historyPage.reviews.nth(1)).toContainText('HIGH RISK SPECIFIC')
     await expect(historyPage.pagination).toContainText('of 13 CSRAs')
     // Establishment filter checkboxes and resolved prison name in the review card
     await expect(historyPage.filters).toContainText('Hull (HMP)')
     await expect(historyPage.filters).toContainText('Leeds (HMP)')
-    await expect(historyPage.reviews.first()).toContainText('Recorded at Leeds (HMP)')
+    await expect(historyPage.reviews.first()).toContainText('Reviewed at Leeds (HMP)')
   })
 
   test('filters by establishment and passes the selection to the API', async ({ page }) => {
@@ -114,7 +115,7 @@ test.describe('Prisoner CSRA history', () => {
 
     await page.goto('/prisoner/A5197BD/history')
 
-    await page.getByLabel('High (2)').check()
+    await page.getByLabel('High risk').check()
     await page.getByTestId('apply-filters').click()
 
     await expect(page).toHaveURL(/ratings=HIGH/)
@@ -137,6 +138,28 @@ test.describe('Prisoner CSRA history', () => {
     await page.goto('/prisoner/A5197BD/history')
 
     const historyPage = await PrisonerCsraHistoryPage.verifyOnPage(page)
-    await expect(historyPage.noResults).toContainText('No CSRAs found.')
+    await expect(historyPage.noHistory).toContainText('There are no CSRA assessments or reviews for this prisoner.')
+  })
+
+  test('shows a no-results message when the selected filters return nothing', async ({ page }) => {
+    await login(page)
+    await prisonerSearchApi.stubGetPrisoner(prisoner)
+    await prisonApi.stubGetPrisonerImage('A5197BD')
+    await manageUsersApi.stubGetUserCaseloads(['LEI'])
+    await csraApi.stubGetCsraHistory('A5197BD', {
+      summary: history.summary,
+      content: [],
+      page: 0,
+      size: 10,
+      totalElements: 0,
+      totalPages: 0,
+    })
+
+    await page.goto('/prisoner/A5197BD/history?ratings=HIGH')
+
+    const historyPage = await PrisonerCsraHistoryPage.verifyOnPage(page)
+    await expect(historyPage.summary).toBeVisible()
+    await expect(historyPage.filters).toBeVisible()
+    await expect(historyPage.noResults).toContainText('No history has been found for the selected filters.')
   })
 })

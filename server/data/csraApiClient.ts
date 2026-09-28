@@ -200,4 +200,14 @@ export default class CsraApiClient extends BaseApiClient {
     requestType: 'put',
     options: { asSystem: true },
   })
+
+  submitFinalRating = this.apiCall<
+    object,
+    { prisonerNumber: string; assessmentId: string },
+    CsraAssessmentStageRequest
+  >({
+    path: '/csra-review/prisoner/:prisonerNumber/assessment/:assessmentId/final',
+    requestType: 'put',
+    options: { asSystem: true },
+  })
 }

@@ -185,6 +185,7 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
       firstAssessmentDate: '2011-06-15',
       lastAssessmentDate: '2025-10-11',
       lastHighDate: '2013-07-14',
+      availableRatings: ['HIGH', 'HIGH_SPECIFIC', 'STANDARD'],
     },
     content: [
       {
@@ -198,9 +199,9 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
       },
     ],
     page: 0,
-    size: 20,
+    size: 10,
     totalElements: 13,
-    totalPages: 5,
+    totalPages: 2,
   }
 
   beforeEach(() => {
@@ -220,15 +221,16 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
         expect(res.text).toContain('Daniel Havers')
         expect(res.text).toContain('15/17564AG') // PNC in the banner
         expect(res.text).toContain('3 February 1972') // DOB in the banner
-        expect(res.text).toContain('High risk – specific')
+        expect(res.text).toContain('HIGH RISK')
+        expect(res.text).toContain('SPECIFIC')
         expect(res.text).toContain('Cannot share with specific groups.')
-        expect(res.text).toContain('Recorded at LEI')
+        expect(res.text).toContain('Reviewed at LEI')
         expect(res.text).toContain('June 2011') // summary date range
         expect(res.text).toContain('Last high 14 July 2013')
         expect(res.text).toContain('of <strong>13</strong> CSRAs')
         expect(csraService.getHistory).toHaveBeenCalledWith(user.username, 'A1234BC', {
           page: '0',
-          size: '20',
+          size: '10',
           ratings: undefined,
           establishments: undefined,
           fromDate: undefined,
@@ -252,7 +254,7 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
       .expect(() => {
         expect(csraService.getHistory).toHaveBeenCalledWith(user.username, 'A1234BC', {
           page: '1',
-          size: '20',
+          size: '10',
           ratings: ['HIGH'],
           establishments: ['LEI'],
           fromDate: '2020-01-01',
@@ -280,9 +282,9 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
         // Establishment filter checkboxes
         expect(res.text).toContain('Hull (HMP)')
         expect(res.text).toContain('value="LEI"')
-        // "Recorded at" resolves the prison name instead of the raw id
-        expect(res.text).toContain('Recorded at Leeds (HMP)')
-        expect(res.text).not.toContain('Recorded at LEI')
+        // "Reviewed at" resolves the prison name instead of the raw id
+        expect(res.text).toContain('Reviewed at Leeds (HMP)')
+        expect(res.text).not.toContain('Reviewed at LEI')
       })
   })
 
@@ -291,7 +293,7 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
       summary: { totalCsras: 0, highCount: 0, standardCount: 0 },
       content: [],
       page: 0,
-      size: 20,
+      size: 10,
       totalElements: 0,
       totalPages: 0,
     })
@@ -300,7 +302,7 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
       .get('/prisoner/A1234BC/history')
       .expect(200)
       .expect(res => {
-        expect(res.text).toContain('No CSRAs found.')
+        expect(res.text).toContain('There are no CSRA assessments or reviews for this prisoner.')
       })
   })
 
@@ -378,7 +380,7 @@ describe('breadcrumbs', () => {
       summary: { totalCsras: 0, highCount: 0, standardCount: 0 },
       content: [],
       page: 0,
-      size: 20,
+      size: 10,
       totalElements: 0,
       totalPages: 0,
     })

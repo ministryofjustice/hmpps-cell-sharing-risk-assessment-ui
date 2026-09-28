@@ -143,4 +143,13 @@ export default class CsraService {
   ) {
     return this.csraApiClient.submitProvisionalRating(username, { prisonerNumber, assessmentId }, rating)
   }
+
+  async submitFinalRating(
+    username: string,
+    prisonerNumber: string,
+    assessmentId: string,
+    rating: Parameters<CsraApiClient['submitFinalRating']>[2],
+  ) {
+    return this.csraApiClient.submitFinalRating(username, { prisonerNumber, assessmentId }, rating)
+  }
 }
