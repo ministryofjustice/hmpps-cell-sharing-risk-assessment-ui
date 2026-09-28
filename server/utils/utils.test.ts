@@ -18,6 +18,7 @@ import {
   formatTime,
   formatLocalDate,
   formatFileSize,
+  getHighRiskRatingOptions,
   initialiseName,
   isPrisonerNumber,
   csraRatingPanelClass,
@@ -151,6 +152,37 @@ describe('csraRatingLabel', () => {
     ['STANDARD', 'PROVISIONAL', 'Standard (provisional)'],
   ])('csraRatingLabel(%s, %s) === %s', (input: string, stage: string, expected: string) => {
     expect(csraRatingLabel(input, stage)).toEqual(expected)
+  })
+})
+
+describe('getHighRiskRatingOptions', () => {
+  it('labels stage-specific high-risk worklist types', () => {
+    expect(
+      getHighRiskRatingOptions(
+        [],
+        ['HIGH_GENERAL_PROVISIONAL', 'HIGH_GENERAL_INTERIM', 'HIGH_SPECIFIC_PROVISIONAL', 'HIGH_SPECIFIC_INTERIM'],
+      ),
+    ).toEqual([
+      { value: 'HIGH_GENERAL_INTERIM', text: 'High – general (interim)', checked: false },
+      { value: 'HIGH_SPECIFIC_INTERIM', text: 'High – specific (interim)', checked: false },
+    ])
+  })
+
+  it('orders each stage-specific option directly after its non-suffixed counterpart', () => {
+    expect(
+      getHighRiskRatingOptions(
+        [],
+        [
+          'HIGH_GENERAL_PROVISIONAL',
+          'HIGH_GENERAL_INTERIM',
+          'HIGH_SPECIFIC_INTERIM',
+          'HIGH_SPECIFIC',
+          'HIGH_GENERAL',
+          'HIGH_SPECIFIC_PROVISIONAL',
+          'HIGH',
+        ],
+      ).map(option => option.value),
+    ).toEqual(['HIGH_GENERAL', 'HIGH_GENERAL_INTERIM', 'HIGH_SPECIFIC', 'HIGH_SPECIFIC_INTERIM', 'HIGH'])
   })
 })
 
