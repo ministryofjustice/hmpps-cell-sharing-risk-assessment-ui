@@ -117,11 +117,12 @@ describe('reviewsInProgressController', () => {
     )
   })
 
-  it('passes true for canEditReviews when the user has the role', async () => {
+  it('passes true for canEditReviews when the access middleware allows the action', async () => {
     const res = {
       locals: {
-        user: { username: 'USER2', token: 'token-2', userRoles: ['CSRA__REVIEW_EDIT'] },
+        user: { username: 'USER2', token: 'token-2' },
         feComponents: { sharedData: { activeCaseLoad: { caseLoadId: 'LEI' } } },
+        canAccess: jest.fn().mockImplementation((action: string) => action === 'edit_review'),
       },
       render: jest.fn(),
     } as unknown as Response
@@ -137,11 +138,12 @@ describe('reviewsInProgressController', () => {
     )
   })
 
-  it('passes false for canEditReviews when the user does not have the role', async () => {
+  it('passes false for canEditReviews when the access middleware denies the action', async () => {
     const res = {
       locals: {
-        user: { username: 'USER2', token: 'token-2', userRoles: [] },
+        user: { username: 'USER2', token: 'token-2' },
         feComponents: { sharedData: { activeCaseLoad: { caseLoadId: 'LEI' } } },
+        canAccess: jest.fn().mockReturnValue(false),
       },
       render: jest.fn(),
     } as unknown as Response

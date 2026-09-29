@@ -7,6 +7,7 @@ import nunjucksSetup from './utils/nunjucksSetup'
 import errorHandler from './errorHandler'
 import { appInsightsMiddleware } from './utils/azureAppInsights'
 import authorisationMiddleware from './middleware/authorisationMiddleware'
+import setCanAccess from './middleware/setCanAccess'
 import config from './config'
 import logger from '../logger'
 
@@ -57,6 +58,9 @@ export default function createApp(services: Services): express.Application {
       },
     }),
   )
+
+  // Makes use of the frontend components metadata to determine the active caseload
+  app.use(setCanAccess(services.activeAgenciesService))
 
   app.use(addBreadcrumb({ title: 'Digital Prison Services', href: app.locals.dpsUrl }))
 

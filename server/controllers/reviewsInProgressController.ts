@@ -3,7 +3,6 @@ import type { Services } from '../services'
 import { Page } from '../services/auditService'
 import logger from '../../logger'
 import { populateUserDisplayNames } from '../utils/populateUserDisplayNames'
-import { Role } from '../utils/roles'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService' | 'manageUsersService'>
 
@@ -23,8 +22,6 @@ export default class ReviewsInProgressController {
         res.locals.feComponents.sharedData.activeCaseLoad.caseLoadId,
       )
 
-      const canEditReviews = res.locals.user?.userRoles?.includes(Role.CSRA__REVIEW_EDIT)
-
       const usernames = reviewsInProgress.map(review => review.startedBy)
 
       await populateUserDisplayNames(res.locals, manageUsersService, res.locals.user.username, usernames)
@@ -32,7 +29,7 @@ export default class ReviewsInProgressController {
       return res.render('pages/reviewsInProgress', {
         title: 'Reviews in progress',
         reviewsInProgress,
-        canEditReviews,
+        canEditReviews: res.locals.canAccess?.('edit_review'),
       })
     } catch (error) {
       logger.error('Error fetching prisoners for reviews-in-progress page', error)

@@ -112,7 +112,7 @@
       {% set assessmentInProgress = csra.inProgress and csra.inProgress.type == "CSRA_INITIAL_REVIEW" %}
       {% set reviewInProgress = csra.inProgress and csra.inProgress.type == "CSRA_REVIEW" %}
 
-      {% if hasRole('CSRA__ASSESSMENT_EDIT') and not reviewInProgress %}
+      {% if canAccess('edit_assessment') and not reviewInProgress %}
         <div id="csra-assessment-section">
           <h2 class="govuk-heading-m">
             Assessment
@@ -159,7 +159,7 @@
         </div>
       {% endif %}
 
-      {% if hasRole('CSRA__REVIEW_EDIT') and csra.rating and not assessmentInProgress %}
+      {% if canAccess('edit_review') and csra.rating and not assessmentInProgress %}
         <div id="csra-review-csra-section" class="govuk-!-margin-top-6">
           <h2 class="govuk-heading-m">
             Review
