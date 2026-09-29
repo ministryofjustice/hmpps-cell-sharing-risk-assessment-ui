@@ -16,6 +16,7 @@ import PrisonApiService from '../../services/prisonApiService'
 import ActiveAgenciesService from '../../services/activeAgenciesService'
 import addBreadcrumb from '../../middleware/addBreadcrumb'
 import setHasRole from '../../middleware/setHasRole'
+import canAccess from '../../middleware/setCanAccess'
 
 jest.mock('../../services/auditService')
 
@@ -48,6 +49,7 @@ function appSetup(services: Services, production: boolean, userSupplier: () => H
     next()
   })
   app.use(setHasRole)
+  app.use(canAccess(services.activeAgenciesService))
   app.use((req, res, next) => {
     req.id = randomUUID()
     next()

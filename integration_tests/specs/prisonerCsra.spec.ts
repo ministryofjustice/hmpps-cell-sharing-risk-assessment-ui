@@ -18,7 +18,11 @@ const prisoner = {
 }
 
 const stubPrisonerPage = async (page: Page, currentRating: Parameters<typeof csraApi.stubGetCurrentRating>[1]) => {
-  await login(page, { roles: ['ROLE_CSRA__ASSESSMENT_EDIT', 'ROLE_CSRA__REVIEW_EDIT'] })
+  await login(page, {
+    roles: ['ROLE_CSRA__ASSESSMENT_EDIT', 'ROLE_CSRA__REVIEW_EDIT'],
+    activeCaseLoad: { caseLoadId: prisoner.prisonId, description: prisoner.prisonName },
+  })
+  await csraApi.stubGetInfo(['MDI'])
   await prisonerSearchApi.stubGetPrisoner(prisoner)
   await prisonApi.stubGetPrisonerImage('A1234BC')
   await manageUsersApi.stubGetUserCaseloads(['MDI'])
@@ -33,7 +37,7 @@ test.describe('Prisoner CSRA', () => {
   })
 
   test('shows the current CSRA rating and supporting detail for a prisoner', async ({ page }) => {
-    await login(page)
+    await login(page, { activeCaseLoad: { caseLoadId: prisoner.prisonId, description: prisoner.prisonName } })
     await prisonerSearchApi.stubGetPrisoner(prisoner)
     await prisonApi.stubGetPrisonerImage('A1234BC')
     await manageUsersApi.stubGetUserCaseloads(['MDI'])
@@ -63,7 +67,7 @@ test.describe('Prisoner CSRA', () => {
   })
 
   test('shows a no-CSRA message when the prisoner has no current rating', async ({ page }) => {
-    await login(page)
+    await login(page, { activeCaseLoad: { caseLoadId: prisoner.prisonId, description: prisoner.prisonName } })
     await prisonerSearchApi.stubGetPrisoner(prisoner)
     await prisonApi.stubGetPrisonerImage('A1234BC')
     await manageUsersApi.stubGetUserCaseloads(['MDI'])
@@ -175,6 +179,63 @@ test.describe('Prisoner CSRA', () => {
     await expect(prisonerCsraPage.reviewDueDateSection).toBeHidden()
   })
 
+  test('hides assessment and review sections when the user does not have the required roles', async ({ page }) => {
+    await login(page, {
+      roles: [],
+      activeCaseLoad: { caseLoadId: prisoner.prisonId, description: prisoner.prisonName },
+    })
+    await prisonerSearchApi.stubGetPrisoner(prisoner)
+    await prisonApi.stubGetPrisonerImage('A1234BC')
+    await manageUsersApi.stubGetUserCaseloads(['MDI'])
+    await csraApi.stubGetCurrentRating('A1234BC', {
+      status: 'COMPLETE',
+      rating: 'HIGH_SPECIFIC',
+      nextReviewDate: '2027-05-06',
+      inProgress: {
+        reviewId: 'review-123',
+        type: 'CSRA_REVIEW',
+        startedBy: 'AUSER_GEN',
+        startedAt: '2026-08-06T09:15:00',
+      },
+    })
+
+    await page.goto('/prisoner/A1234BC')
+
+    const prisonerCsraPage = await PrisonerCsraPage.verifyOnPage(page, 'John Smith')
+    await expect(prisonerCsraPage.assessmentSection).toBeHidden()
+    await expect(prisonerCsraPage.reviewSection).toBeHidden()
+    await expect(prisonerCsraPage.reviewDueDateSection).toBeVisible()
+  })
+
+  test('hides assessment and review sections when the prison is disabled', async ({ page }) => {
+    await login(page, {
+      roles: ['ROLE_CSRA__ASSESSMENT_EDIT', 'ROLE_CSRA__REVIEW_EDIT'],
+      activeCaseLoad: { caseLoadId: prisoner.prisonId, description: prisoner.prisonName },
+    })
+    await csraApi.stubGetInfo([])
+    await prisonerSearchApi.stubGetPrisoner(prisoner)
+    await prisonApi.stubGetPrisonerImage('A1234BC')
+    await manageUsersApi.stubGetUserCaseloads(['MDI'])
+    await csraApi.stubGetCurrentRating('A1234BC', {
+      status: 'COMPLETE',
+      rating: 'HIGH_SPECIFIC',
+      nextReviewDate: '2027-05-06',
+      inProgress: {
+        reviewId: 'review-123',
+        type: 'CSRA_REVIEW',
+        startedBy: 'AUSER_GEN',
+        startedAt: '2026-08-06T09:15:00',
+      },
+    })
+
+    await page.goto('/prisoner/A1234BC')
+
+    const prisonerCsraPage = await PrisonerCsraPage.verifyOnPage(page, 'John Smith')
+    await expect(prisonerCsraPage.assessmentSection).toBeHidden()
+    await expect(prisonerCsraPage.reviewSection).toBeHidden()
+    await expect(prisonerCsraPage.reviewDueDateSection).toBeVisible()
+  })
+
   test('shows a review in progress for a standard rating', async ({ page }) => {
     const prisonerCsraPage = await stubPrisonerPage(page, {
       status: 'COMPLETE',
@@ -254,7 +315,11 @@ test.describe('Prisoner CSRA', () => {
   })
 
   test('starts a new assessment and lands on the task list', async ({ page }) => {
-    await login(page, { roles: ['ROLE_CSRA__ASSESSMENT_EDIT'] })
+    await login(page, {
+      roles: ['ROLE_CSRA__ASSESSMENT_EDIT'],
+      activeCaseLoad: { caseLoadId: prisoner.prisonId, description: prisoner.prisonName },
+    })
+    await csraApi.stubGetInfo(['MDI'])
     await prisonerSearchApi.stubGetPrisoner(prisoner)
     await prisonApi.stubGetPrisonerImage('A1234BC')
     await manageUsersApi.stubGetUserCaseloads(['MDI'])
@@ -288,7 +353,11 @@ test.describe('Prisoner CSRA', () => {
   })
 
   test('can reach the confirm-rating page and submit the provisional rating', async ({ page }) => {
-    await login(page, { roles: ['ROLE_CSRA__ASSESSMENT_EDIT'] })
+    await login(page, {
+      roles: ['ROLE_CSRA__ASSESSMENT_EDIT'],
+      activeCaseLoad: { caseLoadId: prisoner.prisonId, description: prisoner.prisonName },
+    })
+    await csraApi.stubGetInfo(['MDI'])
     await prisonerSearchApi.stubGetPrisoner(prisoner)
     await prisonApi.stubGetPrisonerImage('A1234BC')
     await manageUsersApi.stubGetUserCaseloads(['MDI'])

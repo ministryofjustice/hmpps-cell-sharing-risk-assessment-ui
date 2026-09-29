@@ -13,6 +13,7 @@ test.describe('Reviews in progress', () => {
       activeCaseLoad: { caseLoadId: 'LEI', description: 'Leeds (HMP)' },
       roles: ['ROLE_CSRA__REVIEW_EDIT'],
     })
+    await csraApi.stubGetInfo(['LEI'])
     await csraApi.stubGetReviewsInProgress('LEI')
     await manageUsersApi.stubGetUserDetails('SCARTER', 'Sue Carter')
 
@@ -32,6 +33,23 @@ test.describe('Reviews in progress', () => {
 
   test('does not show continue/cancel review actions when user does not have the role', async ({ page }) => {
     await login(page, { activeCaseLoad: { caseLoadId: 'LEI', description: 'Leeds (HMP)' }, roles: [] })
+    await csraApi.stubGetInfo(['LEI'])
+    await csraApi.stubGetReviewsInProgress('LEI')
+    await manageUsersApi.stubGetUserDetails('SCARTER', 'Sue Carter')
+
+    await page.goto('/reviews-in-progress')
+
+    const table = page.locator('.csra-reviews-in-progress-table')
+    await expect(table).not.toContainText('Continue review')
+    await expect(table).not.toContainText('Cancel review')
+  })
+
+  test('does not show continue/cancel review actions when the prison is not active', async ({ page }) => {
+    await login(page, {
+      activeCaseLoad: { caseLoadId: 'LEI', description: 'Leeds (HMP)' },
+      roles: ['ROLE_CSRA__REVIEW_EDIT'],
+    })
+    await csraApi.stubGetInfo([])
     await csraApi.stubGetReviewsInProgress('LEI')
     await manageUsersApi.stubGetUserDetails('SCARTER', 'Sue Carter')
 
