@@ -28,7 +28,7 @@ export default function csraConfirmRatingController({
 
     if (req.method === 'POST') {
       // TODO: change this to submit real data when the submit rating page is implemented fully
-      await csraService.submitFinalRating(username, prisonerNumber, assessmentId, {
+      await csraService.submitProvisionalRating(username, prisonerNumber, assessmentId, {
         rating: 'HIGH_GENERAL',
         assessmentComment: 'WIP generated comment',
         ...assessmentAnswers,

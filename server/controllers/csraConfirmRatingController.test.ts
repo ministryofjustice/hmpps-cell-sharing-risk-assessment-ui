@@ -27,7 +27,7 @@ const makeAssessment = (overrides: Partial<CsraAssessment> = {}): CsraAssessment
 describe('csraConfirmRatingController', () => {
   const csraService = {
     getCsraAssessment: jest.fn(),
-    submitFinalRating: jest.fn(),
+    submitProvisionalRating: jest.fn(),
   }
 
   const auditService = {
@@ -56,7 +56,7 @@ describe('csraConfirmRatingController', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     csraService.getCsraAssessment.mockResolvedValue(makeAssessment())
-    csraService.submitFinalRating.mockResolvedValue(undefined)
+    csraService.submitProvisionalRating.mockResolvedValue(undefined)
   })
 
   it('renders the confirmation page with the current answers', async () => {
@@ -91,7 +91,7 @@ describe('csraConfirmRatingController', () => {
     )
   })
 
-  it('submits the final rating and redirects back to the prisoner page', async () => {
+  it('submits the provisional rating and redirects back to the prisoner page', async () => {
     const stageAnswers = makeStageAnswers({ pncChecked: true, seenByHealthcare: true })
     csraService.getCsraAssessment.mockResolvedValue(
       makeAssessment({
@@ -103,7 +103,7 @@ describe('csraConfirmRatingController', () => {
     await controller()(request('POST'), res, jest.fn())
 
     expect(auditService.logPageView).not.toHaveBeenCalled()
-    expect(csraService.submitFinalRating).toHaveBeenCalledWith(
+    expect(csraService.submitProvisionalRating).toHaveBeenCalledWith(
       'user1',
       'A1234BC',
       ASSESSMENT_ID,

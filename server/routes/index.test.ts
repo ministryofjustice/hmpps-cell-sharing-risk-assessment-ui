@@ -199,8 +199,13 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
         finalRating: 'HIGH_SPECIFIC',
         finalReviewComment: 'Cannot share with specific groups.',
         finalRecordedDate: '2024-07-23',
+        finalPrisonId: 'LEI',
+        finalPrisonName: null,
         provisionalRating: null,
         provisionalRecordedDate: null,
+        provisionalPrisonId: null,
+        provisionalPrisonName: null,
+        interimReviewer: null,
         closureReason: null,
         riskTo: [],
         vulnerabilities: [],
@@ -224,8 +229,13 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
     finalRating: 'STANDARD',
     finalReviewComment: 'Final assessment notes.',
     finalRecordedDate: '2025-10-11',
+    finalPrisonId: 'LEI',
+    finalPrisonName: 'Leeds (HMP)',
     provisionalRating: null,
     provisionalRecordedDate: null,
+    provisionalPrisonId: null,
+    provisionalPrisonName: null,
+    interimReviewer: null,
     closureReason: null,
     riskTo: [],
     vulnerabilities: [],
@@ -266,7 +276,7 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
         expect(res.text).toContain('HIGH RISK')
         expect(res.text).toContain('SPECIFIC')
         expect(res.text).toContain('Cannot share with specific groups.')
-        expect(res.text).toContain('Assessed at LEI')
+        expect(res.text).toContain('Reviewed at LEI')
         expect(res.text).toContain('June 2011') // summary date range
         expect(res.text).toContain('Last high 14 July 2013')
         expect(res.text).toContain('13 CSRAs</strong>')
@@ -326,8 +336,8 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
         expect(res.text).toContain('Hull (HMP)')
         expect(res.text).toContain('value="LEI"')
         // The provenance resolves the prison name instead of the raw id
-        expect(res.text).toContain('Assessed at Leeds (HMP)')
-        expect(res.text).not.toContain('Assessed at LEI')
+        expect(res.text).toContain('Reviewed at Leeds (HMP)')
+        expect(res.text).not.toContain('Reviewed at LEI')
       })
   })
 
@@ -475,11 +485,15 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
         provisionalRating: 'HIGH_GENERAL',
         provisionalReviewComment: 'Initial notes.',
         provisionalRecordedDate: '2025-10-09',
+        provisionalPrisonId: 'MDI',
+        provisionalPrisonName: 'Moorland (HMP & YOI)',
       }),
     )
     const text = visibleText(staged.text)
     expect(text).toContain('Assessment comment: Final assessment notes. Assessed at Leeds (HMP) 11 October 2025')
-    expect(text).toContain('Provisional assessment comment: Initial notes. Assessed at Leeds (HMP) 9 October 2025')
+    expect(text).toContain(
+      'Provisional assessment comment: Initial notes. Assessed at Moorland (HMP &amp; YOI) 9 October 2025',
+    )
   })
 
   it('uses the stage-specific fields instead of deprecated rating, comment and date fields', async () => {
@@ -510,6 +524,8 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
         provisionalRating: 'HIGH_SPECIFIC',
         provisionalReviewComment: 'Initial notes.',
         provisionalRecordedDate: '2025-10-11',
+        provisionalPrisonId: 'LEI',
+        provisionalPrisonName: 'Leeds (HMP)',
         riskTo: [{ category: 'DIFFERENT_ETHNICITY', details: 'Threats' }],
         vulnerabilities: [{ category: 'NEURODIVERSITY' }],
       }),
@@ -531,8 +547,15 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
       }),
     )
     expect(visibleText(review.text)).toContain(
-      'Review STANDARD RISK View full review Review comment: Reviewed notes. Assessed at Leeds (HMP) 11 October 2025',
+      'Review STANDARD RISK View full review Review comment: Reviewed notes. Reviewed at Leeds (HMP) 11 October 2025',
     )
+    manageUsersService.getUserDetails.mockResolvedValue({
+      username: 'NQP56Y',
+      name: 'Neil Reviewer',
+      active: true,
+      authSource: 'nomis',
+      userId: '12345',
+    })
     const interim = await showEntry(
       entry({
         type: 'CSRA_REVIEW',
@@ -542,11 +565,15 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
         provisionalRating: 'HIGH_GENERAL',
         provisionalReviewComment: 'Urgent review.',
         provisionalRecordedDate: '2025-10-11',
+        provisionalPrisonId: 'MDI',
+        provisionalPrisonName: 'Moorland (HMP & YOI)',
+        interimReviewer: 'NQP56Y',
       }),
     )
     expect(visibleText(interim.text)).toContain(
-      'Review HIGH RISK GENERAL (INTERIM) Provisional review comment: Urgent review. Assessed at Leeds (HMP) 11 October 2025',
+      'Review HIGH RISK GENERAL (INTERIM) Interim rating reason: Urgent review. Reviewed at Moorland (HMP &amp; YOI) by Neil Reviewer 11 October 2025',
     )
+    expect(manageUsersService.getUserDetails).toHaveBeenCalledWith(user.username, 'NQP56Y')
     expect(interim.text).not.toContain('data-qa="view-full-link"')
   })
 
@@ -593,7 +620,7 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
       const text = visibleText(response.text)
       expect(text).toContain(message)
       expect(text.indexOf(message)).toBeLessThan(
-        text.indexOf(assessmentType === 'REVIEW' ? 'Provisional review comment:' : 'Provisional assessment comment:'),
+        text.indexOf(assessmentType === 'REVIEW' ? 'Interim rating reason:' : 'Provisional assessment comment:'),
       )
     },
   )
@@ -625,10 +652,11 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
     expect(text).toContain('View details')
     expect(text).toContain('No approval comment entered.')
     expect(text).toContain('No assessment comment entered.')
-    expect(text).toContain('at an unknown establishment 17 June 2011')
-    expect(text).toContain('at an unknown establishment 15 June 2011')
+    expect(text).not.toContain('Recorded at')
+    expect(text).toContain('17 June 2011')
+    expect(text).toContain('15 June 2011')
     if (level === 'LOW' || level === 'MED') {
-      expect(response.text).toMatch(/<h2 class="govuk-heading-m">(?:Low|Medium) risk<\/h2>/)
+      expect(response.text).toMatch(/<strong class="govuk-heading-m">(?:Low|Medium) risk<\/strong>/)
     } else {
       expect(response.text).toContain('risk-badge')
     }
@@ -813,7 +841,14 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
     expect(visibleText(response.text)).toContain('&#39;Date from&#39; must be on or before &#39;Date to&#39;')
     expect(response.text).toContain('value="2/1/2025"')
     expect(response.text).toContain('value="1/1/2025"')
-    expect(csraService.getHistory).toHaveBeenLastCalledWith(user.username, 'A1234BC', { page: '0', size: '10' })
+    expect(csraService.getHistory).toHaveBeenLastCalledWith(user.username, 'A1234BC', {
+      establishments: undefined,
+      fromDate: undefined,
+      page: '0',
+      ratings: ['HIGH'],
+      size: '10',
+      toDate: '2025-01-01',
+    })
   })
 })
 

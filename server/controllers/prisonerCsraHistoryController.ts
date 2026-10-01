@@ -11,8 +11,9 @@ import {
   parseUkDate,
   validateUkDate,
 } from '../utils/utils'
+import { populateUserDisplayNames } from '../utils/populateUserDisplayNames'
 
-type Dependencies = Pick<Services, 'auditService' | 'csraService'>
+type Dependencies = Pick<Services, 'auditService' | 'csraService' | 'manageUsersService'>
 
 const buildDateValidationMessage = (
   fieldLabel: string,
@@ -65,7 +66,7 @@ export default class PrisonerCsraHistoryController {
   constructor(private readonly dependencies: Dependencies) {}
 
   index: RequestHandler<{ prisonerNumber: string }> = async (req, res) => {
-    const { auditService, csraService } = this.dependencies
+    const { auditService, csraService, manageUsersService } = this.dependencies
     const { prisonerNumber } = req.params
     const { username } = res.locals.user
     const { prisoner } = res.locals
@@ -77,16 +78,18 @@ export default class PrisonerCsraHistoryController {
       res.locals.validationErrors = validationErrors
     }
 
-    const history = await csraService.getHistory(
-      username,
-      prisonerNumber,
-      Object.keys(validationErrors).length
-        ? {
-            page: apiQuery.page,
-            size: apiQuery.size,
-          }
-        : apiQuery,
-    )
+    const validApiQuery = { ...apiQuery }
+    if (validationErrors.fromDate) validApiQuery.fromDate = undefined
+    if (validationErrors.toDate) validApiQuery.toDate = undefined
+
+    const history = await csraService.getHistory(username, prisonerNumber, validApiQuery)
+
+    const interimReviewerUsernames = history.content
+      .map(review => review.interimReviewer)
+      .filter((reviewer): reviewer is string => Boolean(reviewer))
+    if (interimReviewerUsernames.length) {
+      await populateUserDisplayNames(res.locals, manageUsersService, username, interimReviewerUsernames)
+    }
 
     await auditService.logPageView(Page.PRISONER_CSRA_HISTORY, {
       who: username,
@@ -96,14 +99,13 @@ export default class PrisonerCsraHistoryController {
     })
 
     const baseQueryParams = new URLSearchParams()
+    // Pagination links are built from these, so the worklist the prisoner was reached from has to be
+    // among them or paging would drop it out of the breadcrumb trail.
     if (res.locals.fromKey) baseQueryParams.set('from', res.locals.fromKey)
     ratings.forEach(rating => baseQueryParams.append('ratings', rating))
     establishments.forEach(establishment => baseQueryParams.append('establishments', establishment))
     if (fromDateRaw) baseQueryParams.set('fromDate', fromDateRaw)
     if (toDateRaw) baseQueryParams.set('toDate', toDateRaw)
-
-    const selectedRatings = ratings
-    const selectedEstablishments = establishments
 
     const availableRatings = history.summary.ratings
     const availableEstablishments = history.summary.establishments
@@ -121,17 +123,17 @@ export default class PrisonerCsraHistoryController {
       prisoner,
       history,
       summaryRange: buildSummaryRange(history),
-      ratingOptions: getCsraHistoryRatingOptions(selectedRatings, availableRatings),
+      ratingOptions: getCsraHistoryRatingOptions(ratings, availableRatings),
       establishmentOptions: availableEstablishments.map(establishment => ({
         value: establishment.prisonId,
         text: establishment.prisonName,
-        checked: selectedEstablishments.includes(establishment.prisonId),
+        checked: establishments.includes(establishment.prisonId),
       })),
       establishmentNames,
       pagination,
       filters: {
-        ratings: selectedRatings,
-        establishments: selectedEstablishments,
+        ratings,
+        establishments,
         fromDate: fromDateRaw ?? '',
         toDate: toDateRaw ?? '',
       },

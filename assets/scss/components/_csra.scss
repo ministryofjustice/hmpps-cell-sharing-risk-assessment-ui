@@ -213,6 +213,7 @@
     .govuk-tag {
       margin-top: 0;
       margin-bottom: 0;
+      max-width: 240px;
     }
   }
 }
@@ -233,27 +234,6 @@
 
   &--top {
     border-bottom: 1px solid $govuk-border-colour;
-  }
-
-  &__links {
-    display: flex;
-    align-items: center;
-    gap: govuk-spacing(3);
-    @include govuk-font($size: 19);
-
-    .govuk-link {
-      text-decoration: none;
-    }
-  }
-
-  &__next {
-    &:after {
-      content: '>';
-    }
-  }
-
-  &__current {
-    @include govuk-font($size: 19, $weight: bold);
   }
 
   &__results {

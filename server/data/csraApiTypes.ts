@@ -136,11 +136,16 @@ export interface CsraReviewSummary {
   provisionalRating: CsraResult | null
   provisionalReviewComment?: string | null
   provisionalRecordedDate: string | null
+  interimReviewer: string | null
   closureReason: 'NOT_COMPLETED_PRISONER_TRANSFER' | 'NOT_COMPLETED_PRISONER_RELEASE' | null
   riskTo: CsraRiskToDetail[]
   vulnerabilities: CsraVulnerabilityDetail[]
   prisonId: string | null
   prisonName: string | null
+  provisionalPrisonId: string | null
+  provisionalPrisonName: string | null
+  finalPrisonId: string | null
+  finalPrisonName: string | null
   legacy?: CsraLegacyDetail | null
 }
 

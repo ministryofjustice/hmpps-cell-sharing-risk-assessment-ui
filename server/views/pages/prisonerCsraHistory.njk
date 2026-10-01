@@ -37,10 +37,11 @@
 
 {% macro csraHistoryEntry(review) %}
   {% set isLegacy = review.legacy %}
-  {% set isAssessment = review.assessmentType == "ASSESSMENT" %}
-  {% set isInterim = not isLegacy and not isAssessment and not review.finalRating and review.provisionalRating %}
-  {% set isProvisionalAssessment = not isLegacy and isAssessment and not review.finalRating and review.provisionalRating %}
-  {% set establishment = review.prisonName or establishmentNames[review.prisonId] or review.prisonId %}
+  {% set isAssessment = review.assessmentType === 'ASSESSMENT' %}
+  {% set isReview = review.assessmentType === 'REVIEW' %}
+  {% set isProvisional = not review.finalRating and review.provisionalRating %}
+  {% set isInterimReview = not isLegacy and isReview and isProvisional %}
+  {% set isProvisionalAssessment = not isLegacy and isAssessment and isProvisional %}
   {% set reviewType = 'Review' %}
 
   {% if isAssessment %}
@@ -63,27 +64,28 @@
         {% set badgeStage = "" %}
         {% if isProvisionalAssessment %}
           {% set badgeStage = "PROVISIONAL" %}
-          {% elif isInterim %}
+        {% elif isInterimReview %}
           {% set badgeStage = "INTERIM" %}
         {% endif %}
 
         <div class="csra-review__badge-container">
-          {{ riskBadge({ rating: review.legacy.level or review.finalRating or review.provisionalRating, ratingStage: badgeStage }) }}
+          {{ riskBadge({ rating: review.legacy.level or review.finalRating or review.provisionalRating, ratingStage: badgeStage, splitterHtml: ' ' }) }}
 
           {% if isLegacy %}
             {% if review.legacy.approvalStatus == "NOT_APPROVED" %}
               {{ govukTag({ text: "Not approved", classes: "govuk-tag--orange", attributes: { "data-qa": "approval-state" } }) }}
-              {% elif review.legacy.approvalStatus == "APPROVED" and review.legacy.level and review.legacy.calculatedLevel and review.legacy.level != review.legacy.calculatedLevel %}
+            {% elif review.legacy.approvalStatus == "APPROVED" and review.legacy.level and review.legacy.calculatedLevel and review.legacy.level != review.legacy.calculatedLevel %}
               {{ govukTag({ text: "Level changed at approval", classes: "govuk-tag--blue", attributes: { "data-qa": "approval-state" } }) }}
-              {% elif review.legacy.approvalStatus == "APPROVED" %}
+            {% elif review.legacy.approvalStatus == "APPROVED" %}
               {{ govukTag({ text: "Approved", classes: "govuk-tag--green", attributes: { "data-qa": "approval-state" } }) }}
             {% endif %}
           {% endif %}
         </div>
       </div>
 
-      {% if not isInterim %}
-        <a class="govuk-link" href="/prisoner/{{ prisonerNumber }}/history/{{ review.id }}{{ fromQuery }}" data-qa="view-full-link">
+      {% if not isInterimReview %}
+        <a class="govuk-link" href="/prisoner/{{ prisonerNumber }}/history/{{ review.id }}{{ fromQuery }}"
+           data-qa="view-full-link">
           View
 
           {% if isLegacy %}
@@ -104,19 +106,22 @@
       {% set provisionalRatingComment = review.legacy.assessmentComment %}
       {% set provisionalRatingCommentType = 'Recorded' %}
       {% set provisionalRatingDate = review.legacy.assessmentDate %}
+      {% set provisionalEstablishment = review.prisonName or establishmentNames[review.prisonId] or review.prisonId %}
     {% else %}
-      {% set approvalTagStatus = review.approvalStatus %}
-
       {% set finalRatingComment = review.finalReviewComment %}
       {% set finalRatingCommentType = 'Assessed' %}
       {% set finalRatingDate = review.finalRecordedDate %}
       {% set provisionalRatingCommentType = 'Assessed' %}
       {% set provisionalRatingComment = review.provisionalReviewComment %}
       {% set provisionalRatingDate = review.provisionalRecordedDate %}
+      {% set finalEstablishment = review.finalPrisonName or establishmentNames[review.finalPrisonId] or review.finalPrisonId %}
+      {% set provisionalEstablishment = review.provisionalPrisonName or establishmentNames[review.provisionalPrisonId] or review.provisionalPrisonId %}
 
-      {% if review.type === 'CSRA_REVIEW' %}
+      {% if isReview %}
+        {% set finalRatingCommentType = 'Reviewed' %}
         {% set finalRatingLabel = 'Review comment' %}
-        {% set provisionalRatingLabel = 'Provisional review comment' %}
+        {% set provisionalRatingCommentType = 'Reviewed' %}
+        {% set provisionalRatingLabel = 'Interim rating reason' %}
       {% else %}
         {% set finalRatingLabel = 'Assessment comment' %}
         {% set provisionalRatingLabel = 'Provisional assessment comment' %}
@@ -126,7 +131,7 @@
     {% if review.closureReason %}
       <p class="govuk-body csra-review__comment">
         <strong>
-          {% if not isAssessment %}
+          {% if isReview %}
             Review
           {% else %}
             Full assessment
@@ -147,7 +152,7 @@
     {% endif %}
 
     {% if review.vulnerabilities.length %}
-      <h2 class="govuk-body govuk-!-margin-bottom-0"><strong>Vulnerable due to:</strong></h2>
+      <p class="govuk-body govuk-!-margin-bottom-0"><strong>Vulnerable due to:</strong></p>
       <ul class="govuk-list govuk-list--bullet" data-qa="csra-vulnerabilities">
         {% for vulnerability in review.vulnerabilities %}
           <li>{{ vulnerability.category | enumLabel }}{% if vulnerability.details %} — {{ vulnerability.details }}{% endif %}</li>
@@ -162,8 +167,11 @@
         {{ finalRatingComment or "No " + finalRatingLabel | lower + " entered." }}
       </p>
       <p class="govuk-body-m csra-review__meta">
-        {{ finalRatingCommentType }} at {{ establishment or review.prisonId or "an unknown establishment" }}
-        <br>
+        {% if finalEstablishment %}
+          {{ finalRatingCommentType }} at {{ finalEstablishment }}
+          <br>
+        {% endif %}
+
         {{ finalRatingDate | formatDate }}
       </p>
     {% endif %}
@@ -174,8 +182,14 @@
         {{ provisionalRatingComment or "No " + provisionalRatingLabel | lower + " entered." }}
       </p>
       <p class="govuk-body-m csra-review__meta">
-        {{ provisionalRatingCommentType }} at {{ establishment or review.prisonId or "an unknown establishment" }}
-        <br>
+        {% if provisionalEstablishment or review.interimReviewer %}
+          {{ provisionalRatingCommentType }}
+
+          {% if provisionalEstablishment %}at {{ provisionalEstablishment }}{% endif %}
+          {% if review.interimReviewer %}by {{ review.interimReviewer | userDisplayName }}{% endif %}
+          <br>
+        {% endif %}
+
         {{ provisionalRatingDate | formatDate }}
       </p>
     {% endif %}
