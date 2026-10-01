@@ -118,7 +118,7 @@ test.describe('Prisoner CSRA history', () => {
     // Establishment filter checkboxes and resolved prison name in the review card
     await expect(historyPage.filters).toContainText('Hull (HMP)')
     await expect(historyPage.filters).toContainText('Leeds (HMP)')
-    await expect(historyPage.reviews.first()).toContainText('Assessed at Leeds (HMP)')
+    await expect(historyPage.reviews.first()).toContainText('Reviewed at Leeds (HMP)')
   })
 
   test('keeps personal details unchanged when a DPS user switches from Current rating to CSRA history', async ({
