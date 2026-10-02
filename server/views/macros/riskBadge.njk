@@ -5,14 +5,18 @@
     "HIGH": "<strong>HIGH RISK</strong>",
     "HIGH_GENERAL": "<strong>HIGH RISK</strong> GENERAL",
     "HIGH_SPECIFIC": "<strong>HIGH RISK</strong> SPECIFIC",
-    "STANDARD": "<strong>STANDARD RISK</strong>"
+    "STANDARD": "<strong>STANDARD RISK</strong>",
+    "HI": "<strong>HIGH RISK</strong>",
+    "MED": "Medium risk",
+    "LOW": "Low risk"
   } %}
 
   {% set badgeClasses = {
     "HIGH": "risk-badge--very-high",
     "HIGH_GENERAL": "risk-badge--very-high",
     "HIGH_SPECIFIC": "risk-badge--high",
-    "STANDARD": "risk-badge--low"
+    "STANDARD": "risk-badge--low",
+    "HI": "risk-badge--very-high"
   } %}
 
   {# An assessment's Day 1 rating and a review's first-sitting rating are both unconfirmed, but users are
@@ -26,11 +30,15 @@
   {% set badgeLabel = badgeLabelHtml[params.rating] if params.rating else "<strong>NO RATING</strong>" %}
   {% set suffix = stageSuffix[params.ratingStage] if params.ratingStage else ("(PROVISIONAL)" if params.provisional else "") %}
   {% if suffix %}
-    {% set badgeLabel = badgeLabel + "<br>" + suffix %}
+    {% set badgeLabel = badgeLabel + ((params.splitterHtml or '<br>') | safe) + suffix %}
   {% endif %}
 
-  {{ mojBadge({
-    html: badgeLabel | safe,
-    classes: "risk-badge " ~ badgeClasses[params.rating]
-  }) }}
+  {% if params.rating === 'MED' or params.rating === 'LOW' %}
+    <strong class="govuk-heading-m">{{ badgeLabel }}</strong>
+  {% else %}
+    {{ mojBadge({
+      html: badgeLabel | safe,
+      classes: "risk-badge " ~ badgeClasses[params.rating]
+    }) }}
+  {% endif %}
 {% endmacro %}

@@ -33,14 +33,13 @@ describe('csraBreadcrumbs', () => {
     ])
   })
 
-  it('links the prisoner crumb back to the current rating on the history page, keeping the origin', () => {
+  it('keeps the origin and ends at the prisoner on the history page', () => {
     const { crumbs } = run('history', { from: 'due-for-review' })
 
     expect(crumbs).toEqual([
       { title: 'CSRA', href: '/' },
       { title: 'High risk prisoners due for review', href: '/due-for-review' },
-      { title: 'Daniel Havers', href: '/prisoner/A1234BC?from=due-for-review' },
-      { title: 'CSRA history' },
+      { title: 'Daniel Havers' },
     ])
   })
 

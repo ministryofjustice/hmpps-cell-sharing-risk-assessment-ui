@@ -39,14 +39,10 @@ export default function csraBreadcrumbs(page: CsraPage): RequestHandler<{ prison
     // The page you are on is always the last crumb, and has no href — the GOV.UK component renders
     // one without an href as plain text marked aria-current="page".
     crumbs.push(
-      page === 'current'
+      ['current', 'history'].includes(page)
         ? { title: prisonerName }
         : { title: prisonerName, href: `/prisoner/${prisonerNumber}${fromQuery}` },
     )
-
-    if (page === 'history') {
-      crumbs.push({ title: 'CSRA history' })
-    }
 
     if (page === 'review') {
       crumbs.push(

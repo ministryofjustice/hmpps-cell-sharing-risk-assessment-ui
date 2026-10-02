@@ -1,40 +1,252 @@
 {% extends "../partials/layout.njk" %}
 
-{% from "govuk/components/tag/macro.njk" import govukTag %}
-{% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+{% from "govuk/components/fieldset/macro.njk" import govukFieldset %}
+{% from "govuk/components/pagination/macro.njk" import govukPagination %}
+{% from "govuk/components/tag/macro.njk" import govukTag %}
 {% from "moj/components/date-picker/macro.njk" import mojDatePicker %}
+
+{% from "../macros/mojFilter.njk" import mojFilter %}
+{% from "../macros/riskBadge.njk" import riskBadge %}
 
 {% set prisonerName = (prisoner.firstName + " " + prisoner.lastName) | convertToTitleCase %}
 {% set pageTitle = applicationName + " - CSRA history for " + prisonerName %}
 {% set mainClasses = "govuk-body" %}
 {% set currentTab = "history" %}
 
-{% macro pager(pagination) %}
-  <div class="csra-pagination" data-qa="pagination">
-    <nav class="csra-pagination__links" aria-label="Pagination">
-      {% if pagination.previous %}
-        <a class="govuk-link csra-pagination__prev" href="{{ pagination.previous.href }}">Previous</a>
-      {% endif %}
-      {% for item in pagination.items %}
-        {% if item.type == "dots" %}
-          <span class="csra-pagination__dots">&hellip;</span>
-        {% elif item.selected %}
-          <span class="csra-pagination__current" aria-current="page">{{ item.text }}</span>
-        {% else %}
-          <a class="govuk-link" href="{{ item.href }}">{{ item.text }}</a>
-        {% endif %}
-      {% endfor %}
-      {% if pagination.next %}
-        <a class="govuk-link csra-pagination__next" href="{{ pagination.next.href }}">Next</a>
-      {% endif %}
-    </nav>
+{% macro paginationSection(pagination, top) %}
+  <div class="csra-pagination{% if top %} csra-pagination--top{% endif %}" data-qa="pagination">
+    {{ govukPagination(pagination) }}
+
     <p class="csra-pagination__results">
       Showing <strong>{{ pagination.results.from }}</strong> to <strong>{{ pagination.results.to }}</strong>
-      of <strong>{{ pagination.results.count }}</strong> CSRAs
+      of <strong>{{ pagination.results.count }} CSRAs</strong>
     </p>
   </div>
 {% endmacro %}
+
+{% macro summaryCard(label, value, hint, qa) %}
+  <div class="csra-summary__card">
+    <p class="csra-summary__caption">{{ label }}</p>
+    <p class="csra-summary__value" data-qa="{{ qa }}">{{ value }}</p>
+    {% if hint %}
+      <p class="csra-summary__hint">{{ hint }}</p>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{% macro csraHistoryEntry(review) %}
+  {% set isLegacy = review.legacy %}
+  {% set isAssessment = review.assessmentType === 'ASSESSMENT' %}
+  {% set isReview = review.assessmentType === 'REVIEW' %}
+  {% set isProvisional = not review.finalRating and review.provisionalRating %}
+  {% set isInterimReview = not isLegacy and isReview and isProvisional %}
+  {% set isProvisionalAssessment = not isLegacy and isAssessment and isProvisional %}
+  {% set reviewType = 'Review' %}
+
+  {% if isAssessment %}
+    {% if isProvisionalAssessment %}
+      {% set reviewType = 'Provisional assessment' %}
+    {% else %}
+      {% set reviewType = 'Assessment' %}
+    {% endif %}
+  {% endif %}
+
+  <div class="csra-review csra-history-entry" data-qa="csra-history-entry">
+    <div class="csra-review__header">
+      <div class="csra-review__header__left">
+        {% if not isLegacy %}
+          <span class="csra-review__type govuk-caption-m govuk-!-margin-bottom-3">
+            {{ reviewType }}
+          </span>
+        {% endif %}
+
+        {% set badgeStage = "" %}
+        {% if isProvisionalAssessment %}
+          {% set badgeStage = "PROVISIONAL" %}
+        {% elif isInterimReview %}
+          {% set badgeStage = "INTERIM" %}
+        {% endif %}
+
+        <div class="csra-review__badge-container">
+          {{ riskBadge({ rating: review.legacy.level or review.finalRating or review.provisionalRating, ratingStage: badgeStage, splitterHtml: ' ' }) }}
+
+          {% if isLegacy %}
+            {% if review.legacy.approvalStatus == "NOT_APPROVED" %}
+              {{ govukTag({ text: "Not approved", classes: "govuk-tag--orange", attributes: { "data-qa": "approval-state" } }) }}
+            {% elif review.legacy.approvalStatus == "APPROVED" and review.legacy.level and review.legacy.calculatedLevel and review.legacy.level != review.legacy.calculatedLevel %}
+              {{ govukTag({ text: "Level changed at approval", classes: "govuk-tag--blue", attributes: { "data-qa": "approval-state" } }) }}
+            {% elif review.legacy.approvalStatus == "APPROVED" %}
+              {{ govukTag({ text: "Approved", classes: "govuk-tag--green", attributes: { "data-qa": "approval-state" } }) }}
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+
+      {% if not isInterimReview %}
+        <a class="govuk-link" href="/prisoner/{{ prisonerNumber }}/history/{{ review.id }}{{ fromQuery }}"
+           data-qa="view-full-link">
+          View
+
+          {% if isLegacy %}
+            details
+          {% else %}
+            full {{ reviewType | lower }}
+          {% endif %}
+        </a>
+      {% endif %}
+    </div>
+
+    {% if isLegacy %}
+      {% set finalRatingLabel = 'Approval comment' %}
+      {% set finalRatingComment = review.legacy.approvalComment or review.legacy.approvalCommitteeComment %}
+      {% set finalRatingCommentType = 'Recorded' %}
+      {% set finalRatingDate = review.legacy.approvalDate %}
+      {% set provisionalRatingLabel = 'Assessment comment' %}
+      {% set provisionalRatingComment = review.legacy.assessmentComment %}
+      {% set provisionalRatingCommentType = 'Recorded' %}
+      {% set provisionalRatingDate = review.legacy.assessmentDate %}
+      {% set provisionalEstablishment = review.prisonName or establishmentNames[review.prisonId] or review.prisonId %}
+    {% else %}
+      {% set finalRatingComment = review.finalReviewComment %}
+      {% set finalRatingCommentType = 'Assessed' %}
+      {% set finalRatingDate = review.finalRecordedDate %}
+      {% set provisionalRatingCommentType = 'Assessed' %}
+      {% set provisionalRatingComment = review.provisionalReviewComment %}
+      {% set provisionalRatingDate = review.provisionalRecordedDate %}
+      {% set finalEstablishment = review.finalPrisonName or establishmentNames[review.finalPrisonId] or review.finalPrisonId %}
+      {% set provisionalEstablishment = review.provisionalPrisonName or establishmentNames[review.provisionalPrisonId] or review.provisionalPrisonId %}
+
+      {% if isReview %}
+        {% set finalRatingCommentType = 'Reviewed' %}
+        {% set finalRatingLabel = 'Review comment' %}
+        {% set provisionalRatingCommentType = 'Reviewed' %}
+        {% set provisionalRatingLabel = 'Interim rating reason' %}
+      {% else %}
+        {% set finalRatingLabel = 'Assessment comment' %}
+        {% set provisionalRatingLabel = 'Provisional assessment comment' %}
+      {% endif %}
+    {% endif %}
+
+    {% if review.closureReason %}
+      <p class="govuk-body csra-review__comment">
+        <strong>
+          {% if isReview %}
+            Review
+          {% else %}
+            Full assessment
+          {% endif %}
+          not completed due to prisoner
+          {{ 'transfer' if review.closureReason === 'NOT_COMPLETED_PRISONER_TRANSFER' else 'release' }}.
+        </strong>
+      </p>
+    {% endif %}
+
+    {% if review.riskTo.length %}
+      <p class="govuk-body govuk-!-margin-bottom-0"><strong>Risk to:</strong></p>
+      <ul class="govuk-list govuk-list--bullet" data-qa="csra-risk-to">
+        {% for risk in review.riskTo %}
+          <li>{{ risk.category | enumLabel }}{% if risk.details %} — {{ risk.details }}{% endif %}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    {% if review.vulnerabilities.length %}
+      <p class="govuk-body govuk-!-margin-bottom-0"><strong>Vulnerable due to:</strong></p>
+      <ul class="govuk-list govuk-list--bullet" data-qa="csra-vulnerabilities">
+        {% for vulnerability in review.vulnerabilities %}
+          <li>{{ vulnerability.category | enumLabel }}{% if vulnerability.details %} — {{ vulnerability.details }}{% endif %}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+
+    {% if finalRatingDate %}
+      <p class="govuk-body csra-review__comment">
+        <strong>{{ finalRatingLabel }}:</strong><br>
+        {{ finalRatingComment or "No " + finalRatingLabel | lower + " entered." }}
+      </p>
+      <p class="govuk-body-m csra-review__meta">
+        {% if finalEstablishment %}
+          {{ finalRatingCommentType }} at {{ finalEstablishment }}
+          <br>
+        {% endif %}
+
+        {{ finalRatingDate | formatDate }}
+      </p>
+    {% endif %}
+
+    {% if provisionalRatingDate %}
+      <p class="govuk-body csra-review__comment">
+        <strong>{{ provisionalRatingLabel }}:</strong><br>
+        {{ provisionalRatingComment or "No " + provisionalRatingLabel | lower + " entered." }}
+      </p>
+      <p class="govuk-body-m csra-review__meta">
+        {% if provisionalEstablishment or review.interimReviewer %}
+          {{ provisionalRatingCommentType }}
+
+          {% if provisionalEstablishment %}at {{ provisionalEstablishment }}{% endif %}
+          {% if review.interimReviewer %}by {{ review.interimReviewer | userDisplayName }}{% endif %}
+          <br>
+        {% endif %}
+
+        {{ provisionalRatingDate | formatDate }}
+      </p>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{% set optionsHtml %}
+  {{ govukCheckboxes({
+    idPrefix: "ratings",
+    name: "ratings",
+    classes: "govuk-checkboxes--small",
+    fieldset: { legend: { text: "CSRA rating type", classes: "govuk-fieldset__legend--s" } },
+    items: ratingOptions
+  }) }}
+
+  {% if establishmentOptions.length %}
+    {{ govukCheckboxes({
+      idPrefix: "establishments",
+      name: "establishments",
+      classes: "govuk-checkboxes--small",
+      fieldset: { legend: { text: "Establishment", classes: "govuk-fieldset__legend--s" } },
+      items: establishmentOptions
+    }) }}
+  {% endif %}
+
+  {% call govukFieldset({
+    legend: { text: "Date from (earliest)", classes: "govuk-fieldset__legend--s" }
+  }) %}
+    {{ mojDatePicker({
+      id: "fromDate",
+      name: "fromDate",
+      value: filters.fromDate,
+      errorMessage: validationErrors.fromDate if validationErrors,
+      label: {
+        text: "Date from (earliest)",
+        classes: "govuk-visually-hidden"
+      },
+      hint: { text: "For example, 1/2/2026" }
+    }) }}
+  {% endcall %}
+
+  {% call govukFieldset({
+    legend: { text: "Date to (latest)", classes: "govuk-fieldset__legend--s" }
+  }) %}
+    {{ mojDatePicker({
+      id: "toDate",
+      name: "toDate",
+      value: filters.toDate,
+      errorMessage: validationErrors.toDate if validationErrors,
+      label: {
+        text: "Date to (latest)",
+        classes: "govuk-visually-hidden"
+      },
+      hint: { text: "For example, 1/2/2027" }
+    }) }}
+  {% endcall %}
+{% endset %}
 
 {% block content %}
   {% include "../partials/prisonerBanner.njk" %}
@@ -42,121 +254,59 @@
 
   <h1 class="govuk-heading-xl govuk-!-margin-bottom-6" data-qa="page-heading">CSRA history</h1>
 
-  <div class="csra-summary" data-qa="csra-summary">
-    <div class="csra-summary__card">
-      <p class="csra-summary__caption">Total CSRAs</p>
-      <p class="csra-summary__value" data-qa="summary-total">{{ summary.totalCsras }}</p>
-      {% if summary.firstAssessmentDate and summary.lastAssessmentDate %}
-        <p class="csra-summary__hint">{{ summary.firstAssessmentDate | formatMonthYear }} &ndash; {{ summary.lastAssessmentDate | formatMonthYear }}</p>
+  {% if hasHistory %}
+    <div class="csra-summary" data-qa="csra-summary">
+      {{ summaryCard("Total CSRAs", history.summary.totalCsras, summaryRange, "summary-total") }}
+      {% set highHint = "" %}
+      {% if history.summary.lastHighDate %}
+        {% set highHint = "Last high " + (history.summary.lastHighDate | formatDate) %}
       {% endif %}
+      {{ summaryCard("High ratings", history.summary.highCount, highHint, "summary-high") }}
+      {{ summaryCard("Standard ratings", history.summary.standardCount, "", "summary-standard") }}
     </div>
-    <div class="csra-summary__card">
-      <p class="csra-summary__caption">High ratings</p>
-      <p class="csra-summary__value" data-qa="summary-high">{{ summary.highCount }}</p>
-      {% if summary.lastHighDate %}
-        <p class="csra-summary__hint">Last high {{ summary.lastHighDate | formatDate }}</p>
-      {% endif %}
-    </div>
-    <div class="csra-summary__card">
-      <p class="csra-summary__caption">Standard ratings</p>
-      <p class="csra-summary__value" data-qa="summary-standard">{{ summary.standardCount }}</p>
-    </div>
-  </div>
 
-  <div class="govuk-grid-row">
-    <div class="govuk-grid-column-one-third">
-      <form method="get" action="/prisoner/{{ prisonerNumber }}/history" novalidate data-qa="csra-filters">
-        {# A GET form rebuilds the query string from its inputs, so the worklist we came from has to be
-           carried as a field or applying a filter would drop it from the breadcrumb trail. #}
-        {% if fromKey %}
-          <input type="hidden" name="from" value="{{ fromKey }}">
-        {% endif %}
-        <h2 class="govuk-heading-m">Filter</h2>
-
-        {{ govukCheckboxes({
-          idPrefix: "ratings",
-          name: "ratings",
-          classes: "govuk-checkboxes--small",
-          fieldset: { legend: { text: "CSRA rating type", classes: "govuk-fieldset__legend--s" } },
-          items: [
-            { value: "HIGH", text: "High (" + summary.highCount + ")", checked: "HIGH" in filters.ratings },
-            { value: "STANDARD", text: "Standard (" + summary.standardCount + ")", checked: "STANDARD" in filters.ratings }
-          ]
-        }) }}
-
-        {# Establishment filter is deferred: renders only once the API returns the establishment list
-           on the summary (see MAPA-180 follow-up). #}
-        {% if summary.establishments.length %}
-          {% set establishmentItems = [] %}
-          {% for establishment in summary.establishments %}
-            {% set establishmentItems = (establishmentItems.push({
-              value: establishment.prisonId,
-              text: establishment.prisonName,
-              checked: establishment.prisonId in filters.establishments
-            }), establishmentItems) %}
-          {% endfor %}
-          {{ govukCheckboxes({
-            idPrefix: "establishments",
-            name: "establishments",
-            classes: "govuk-checkboxes--small",
-            fieldset: { legend: { text: "Establishment", classes: "govuk-fieldset__legend--s" } },
-            items: establishmentItems
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-one-quarter">
+        <form method="get" action="/prisoner/{{ prisonerNumber }}/history" novalidate data-qa="csra-filters">
+          {% if fromQuery %}
+            <input type="hidden" name="from" value="{{ fromKey }}">
+          {% endif %}
+          {{ mojFilter({
+            attributes: { "data-qa": "csra-filter-panel" },
+            selectedFilters: { heading: { text: "Filter" } },
+            optionsHtml: optionsHtml,
+            submit: { attributes: { "data-qa": "apply-filters" } },
+            clearFiltersUrl: "/prisoner/" + prisonerNumber + "/history" + (fromQuery or "")
           }) }}
+        </form>
+      </div>
+
+      <div class="govuk-grid-column-three-quarters">
+        {% if hasResults %}
+          {% if pagination %}
+            {{ paginationSection(pagination, true) }}
+          {% endif %}
+
+          {% for review in history.content %}
+            {{ csraHistoryEntry(review) }}
+          {% endfor %}
+
+          {% if pagination %}
+            {{ paginationSection(pagination, false) }}
+          {% endif %}
+        {% else %}
+          <p class="govuk-body" data-qa="no-results">No history has been found for the selected filters.</p>
+          <p class="govuk-body">You can:</p>
+          <ul class="govuk-list govuk-list--bullet">
+            <li>select different CSRA rating types</li>
+            <li>select different establishments</li>
+            <li>choose different dates</li>
+            <li>clear filters to view all history for the prisoner</li>
+          </ul>
         {% endif %}
-
-        {{ mojDatePicker({
-          id: "fromDate",
-          name: "fromDate",
-          label: { text: "Date from (earliest)", classes: "govuk-label--s" },
-          hint: { text: "For example, 17/5/2024." },
-          value: filters.fromDate
-        }) }}
-
-        {{ mojDatePicker({
-          id: "toDate",
-          name: "toDate",
-          label: { text: "Date to (latest)", classes: "govuk-label--s" },
-          hint: { text: "For example, 17/5/2024." },
-          value: filters.toDate
-        }) }}
-
-        {{ govukButton({ text: "Apply", attributes: { "data-qa": "apply-filters" } }) }}
-        <p class="govuk-body">
-          <a class="govuk-link" href="/prisoner/{{ prisonerNumber }}/history{{ fromQuery }}" data-qa="clear-filters">Clear filters</a>
-        </p>
-      </form>
+      </div>
     </div>
-
-    <div class="govuk-grid-column-two-thirds">
-      {% if reviews.length == 0 %}
-        <p class="govuk-body" data-qa="no-results">No CSRAs found.</p>
-      {% else %}
-        {{ pager(pagination) }}
-
-        {% for review in reviews %}
-          <div class="csra-review" data-qa="csra-review">
-            <div class="csra-review__header">
-              <span class="csra-review__type">Review</span>
-              <a class="govuk-link" href="/prisoner/{{ prisonerNumber }}/history/{{ review.id }}{{ fromQuery }}" data-qa="view-full-review">View full review</a>
-            </div>
-            {{ govukTag({
-              text: review.rating | csraRatingLabel,
-              classes: review.rating | csraRatingTagClass,
-              attributes: { "data-qa": "review-rating" }
-            }) }}
-            <p class="govuk-body csra-review__comment">
-              <strong>Review comment:</strong><br>
-              {{ review.reviewComment or "No comment recorded" }}
-            </p>
-            <p class="govuk-body-s csra-review__meta">
-              Recorded at {{ establishmentNames[review.prisonId] or review.prisonId or "an unknown establishment" }}<br>
-              {{ review.recordedDate | formatDate }}
-            </p>
-          </div>
-        {% endfor %}
-
-        {{ pager(pagination) }}
-      {% endif %}
-    </div>
-  </div>
+  {% else %}
+    <p class="govuk-body" data-qa="no-history">There are no CSRA assessments or reviews for this prisoner.</p>
+  {% endif %}
 {% endblock %}
