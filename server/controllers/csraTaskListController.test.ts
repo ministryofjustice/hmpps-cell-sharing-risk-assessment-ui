@@ -100,7 +100,7 @@ describe('csraTaskListController', () => {
     })
   })
 
-  it('renders the task list with a provisional rating link when the prerequisite sections are in progress', async () => {
+  it('renders the task list with the rating locked when the prerequisite sections are only in progress', async () => {
     const assessmentAnswers = makeStageAnswers({ pncChecked: true, seenByHealthcare: true })
     csraService.getCsraAssessment.mockResolvedValue(
       makeAssessment({
@@ -139,6 +139,192 @@ describe('csraTaskListController', () => {
     expect(renderLocals.taskLists[2].sections[0]).toEqual(
       expect.objectContaining({
         title: 'Check answers and confirm rating',
+        status: 'LOCKED',
+        href: undefined,
+      }),
+    )
+  })
+
+  const answeredOffences: Partial<CsraAssessmentStageAnswers> = {
+    pncChecked: true,
+    offenceMurderManslaughter: false,
+    offenceAssistingSuicide: false,
+    offenceSexualAssault: false,
+    offenceRepeatedViolence: false,
+    offencePrejudiceMotivated: false,
+    offenceArson: false,
+    offenceKidnapHostage: false,
+  }
+
+  it.each<{
+    description: string
+    answers: Partial<CsraAssessmentStageAnswers>
+    offencesStatus: string
+    healthcareStatus: string
+    ratingStatus: string
+  }>([
+    {
+      description: 'neither prerequisite is started',
+      answers: {},
+      offencesStatus: 'NOT_STARTED',
+      healthcareStatus: 'NOT_STARTED',
+      ratingStatus: 'LOCKED',
+    },
+    {
+      description: 'offences are unanswered',
+      answers: { pncChecked: true, seenByHealthcare: false },
+      offencesStatus: 'IN_PROGRESS',
+      healthcareStatus: 'PROVISIONAL_COMPLETE',
+      ratingStatus: 'LOCKED',
+    },
+    {
+      description: 'one offence is unanswered',
+      answers: { ...answeredOffences, offenceArson: null, seenByHealthcare: false },
+      offencesStatus: 'IN_PROGRESS',
+      healthcareStatus: 'PROVISIONAL_COMPLETE',
+      ratingStatus: 'LOCKED',
+    },
+    {
+      description: 'no evidence source is checked',
+      answers: { ...answeredOffences, pncChecked: false, seenByHealthcare: false },
+      offencesStatus: 'IN_PROGRESS',
+      healthcareStatus: 'PROVISIONAL_COMPLETE',
+      ratingStatus: 'LOCKED',
+    },
+    {
+      description: 'healthcare is not answered',
+      answers: answeredOffences,
+      offencesStatus: 'PROVISIONAL_COMPLETE',
+      healthcareStatus: 'NOT_STARTED',
+      ratingStatus: 'LOCKED',
+    },
+    {
+      description: 'healthcare risk is not answered after seeing healthcare',
+      answers: { ...answeredOffences, seenByHealthcare: true },
+      offencesStatus: 'PROVISIONAL_COMPLETE',
+      healthcareStatus: 'IN_PROGRESS',
+      ratingStatus: 'LOCKED',
+    },
+    {
+      description: 'healthcare risk details are missing',
+      answers: { ...answeredOffences, seenByHealthcare: true, healthcareIncreasedRisk: true },
+      offencesStatus: 'PROVISIONAL_COMPLETE',
+      healthcareStatus: 'IN_PROGRESS',
+      ratingStatus: 'LOCKED',
+    },
+    {
+      description: 'a positive offence needs evidence',
+      answers: { ...answeredOffences, offenceArson: true, seenByHealthcare: false },
+      offencesStatus: 'IN_PROGRESS',
+      healthcareStatus: 'PROVISIONAL_COMPLETE',
+      ratingStatus: 'LOCKED',
+    },
+    {
+      description: 'all applicable questions are answered with incomplete evidence and no healthcare visit',
+      answers: { ...answeredOffences, seenByHealthcare: false },
+      offencesStatus: 'PROVISIONAL_COMPLETE',
+      healthcareStatus: 'PROVISIONAL_COMPLETE',
+      ratingStatus: 'IN_PROGRESS',
+    },
+    {
+      description: 'offences and healthcare are complete but other sections have not started',
+      answers: {
+        ...answeredOffences,
+        dpsChecked: true,
+        perChecked: true,
+        warrantChecked: true,
+        seenByHealthcare: true,
+        healthcareIncreasedRisk: false,
+      },
+      offencesStatus: 'COMPLETE',
+      healthcareStatus: 'COMPLETE',
+      ratingStatus: 'IN_PROGRESS',
+    },
+    {
+      description: 'a positive offence has its evidence and healthcare risk has its details',
+      answers: {
+        ...answeredOffences,
+        offenceArson: true,
+        offenceEvidence: [{ offence: 'ARSON', sources: ['PNC'], details: 'Previous arson conviction' }],
+        seenByHealthcare: true,
+        healthcareIncreasedRisk: true,
+        healthcareIncreasedRiskDetail: 'Discussed with healthcare',
+      },
+      offencesStatus: 'PROVISIONAL_COMPLETE',
+      healthcareStatus: 'COMPLETE',
+      ratingStatus: 'IN_PROGRESS',
+    },
+  ])(
+    'sets prerequisite and rating statuses when $description',
+    async ({ answers, offencesStatus, healthcareStatus, ratingStatus }) => {
+      csraService.getCsraAssessment.mockResolvedValue(makeAssessment({ stages: [makeStageAnswers(answers)] }))
+      const res = response()
+
+      await controller()(request(), res, jest.fn())
+
+      const { taskLists } = res.render.mock.calls[0][1]
+      expect(taskLists[0].sections[0].status).toBe(offencesStatus)
+      expect(taskLists[1].sections[0].status).toBe(healthcareStatus)
+      expect(taskLists[2].sections[0]).toEqual(
+        expect.objectContaining({
+          status: ratingStatus,
+          href: ratingStatus === 'LOCKED' ? undefined : `/prisoner/A1234BC/csra/${ASSESSMENT_ID}/confirm-rating`,
+        }),
+      )
+    },
+  )
+
+  it('does not allow another provisional rating after one has already been entered', async () => {
+    csraService.getCsraAssessment.mockResolvedValue(
+      makeAssessment({
+        interimResult: 'HIGH_GENERAL',
+        stages: [makeStageAnswers({ ...answeredOffences, seenByHealthcare: false })],
+      }),
+    )
+    const res = response()
+
+    await controller()(request(), res, jest.fn())
+
+    expect(res.render.mock.calls[0][1].taskLists.at(-1).sections[0]).toEqual(
+      expect.objectContaining({
+        status: 'LOCKED',
+        href: undefined,
+        hint: 'You must complete all sections to enter a final rating.',
+      }),
+    )
+  })
+
+  it('allows confirmation when every assessment section is fully complete', async () => {
+    csraService.getCsraAssessment.mockResolvedValue(
+      makeAssessment({
+        stages: [
+          makeStageAnswers({
+            ...answeredOffences,
+            dpsChecked: true,
+            perChecked: true,
+            warrantChecked: true,
+            seenByHealthcare: true,
+            healthcareIncreasedRisk: false,
+            officerSpokeToPrisoner: true,
+            likelyToHarmCellmate: false,
+            significantlyVulnerable: false,
+            causeForConcernSharing: false,
+            otherHighRiskIndicators: false,
+          }),
+        ],
+      }),
+    )
+    const res = response()
+
+    await controller()(request(), res, jest.fn())
+
+    const { taskLists } = res.render.mock.calls[0][1]
+    expect(taskLists[0].sections).toHaveLength(4)
+    for (const section of [...taskLists[0].sections, ...taskLists[1].sections]) {
+      expect(section.status).toBe('COMPLETE')
+    }
+    expect(taskLists.at(-1).sections[0]).toEqual(
+      expect.objectContaining({
         status: 'IN_PROGRESS',
         href: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}/confirm-rating`,
       }),
