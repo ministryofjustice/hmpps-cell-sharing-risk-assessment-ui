@@ -58,12 +58,16 @@ const questions = {
     'Based on observed behaviour, is there any cause for concern about this prisoner sharing a cell?',
     'causeForConcernSharing',
     'causeForConcernSharingDetail',
-    'This includes behaviour observed by you or by other officers.',
+    { hint: 'This includes behaviour observed by you or by other officers.' },
   ),
   otherHighRiskIndicators: new YesNoWithDetailQuestion(
-    'Are there any other indicators to suggest the prisoner is high risk?',
+    'Are there any other factors to suggest the prisoner is high risk?',
     'otherHighRiskIndicators',
     'otherHighRiskIndicatorsDetail',
+    {
+      validationMessages: { required: 'Select yes if there are other risk factors' },
+      detailValidationMessages: { required: 'Enter details of the risk' },
+    },
   ),
   seenByHealthcare: new YesNoQuestion('Has the prisoner been seen by healthcare?', 'seenByHealthcare'),
   healthcareIncreasedRisk: new YesNoQuestion(
@@ -133,7 +137,7 @@ const observation: Section = {
 }
 
 const otherRisks: Section = {
-  title: 'Other risk indicators',
+  title: 'Other risk factors',
   steps: [new Step({ questions: [questions.otherHighRiskIndicators] })],
 }
 

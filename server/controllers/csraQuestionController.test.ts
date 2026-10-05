@@ -88,7 +88,9 @@ describe('csraQuestionController', () => {
       'pages/csraQuestion',
       expect.objectContaining({
         title: 'Prisoner conversation and vulnerability',
+        saveButtonText: 'Save and return',
         prisoner: { prisonerNumber: 'A1234BC' },
+        backLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}`,
         cancelLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}`,
         backLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}`,
         values: {},
@@ -240,11 +242,55 @@ describe('csraQuestionController', () => {
     expect(res.render).toHaveBeenCalledWith(
       'pages/csraQuestion',
       expect.objectContaining({
+        backLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}`,
+        saveButtonText: 'Save and return',
         validationErrors: {
           officerSpokeToPrisoner: { text: 'TODO: select one' },
         },
       }),
     )
+  })
+
+  it.each(['GET', 'POST'] as const)('shows Save and return for a single-step section on %s', async method => {
+    const req = request(method)
+    req.params.sectionId = 'otherRisks'
+    const res = response()
+
+    await controller()(req, res, jest.fn())
+
+    expect(res.render).toHaveBeenCalledWith(
+      'pages/csraQuestion',
+      expect.objectContaining({ saveButtonText: 'Save and return' }),
+    )
+    expect(csraService.updateCsraAssessment).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    {
+      description: 'a later step is available',
+      stageAnswers: { officerSpokeToPrisoner: true },
+      stepId: '0',
+      saveButtonText: 'Save and continue',
+    },
+    {
+      description: 'the current step is the last step',
+      stageAnswers: { officerSpokeToPrisoner: true, likelyToHarmCellmate: false },
+      stepId: '2',
+      saveButtonText: 'Save and return',
+    },
+    {
+      description: 'all later steps are skipped',
+      stageAnswers: { officerSpokeToPrisoner: false },
+      stepId: '0',
+      saveButtonText: 'Save and return',
+    },
+  ])('chooses the button text when $description', async ({ stageAnswers, stepId, saveButtonText }) => {
+    csraService.getCsraAssessment.mockResolvedValue(makeAssessment({ stages: [makeStageAnswers(stageAnswers)] }))
+    const res = response()
+
+    await controller()(request('GET', {}, stepId), res, jest.fn())
+
+    expect(res.render).toHaveBeenCalledWith('pages/csraQuestion', expect.objectContaining({ saveButtonText }))
   })
 
   it('updates the assessment and redirects to the next step when the answer is valid', async () => {

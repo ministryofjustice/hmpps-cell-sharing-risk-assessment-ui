@@ -1,16 +1,33 @@
 import YesNoQuestion from './yesNo'
 import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
-import TextAreaQuestion from './textArea'
+import TextAreaQuestion, { TextAreaValidationMessages } from './textArea'
+import required from '../validations/required'
+
+type YesNoWithDetailQuestionOptions = {
+  hint?: string
+  validationMessages?: { required?: string }
+  detailValidationMessages?: TextAreaValidationMessages
+}
 
 export default class YesNoWithDetailQuestion extends YesNoQuestion {
   constructor(
     question: string,
     booleanField: keyof PickByType<CsraAssessmentStageAnswers, boolean>,
     public detailField: keyof PickByType<CsraAssessmentStageAnswers, string>,
-    hint?: string,
+    private readonly options: YesNoWithDetailQuestionOptions = {},
   ) {
-    super(question, booleanField as keyof PickByType<CsraAssessmentStageAnswers, boolean>, hint)
+    super(question, booleanField as keyof PickByType<CsraAssessmentStageAnswers, boolean>, options.hint)
 
-    this.items[0] = { ...this.items[0], conditional: new TextAreaQuestion('Provide details of the risk', detailField) }
+    this.items[0] = {
+      ...this.items[0],
+      conditional: new TextAreaQuestion('Provide details of the risk', detailField, {
+        validationMessages: options.detailValidationMessages,
+      }),
+    }
+  }
+
+  override validations(): ValidationFunction[] {
+    const message = this.options.validationMessages?.required
+    return message === undefined ? super.validations() : [required(message)]
   }
 }
