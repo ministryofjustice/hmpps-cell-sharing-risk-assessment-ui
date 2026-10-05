@@ -45,8 +45,8 @@ export default function createApp(services: Services): express.Application {
   app.use(setUpCurrentUser())
   app.use(setHasRole)
 
-  app.get(
-    '*allPaths',
+  // Permission checks also run on POSTs, which need the active caseload from shared component data.
+  app.use(
     getFrontendComponents({
       logger,
       componentApiConfig: config.apis.componentApi,

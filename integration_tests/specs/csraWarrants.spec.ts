@@ -69,13 +69,18 @@ const stubCommonPageData = async () => {
   await csraApi.stubGetAssessment('A1234BC', ASSESSMENT_ID)
 }
 
+const loginAtMoorland = async (page: Parameters<typeof login>[0], roles: string[]) => {
+  await csraApi.stubGetInfo(['MDI'])
+  await login(page, { roles, activeCaseLoad: { caseLoadId: 'MDI', description: 'Moorland (HMP)' } })
+}
+
 test.describe('CSRA court warrants', () => {
   test.afterEach(async () => {
     await resetStubs()
   })
 
   test('lists the prisoner’s warrants with their court, hearing type, date added and size', async ({ page }) => {
-    await login(page, { roles: EDIT_ROLES })
+    await loginAtMoorland(page, EDIT_ROLES)
     await stubCommonPageData()
     await courtDataApi.stubGetCourtHearings('A1234BC', hearings())
     await documentApi.stubGetDocumentsMetadata([
@@ -102,7 +107,7 @@ test.describe('CSRA court warrants', () => {
   })
 
   test('sorts newest first by default and oldest first on request', async ({ page }) => {
-    await login(page, { roles: EDIT_ROLES })
+    await loginAtMoorland(page, EDIT_ROLES)
     await stubCommonPageData()
     await courtDataApi.stubGetCourtHearings('A1234BC', hearings())
     await documentApi.stubGetDocumentsMetadata([])
@@ -116,7 +121,7 @@ test.describe('CSRA court warrants', () => {
   })
 
   test('still lists the warrants when document metadata cannot be fetched, just without sizes', async ({ page }) => {
-    await login(page, { roles: EDIT_ROLES })
+    await loginAtMoorland(page, EDIT_ROLES)
     await stubCommonPageData()
     await courtDataApi.stubGetCourtHearings('A1234BC', hearings())
     await documentApi.stubGetDocumentsMetadataError()
@@ -129,7 +134,7 @@ test.describe('CSRA court warrants', () => {
   })
 
   test('tells the officer when the prisoner could not be matched on the court system', async ({ page }) => {
-    await login(page, { roles: EDIT_ROLES })
+    await loginAtMoorland(page, EDIT_ROLES)
     await stubCommonPageData()
     await courtDataApi.stubGetCourtHearings('A1234BC', [])
 
@@ -141,7 +146,7 @@ test.describe('CSRA court warrants', () => {
   })
 
   test('serves the warrant PDF inline so the browser renders it rather than downloading it', async ({ page }) => {
-    await login(page, { roles: EDIT_ROLES })
+    await loginAtMoorland(page, EDIT_ROLES)
     await stubCommonPageData()
     await courtDataApi.stubGetCourtHearings('A1234BC', hearings())
     await documentApi.stubGetDocumentsMetadata([{ documentUuid: SENTENCING_DOC, fileSize: 58634 }])
@@ -155,7 +160,7 @@ test.describe('CSRA court warrants', () => {
   })
 
   test('refuses a document that is not one of the prisoner’s own warrants', async ({ page }) => {
-    await login(page, { roles: EDIT_ROLES })
+    await loginAtMoorland(page, EDIT_ROLES)
     await stubCommonPageData()
     await courtDataApi.stubGetCourtHearings('A1234BC', hearings())
     await documentApi.stubGetDocumentsMetadata([])
@@ -168,7 +173,7 @@ test.describe('CSRA court warrants', () => {
   })
 
   test('links from the task list to the warrants page and back again', async ({ page }) => {
-    await login(page, { roles: EDIT_ROLES })
+    await loginAtMoorland(page, EDIT_ROLES)
     await stubCommonPageData()
     await courtDataApi.stubGetCourtHearings('A1234BC', hearings())
     await documentApi.stubGetDocumentsMetadata([])
@@ -190,7 +195,7 @@ test.describe('CSRA court warrants', () => {
 
   test.describe('reached without an assessment id', () => {
     test('an admin sees the same warrants as the assessment-scoped page', async ({ page }) => {
-      await login(page, { roles: ADMIN_ROLES })
+      await loginAtMoorland(page, ADMIN_ROLES)
       await stubCommonPageData()
       await courtDataApi.stubGetCourtHearings('A1234BC', hearings())
       await documentApi.stubGetDocumentsMetadata([
@@ -206,7 +211,7 @@ test.describe('CSRA court warrants', () => {
     })
 
     test('its sort, PDF and return links all stay under the standalone path', async ({ page }) => {
-      await login(page, { roles: ADMIN_ROLES })
+      await loginAtMoorland(page, ADMIN_ROLES)
       await stubCommonPageData()
       await courtDataApi.stubGetCourtHearings('A1234BC', hearings())
       await documentApi.stubGetDocumentsMetadata([])
@@ -228,7 +233,7 @@ test.describe('CSRA court warrants', () => {
     })
 
     test('serves the warrant PDF inline', async ({ page }) => {
-      await login(page, { roles: ADMIN_ROLES })
+      await loginAtMoorland(page, ADMIN_ROLES)
       await stubCommonPageData()
       await courtDataApi.stubGetCourtHearings('A1234BC', hearings())
       await documentApi.stubGetDocumentsMetadata([])
@@ -243,7 +248,7 @@ test.describe('CSRA court warrants', () => {
     test('is refused to a user without the admin role', async ({ page }) => {
       // Deliberately not open to every officer: this is a proof of concept, and in production it is
       // currently the only way to reach warrants at all.
-      await login(page, { roles: EDIT_ROLES })
+      await loginAtMoorland(page, EDIT_ROLES)
       await stubCommonPageData()
       await courtDataApi.stubGetCourtHearings('A1234BC', hearings())
 
@@ -255,7 +260,7 @@ test.describe('CSRA court warrants', () => {
     })
 
     test('still applies the caseload rules', async ({ page }) => {
-      await login(page, { roles: ADMIN_ROLES })
+      await loginAtMoorland(page, ADMIN_ROLES)
       await prisonerSearchApi.stubGetPrisoner({ ...prisoner, prisonId: 'LEI', prisonName: 'Leeds (HMP)' })
       await prisonApi.stubGetPrisonerImage('A1234BC')
       // The admin role is national; it does not grant sight of a prisoner outside your caseload.
@@ -269,7 +274,7 @@ test.describe('CSRA court warrants', () => {
   })
 
   test('shows the no-warrant message on the task list when the court API is unavailable', async ({ page }) => {
-    await login(page, { roles: EDIT_ROLES })
+    await loginAtMoorland(page, EDIT_ROLES)
     await stubCommonPageData()
     await courtDataApi.stubGetCourtHearingsError('A1234BC')
 
