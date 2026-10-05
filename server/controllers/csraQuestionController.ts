@@ -47,7 +47,7 @@ function getCurrentStep(assessmentAnswers: CsraAssessmentStageAnswers, sectionId
   const firstUnansweredStep = findNextUnansweredStep(assessmentAnswers, section)
   let currentStepId = stepId
   if (currentStepId === undefined || Number.isNaN(currentStepId)) {
-    currentStepId = firstUnansweredStep?.stepId || 0
+    currentStepId = 0
   }
 
   if (firstUnansweredStep && firstUnansweredStep.stepId >= 0) {
