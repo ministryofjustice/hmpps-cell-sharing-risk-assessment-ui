@@ -31,7 +31,7 @@
         {% endfor %}
 
         {{ govukButton({
-          text: "Save and continue",
+          text: saveButtonText,
           classes: "govuk-!-margin-bottom-0",
           attributes: { "data-qa": "prison-search-button" }
         }) }}
@@ -40,7 +40,7 @@
       <br>
       <br>
 
-      <a class="govuk-link" href="{{ cancelLink }}">Cancel</a>
+      <a class="govuk-body govuk-link" href="{{ cancelLink }}">Cancel</a>
     </div>
   </div>
 {% endblock %}

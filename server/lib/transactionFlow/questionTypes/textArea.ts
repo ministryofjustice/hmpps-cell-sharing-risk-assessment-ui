@@ -2,10 +2,19 @@ import Question from './base'
 import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 import required from '../validations/required'
 
+export type TextAreaValidationMessages = {
+  required?: string
+}
+
+type TextAreaQuestionOptions = {
+  validationMessages?: TextAreaValidationMessages
+}
+
 export default class TextAreaQuestion extends Question {
   constructor(
     question: string,
     public override id: keyof PickByType<CsraAssessmentStageAnswers, string>,
+    private readonly options: TextAreaQuestionOptions = {},
   ) {
     super(question, id, 'govukTextarea')
   }
@@ -23,12 +32,12 @@ export default class TextAreaQuestion extends Question {
         classes: 'govuk-fieldset__legend--s',
       },
       value: values[this.id],
-      errorMessage: validationErrors ? validationErrors[this.id]?.text : undefined,
+      errorMessage: validationErrors ? validationErrors[this.id] : undefined,
     }
   }
 
   override validations(): ValidationFunction[] {
-    return [required('TODO: enter a reason')]
+    return [required(this.options.validationMessages?.required ?? 'There is a problem')]
   }
 
   override getFormValues(assessmentAnswers: CsraAssessmentStageAnswers): FormValues {

@@ -30,7 +30,7 @@ describe('YesNoQuestion', () => {
       { text: 'No', value: 'NO' },
     ])
     expect(result.value).toBe('YES')
-    expect(result.errorMessage).toBe('Select one')
+    expect(result.errorMessage).toEqual({ text: 'Select one' })
   })
 
   it('uses required validation', () => {

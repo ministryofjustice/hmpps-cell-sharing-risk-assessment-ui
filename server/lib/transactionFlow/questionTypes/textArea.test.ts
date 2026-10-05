@@ -23,14 +23,23 @@ describe('TextAreaQuestion', () => {
     ) as { value?: string; errorMessage?: string }
 
     expect(result.value).toBe('Current value')
-    expect(result.errorMessage).toBe('Required')
+    expect(result.errorMessage).toEqual({ text: 'Required' })
   })
 
   it('uses required validation', () => {
     const [validate] = question.validations()
 
-    expect(validate('')).toBe('TODO: enter a reason')
+    expect(validate('')).toBe('There is a problem')
     expect(validate('details')).toBeNull()
+  })
+
+  it('uses a configured required validation message', () => {
+    const configuredQuestion = new TextAreaQuestion('Provide details', 'likelyToHarmCellmateDetail', {
+      validationMessages: { required: 'Enter details of the risk' },
+    })
+    const [validate] = configuredQuestion.validations()
+
+    expect(validate('')).toBe('Enter details of the risk')
   })
 
   it('maps values between form and assessment', () => {
