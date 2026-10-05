@@ -47,7 +47,7 @@ export default class YesNoQuestion extends Question {
         })
         .filter(i => i),
       value: values[this.id],
-      errorMessage: validationErrors ? validationErrors[this.id]?.text : undefined,
+      errorMessage: validationErrors ? validationErrors[this.id] : undefined,
     }
   }
 

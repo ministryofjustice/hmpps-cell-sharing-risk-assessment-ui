@@ -187,12 +187,16 @@ export default function csraQuestionController({
 
     res.render('pages/csraQuestion', {
       title: currentStep.title ?? section.title,
+      saveButtonText: findNextAvailableStep(assessmentAnswers, section, currentStepId)
+        ? 'Save and continue'
+        : 'Save and return',
       prisoner,
       section,
       currentStep,
       ...(Object.keys(validationErrors).length > 0 ? { validationErrors } : {}),
       values,
       assessmentAnswers,
+      backLink: assessmentUrl,
       cancelLink: assessmentUrl,
     })
   }
