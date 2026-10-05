@@ -178,7 +178,6 @@
 
 // Review card
 .csra-review {
-  padding-bottom: govuk-spacing(4);
   margin-bottom: govuk-spacing(4);
   border-bottom: 1px solid $govuk-border-colour;
 
@@ -194,11 +193,28 @@
 
   &__comment {
     margin-top: govuk-spacing(2);
+    margin-bottom: govuk-spacing(2);
+    word-wrap: break-word;
   }
 
   &__meta {
     color: $govuk-secondary-text-colour;
-    margin-bottom: 0;
+    margin-bottom: govuk-spacing(6);
+  }
+
+  &__badge-container {
+    display: flex;
+    gap: govuk-spacing(2);
+
+    .govuk-heading-m {
+      margin-bottom: 0;
+    }
+
+    .govuk-tag {
+      margin-top: 0;
+      margin-bottom: 0;
+      max-width: 240px;
+    }
   }
 }
 
@@ -210,16 +226,14 @@
   align-items: center;
   gap: govuk-spacing(2);
   margin-bottom: govuk-spacing(4);
+  padding-bottom: govuk-spacing(4);
 
-  &__links {
-    display: flex;
-    align-items: center;
-    gap: govuk-spacing(3);
-    @include govuk-font($size: 19);
+  .govuk-pagination {
+    margin-bottom: 0;
   }
 
-  &__current {
-    @include govuk-font($size: 19, $weight: bold);
+  &--top {
+    border-bottom: 1px solid $govuk-border-colour;
   }
 
   &__results {

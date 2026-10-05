@@ -111,7 +111,8 @@ export type CsraReviewType =
  * Presence of either identifies the record as NOMIS-sourced.
  */
 export interface CsraLegacyDetail {
-  level?: CsraLevel | null
+  level: CsraLevel | null
+  calculatedLevel: CsraLevel | null
   assessmentComment?: string | null
   assessmentDate: string
   approvalStatus?: CsraApprovalStatus | null
@@ -125,11 +126,26 @@ export interface CsraReviewSummary {
   id: string
   type: CsraReviewType
   assessmentType: CsraAssessmentTypeBucket
-  rating: CsraResult
-  reviewComment?: string | null
-  prisonId?: string | null
-  prisonName?: string | null
-  recordedDate: string
+  /** Deprecated API fields; use the final and provisional stage fields below. */
+  rating: CsraResult | null
+  reviewComment: string | null
+  recordedDate: string | null
+  finalRating: CsraResult | null
+  finalReviewComment?: string | null
+  finalRecordedDate: string | null
+  provisionalRating: CsraResult | null
+  provisionalReviewComment?: string | null
+  provisionalRecordedDate: string | null
+  interimReviewer: string | null
+  closureReason: 'NOT_COMPLETED_PRISONER_TRANSFER' | 'NOT_COMPLETED_PRISONER_RELEASE' | null
+  riskTo: CsraRiskToDetail[]
+  vulnerabilities: CsraVulnerabilityDetail[]
+  prisonId: string | null
+  prisonName: string | null
+  provisionalPrisonId: string | null
+  provisionalPrisonName: string | null
+  finalPrisonId: string | null
+  finalPrisonName: string | null
   legacy?: CsraLegacyDetail | null
 }
 
@@ -141,14 +157,12 @@ export interface CsraReviewHistorySummary {
   totalCsras: number
   highCount: number
   standardCount: number
-  firstAssessmentDate?: string | null
-  lastAssessmentDate?: string | null
-  lastHighDate?: string | null
-  /**
-   * Establishments the prisoner has CSRAs at, for the establishment filter. NOT yet returned by the
-   * API — the establishment filter renders only once this is populated (see MAPA-180 follow-up).
-   */
-  establishments?: { prisonId: string; prisonName: string }[]
+  firstAssessmentDate: string | null
+  lastAssessmentDate: string | null
+  lastHighDate: string | null
+  ratings: string[]
+  /** Name-sorted establishments across the prisoner's full history. */
+  establishments: { prisonId: string; prisonName: string }[]
 }
 
 /** A page of a prisoner's CSRA history plus whole-history summary (mirrors dto.CsraReviewHistory). */

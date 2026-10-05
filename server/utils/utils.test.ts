@@ -401,7 +401,7 @@ describe('parseCsraHistoryQuery', () => {
     expect(result.establishments).toEqual([])
     expect(result.apiQuery).toEqual({
       page: '0',
-      size: '20',
+      size: '10',
       ratings: undefined,
       establishments: undefined,
       fromDate: undefined,
@@ -411,20 +411,20 @@ describe('parseCsraHistoryQuery', () => {
 
   it('whitelists ratings, normalises establishments, parses dates and translates the 1-based page to zero-based', () => {
     const result = parseCsraHistoryQuery({
-      ratings: ['HIGH', 'BOGUS', 'STANDARD'],
+      ratings: ['HIGH', 'BOGUS', 'HIGH_GENERAL_PROVISIONAL', 'STANDARD'],
       establishments: ['lei', 'MDI'],
       fromDate: '1/1/2020',
       toDate: '31/12/2024',
       page: '3',
     })
-    expect(result.ratings).toEqual(['HIGH', 'STANDARD'])
+    expect(result.ratings).toEqual(['HIGH', 'HIGH_GENERAL_PROVISIONAL', 'STANDARD'])
     expect(result.establishments).toEqual(['LEI', 'MDI'])
     expect(result.fromDateRaw).toBe('1/1/2020')
     expect(result.page).toBe(3)
     expect(result.apiQuery).toEqual({
       page: '2',
-      size: '20',
-      ratings: ['HIGH', 'STANDARD'],
+      size: '10',
+      ratings: ['HIGH', 'HIGH_GENERAL_PROVISIONAL', 'STANDARD'],
       establishments: ['LEI', 'MDI'],
       fromDate: '2020-01-01',
       toDate: '2024-12-31',
@@ -444,7 +444,7 @@ describe('buildPagination', () => {
     expect(pagination.results).toEqual({ from: 1, to: 3, count: 3 })
     expect(pagination.previous).toBeUndefined()
     expect(pagination.next).toBeUndefined()
-    expect(pagination.items).toEqual([{ text: 1, href: '?page=1', selected: true }])
+    expect(pagination.items).toEqual([{ number: 1, href: '?page=1', current: true }])
   })
 
   it('computes the from/to window and preserves the base query in links', () => {
@@ -452,7 +452,7 @@ describe('buildPagination', () => {
     expect(pagination.results).toEqual({ from: 21, to: 40, count: 55 })
     expect(pagination.previous?.href).toBe('?ratings=HIGH&page=1')
     expect(pagination.next?.href).toBe('?ratings=HIGH&page=3')
-    expect(pagination.items.map(item => item.text)).toEqual([1, 2, 3])
+    expect(pagination.items.map(item => item.number)).toEqual([1, 2, 3])
   })
 
   it('reports zero results for an empty list', () => {
