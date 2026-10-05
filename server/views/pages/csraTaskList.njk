@@ -70,7 +70,11 @@
         }) }}
       {% endfor %}
 
-      <a href="#" class="govuk-link">Cancel this assessment</a>
+      {% if not assessment.interimResult %}
+        <p>
+          <a href="#" class="govuk-link">Cancel this assessment</a>
+        </p>
+      {% endif %}
     </div>
   </div>
 {% endblock %}
