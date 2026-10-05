@@ -92,6 +92,7 @@ describe('csraQuestionController', () => {
         prisoner: { prisonerNumber: 'A1234BC' },
         backLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}`,
         cancelLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}`,
+        backLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}`,
         values: {},
         currentStep: expect.objectContaining({
           questions: [expect.objectContaining({ id: 'officerSpokeToPrisoner' })],
