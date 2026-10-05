@@ -105,9 +105,9 @@
         {% set sectionList = [] %}
 
         {% for step in section.steps %}
-          {% set stepId = loop.index %}
+          {% set stepId = loop.index - 1 %}
 
-          {% if sectionId !== 'evidenceAndOffences' or stepId !== 1 %}
+          {% if sectionId !== 'evidenceAndOffences' or stepId !== 0 %}
             {% for question in step.questions %}
               {% if question.question !== 'Provide details of the evidence' and not question.question.startsWith('Where did you find evidence of') %}
                 {% set sectionList = (sectionList.push(
@@ -116,7 +116,7 @@
                       text: question.question
                     },
                     value: {
-                      text: assessmentAnswers[question.id] | yesNoValue
+                      text: (assessmentAnswers[question.id] | yesNoValue) or "Not answered"
                     },
                     actions: {
                       items: [

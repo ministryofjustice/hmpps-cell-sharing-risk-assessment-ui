@@ -25,7 +25,20 @@ import {
   parseCsraHistoryQuery,
   parseUkDate,
   validateUkDate,
+  taskListStatus,
 } from './utils'
+
+describe('taskListStatus', () => {
+  it.each([
+    ['NOT_STARTED', { tag: { text: 'Not yet started', classes: 'govuk-tag--blue' } }],
+    ['IN_PROGRESS', { tag: { text: 'Incomplete', classes: 'govuk-tag--blue' } }],
+    ['PROVISIONAL_COMPLETE', { tag: { text: 'Incomplete', classes: 'govuk-tag--blue' } }],
+    ['COMPLETE', { text: 'Completed' }],
+    ['LOCKED', { text: 'Cannot start yet', classes: 'task-list-status--locked' }],
+  ] as const)('renders %s with the expected label and styling', (status, expected) => {
+    expect(taskListStatus(status)).toEqual(expected)
+  })
+})
 
 describe('arrivalTypeLabel', () => {
   it.each([

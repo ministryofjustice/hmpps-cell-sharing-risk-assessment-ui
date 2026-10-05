@@ -10,7 +10,15 @@ import { Page } from '../services/auditService'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService' | 'warrantsService'>
 
-type SectionStatus = 'LOCKED' | 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETE'
+/**
+ * SectionStatus represents the status of a section in the CSRA assessment task list.
+ * - 'LOCKED': The section is locked and cannot be accessed.
+ * - 'NOT_STARTED': The section has not been started yet.
+ * - 'IN_PROGRESS': The section is currently in progress.
+ * - 'PROVISIONAL_COMPLETE': Every question in the section is answered, but some are not fully complete.
+ * - 'COMPLETE': The section is fully complete.
+ */
+type SectionStatus = 'LOCKED' | 'NOT_STARTED' | 'IN_PROGRESS' | 'PROVISIONAL_COMPLETE' | 'COMPLETE'
 
 function getSectionStatus(assessmentAnswers: CsraAssessmentStageAnswers, section: Section): SectionStatus {
   if (!section) {
@@ -25,6 +33,10 @@ function getSectionStatus(assessmentAnswers: CsraAssessmentStageAnswers, section
 
   if (steps.every(s => s.isComplete(assessmentAnswers))) {
     return 'COMPLETE'
+  }
+
+  if (steps.every(s => s.isAnswered(assessmentAnswers))) {
+    return 'PROVISIONAL_COMPLETE'
   }
 
   if (steps.some(s => s.isComplete(assessmentAnswers) || s.isAnswered(assessmentAnswers))) {
@@ -114,8 +126,8 @@ export default function csraTaskListController({
     )
 
     const canSubmitProvisionalRating =
-      ['COMPLETE', 'IN_PROGRESS'].includes(evidenceAndOffencesSection.status) &&
-      ['COMPLETE', 'IN_PROGRESS'].includes(healthcareSection.status)
+      ['COMPLETE', 'PROVISIONAL_COMPLETE'].includes(evidenceAndOffencesSection.status) &&
+      ['COMPLETE', 'PROVISIONAL_COMPLETE'].includes(healthcareSection.status)
 
     taskLists.push({
       title: 'Rating',
