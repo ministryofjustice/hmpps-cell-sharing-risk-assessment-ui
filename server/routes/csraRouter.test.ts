@@ -120,7 +120,9 @@ describe('csraRouter', () => {
     expect(banner).toContain(
       `href="${config.serviceUrls.digitalPrison}/prisoner/A1234BC" target="_blank" data-qa="prisoner-name">John Smith</a>`,
     )
-    expect(response.text).toMatch(/<p>\s*<a href="#" class="govuk-link">Cancel this assessment<\/a>\s*<\/p>/)
+    expect(response.text).toMatch(
+      /<p class="govuk-body">\s*<a href="#" class="govuk-link">Cancel this assessment<\/a>\s*<\/p>/,
+    )
   })
 
   it('hides the assessment cancel link when a provisional rating has already been entered', async () => {
@@ -179,7 +181,9 @@ describe('csraRouter', () => {
 
     expect(response.text).toContain('Has an officer spoken with the prisoner about sharing a cell?')
     expect(response.text).toContain(`href="${assessmentUrl}" class="govuk-back-link"`)
-    expect(response.text).toMatch(new RegExp(`<p>\\s*<a class="govuk-link" href="${assessmentUrl}">Cancel</a>\\s*</p>`))
+    expect(response.text).toMatch(
+      new RegExp(`<p class="govuk-body">\\s*<a class="govuk-link" href="${assessmentUrl}">Cancel</a>\\s*</p>`),
+    )
   })
 
   it('renders a back link to the preceding answered question', async () => {

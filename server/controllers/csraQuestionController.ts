@@ -227,7 +227,6 @@ export default function csraQuestionController({ auditService, csraService }: De
       ...(Object.keys(validationErrors).length > 0 ? { validationErrors } : {}),
       values,
       assessmentAnswers,
-      backLink: assessmentUrl,
       cancelLink: assessmentUrl,
       backLink,
     })
