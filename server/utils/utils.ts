@@ -325,6 +325,35 @@ export const csraStatusLabel = (status?: string | null): string => {
   }
 }
 
+/** Human-readable label for a CSRA task list status. */
+const taskListStatusMap = {
+  NOT_STARTED: 'Not yet started',
+  IN_PROGRESS: 'Incomplete',
+  PROVISIONAL_COMPLETE: 'Incomplete',
+  COMPLETE: 'Completed',
+  LOCKED: 'Cannot start yet',
+}
+
+/** Return a view model for a CSRA task list status, including GOV.UK tag classes. */
+export function taskListStatus(status: keyof typeof taskListStatusMap) {
+  const statusText = taskListStatusMap[status]
+
+  if (status === 'LOCKED') {
+    return { text: statusText, classes: 'task-list-status--locked' }
+  }
+
+  if (status === 'COMPLETE') {
+    return { text: statusText }
+  }
+
+  return {
+    tag: {
+      text: statusText,
+      classes: 'govuk-tag--blue',
+    },
+  }
+}
+
 /** Human-readable label for an arrival type (mirrors the API's CsraArrivalType enum). */
 export const arrivalTypeLabel = (arrivalType?: CsraArrivalType | null): string => {
   switch (arrivalType) {

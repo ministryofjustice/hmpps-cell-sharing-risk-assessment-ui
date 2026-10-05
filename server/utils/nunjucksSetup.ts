@@ -25,37 +25,12 @@ import {
   formatDayMonth,
   formatDayMonthYear,
   csraRatingPanelClass,
+  taskListStatus,
 } from './utils'
 import { userDisplayName } from './populateUserDisplayNames'
 import { yesNoValue } from './yesNoValue'
 import config from '../config'
 import logger from '../../logger'
-
-const taskListStatusMap = {
-  NOT_STARTED: 'Not yet started',
-  IN_PROGRESS: 'Incomplete',
-  COMPLETE: 'Completed',
-  LOCKED: 'Cannot start yet',
-}
-
-function taskListStatus(status: keyof typeof taskListStatusMap) {
-  const statusText = taskListStatusMap[status]
-
-  if (status === 'LOCKED') {
-    return { text: statusText, classes: 'task-list-status--locked' }
-  }
-
-  if (status === 'COMPLETE') {
-    return { text: statusText }
-  }
-
-  return {
-    tag: {
-      text: statusText,
-      classes: 'govuk-tag--blue',
-    },
-  }
-}
 
 export default function nunjucksSetup(app: express.Express): void {
   app.set('view engine', 'njk')
