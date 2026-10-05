@@ -81,15 +81,27 @@ describe('csraRouter', () => {
     })
     csraService.startCsraAssessment.mockResolvedValue({ assessmentId: 'assessment-123' })
     csraService.getCsraAssessment.mockResolvedValue(assessment())
+    activeAgenciesService.isPrisonActive.mockResolvedValue(true)
   })
 
-  it('blocks CSRA routes when the user lacks the assessment edit role', async () => {
+  it('blocks CSRA routes when the user lacks permission to edit assessments', async () => {
     await request(buildApp([])).get('/prisoner/A1234BC/csra/start').expect(302).expect('Location', '/sign-out')
 
     expect(csraService.startCsraAssessment).not.toHaveBeenCalled()
   })
 
-  it('allows CSRA routes when the user has the assessment edit role', async () => {
+  it('blocks CSRA routes when the prison is inactive, even if the user has the assessment edit role', async () => {
+    activeAgenciesService.isPrisonActive.mockResolvedValue(false)
+
+    await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      .get('/prisoner/A1234BC/csra/start')
+      .expect(302)
+      .expect('Location', '/sign-out')
+
+    expect(csraService.startCsraAssessment).not.toHaveBeenCalled()
+  })
+
+  it('allows CSRA routes when the user has permission to edit assessments', async () => {
     await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
       .get('/prisoner/A1234BC/csra/start')
       .expect(302)
