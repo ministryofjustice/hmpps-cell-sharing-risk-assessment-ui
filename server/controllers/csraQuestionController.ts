@@ -41,6 +41,31 @@ function findNextUnansweredStep(assessmentAnswers: CsraAssessmentStageAnswers, s
     : null
 }
 
+function findLastAnsweredStep(
+  assessmentAnswers: CsraAssessmentStageAnswers,
+  section: Section,
+  beforeStepId = section.steps.length,
+) {
+  if (beforeStepId === 0) {
+    return null
+  }
+
+  const lastAnsweredStepId = section.steps.findLastIndex((step, i) => {
+    if (i >= beforeStepId || step.removeIf?.(assessmentAnswers)) {
+      return false
+    }
+
+    return step.isAnswered(assessmentAnswers)
+  })
+
+  return lastAnsweredStepId >= 0
+    ? {
+        stepId: lastAnsweredStepId,
+        step: section.steps[lastAnsweredStepId],
+      }
+    : null
+}
+
 function getCurrentStep(assessmentAnswers: CsraAssessmentStageAnswers, sectionId: string, stepId: number) {
   const section = flowConfig[sectionId]
 
@@ -63,10 +88,12 @@ function getCurrentStep(assessmentAnswers: CsraAssessmentStageAnswers, sectionId
   return { currentStep, currentStepId }
 }
 
-export default function csraQuestionController({
-  auditService,
-  csraService,
-}: Dependencies): RequestHandler<{ prisonerNumber: string; assessmentId: string; sectionId: string; stepId?: string }> {
+export default function csraQuestionController({ auditService, csraService }: Dependencies): RequestHandler<{
+  prisonerNumber: string
+  assessmentId: string
+  sectionId: string
+  stepId?: string
+}> {
   return async (req, res, _next) => {
     const { assessmentId, sectionId } = req.params
     const {
@@ -95,6 +122,10 @@ export default function csraQuestionController({
     const values = currentStep.getFormValues(assessmentAnswers)
 
     const assessmentUrl = `/prisoner/${prisoner.prisonerNumber}/csra/${assessmentId}`
+    const lastAnsweredStep = findLastAnsweredStep(assessmentAnswers, section, currentStepId)
+    const backLink = lastAnsweredStep
+      ? `${assessmentUrl}/section/${sectionId}/${lastAnsweredStep.stepId}`
+      : assessmentUrl
 
     const validationErrors: Record<string, { text: string }> = {}
     if (req.method === 'POST') {
@@ -194,6 +225,7 @@ export default function csraQuestionController({
       values,
       assessmentAnswers,
       cancelLink: assessmentUrl,
+      backLink,
     })
   }
 }
