@@ -10,49 +10,91 @@ const questions = {
   offenceMurderManslaughter: new YesNoQuestion(
     'Is there any evidence of murder, manslaughter or a life-threatening assault on another prisoner while in custody?',
     'offenceMurderManslaughter',
+    {
+      validationMessages: {
+        required:
+          'Select yes if there is evidence of murder, manslaughter or a life-threatening assault on another prisoner while in custody',
+      },
+    },
   ),
   offenceAssistingSuicide: new YesNoQuestion(
     'Is there any evidence of assisting a suicide while in custody?',
     'offenceAssistingSuicide',
+    {
+      validationMessages: { required: 'Select yes if there is evidence of assisting a suicide while in custody' },
+    },
   ),
   offenceSexualAssault: new YesNoQuestion(
     'Is there evidence of sexual assault of a same sex adult victim?',
     'offenceSexualAssault',
-    'Either while in custody or in the community.',
+    {
+      hint: 'Either while in custody or in the community.',
+      validationMessages: {
+        required: 'Select yes if there is evidence of sexual assault of a same sex adult victim',
+      },
+    },
   ),
   offenceRepeatedViolence: new YesNoQuestion(
     'Is there evidence of repeated violence in custody?',
     'offenceRepeatedViolence',
+    { validationMessages: { required: 'Select yes if there is evidence of repeated violence in custody' } },
   ),
   offencePrejudiceMotivated: new YesNoQuestion(
     'Is there evidence of offending or behaviour motivated by prejudice?',
     'offencePrejudiceMotivated',
-    'For example racism, homophobia or religious prejudice.',
+    {
+      hint: 'For example racism, homophobia or religious prejudice.',
+      validationMessages: {
+        required: 'Select yes if there is evidence of offending or behaviour motivated by prejudice',
+      },
+    },
   ),
-  offenceArson: new YesNoQuestion(
-    'Is there evidence of arson or fire setting?',
-    'offenceArson',
-    'Either while in custody or in the community.',
-  ),
+  offenceArson: new YesNoQuestion('Is there evidence of arson or fire setting?', 'offenceArson', {
+    hint: 'Either while in custody or in the community.',
+    validationMessages: { required: 'Select yes if there is evidence of arson or fire setting' },
+  }),
   offenceKidnapHostage: new YesNoQuestion(
     'Is there evidence of kidnap, hostage taking and false imprisonment?',
     'offenceKidnapHostage',
-    'Either while in custody or in the community.',
+    {
+      hint: 'Either while in custody or in the community.',
+      validationMessages: {
+        required: 'Select yes if there is evidence of kidnap, hostage taking and false imprisonment',
+      },
+    },
   ),
   officerSpokeToPrisoner: new YesNoQuestion(
     'Has an officer spoken with the prisoner about sharing a cell?',
     'officerSpokeToPrisoner',
-    'This conversation should give the prisoner an opportunity to express their views or concerns about sharing a cell.',
+    {
+      hint: 'This conversation should give the prisoner an opportunity to express their views or concerns about sharing a cell.',
+      validationMessages: {
+        required: 'Select yes if an officer has spoken with the prisoner about sharing a cell',
+      },
+    },
   ),
   likelyToHarmCellmate: new YesNoWithDetailQuestion(
     'Based on the conversation, is there reason to believe the prisoner is likely to cause harm to someone they share a cell with?',
     'likelyToHarmCellmate',
     'likelyToHarmCellmateDetail',
+    {
+      validationMessages: {
+        required:
+          'Select yes if there is reason to believe the prisoner is likely to cause harm to someone they share a cell with',
+      },
+      detailValidationMessages: { required: 'Enter details of the risk' },
+    },
   ),
   significantlyVulnerable: new YesNoWithDetailQuestion(
     'Is the prisoner significantly vulnerable to assault by others?',
     'significantlyVulnerable',
     'significantlyVulnerableDetail',
+    {
+      validationMessages: {
+        required: 'Select yes if the prisoner is significantly vulnerable to assault by others',
+      },
+      detailValidationMessages: { required: 'Enter details of the risk' },
+    },
   ),
   causeForConcernSharing: new YesNoWithDetailQuestion(
     'Based on observed behaviour, is there any cause for concern about this prisoner sharing a cell?',
@@ -76,11 +118,16 @@ const questions = {
       detailValidationMessages: { required: 'Enter details of the risk' },
     },
   ),
-  seenByHealthcare: new YesNoQuestion('Has the prisoner been seen by healthcare?', 'seenByHealthcare'),
+  seenByHealthcare: new YesNoQuestion('Has the prisoner been seen by healthcare?', 'seenByHealthcare', {
+    validationMessages: { required: 'Select yes if the prisoner has been seen by healthcare' },
+  }),
   healthcareIncreasedRisk: new YesNoQuestion(
     'Did healthcare identify any signs of increased risk?',
     'healthcareIncreasedRisk',
-    'If increased risk has been identified, you must discuss this with healthcare before completing your risk rating.',
+    {
+      hint: 'If increased risk has been identified, you must discuss this with healthcare before completing your risk rating.',
+      validationMessages: { required: 'Select no if healthcare did not identify any signs of increased risk' },
+    },
     [
       { text: 'No increased risk', value: 'NO' },
       {
@@ -89,6 +136,7 @@ const questions = {
         conditional: new TextAreaQuestion(
           'Provide a brief summary of why healthcare consider the prisoner an increased risk',
           'healthcareIncreasedRiskDetail',
+          { validationMessages: { required: 'Enter details of the risk' } },
         ),
       },
     ],

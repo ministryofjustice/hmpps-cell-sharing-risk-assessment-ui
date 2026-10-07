@@ -1,5 +1,6 @@
 import TextAreaQuestion from './textArea'
 import { CsraAssessmentStageAnswers, OffenceType } from '../../../data/csraApiTypes'
+import required from '../validations/required'
 
 export default class OffenceEvidenceDetailsQuestion extends TextAreaQuestion {
   constructor(public offenceType: OffenceType) {
@@ -12,7 +13,7 @@ export default class OffenceEvidenceDetailsQuestion extends TextAreaQuestion {
   ): CsraAssessmentStageAnswers {
     return {
       ...assessmentAnswers,
-      offenceEvidence: assessmentAnswers.offenceEvidence.map(e => {
+      offenceEvidence: (assessmentAnswers.offenceEvidence ?? []).map(e => {
         if (e.offence !== this.offenceType) {
           return e
         }
@@ -20,6 +21,15 @@ export default class OffenceEvidenceDetailsQuestion extends TextAreaQuestion {
         return { ...e, details: formValues[this.id] as string }
       }),
     }
+  }
+
+  override validations(): ValidationFunction[] {
+    return [required('Enter details of the evidence')]
+  }
+
+  override eraseAnswers(assessmentAnswers: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
+    // Erasure is handled by OffenceEvidenceStep, so we don't need to do anything here
+    return assessmentAnswers
   }
 
   private getEvidenceData(assessmentAnswers: CsraAssessmentStageAnswers) {

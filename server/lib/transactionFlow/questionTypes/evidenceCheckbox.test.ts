@@ -22,6 +22,10 @@ class ConditionalQuestion extends Question {
   override mutateAssessmentAnswers(assessment: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
     return { ...assessment, likelyToHarmCellmateDetail: 'conditional was called' }
   }
+
+  override eraseAnswers(assessment: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
+    return { ...assessment, likelyToHarmCellmateDetail: null }
+  }
 }
 
 const makeAssessment = (overrides: Partial<CsraAssessmentStageAnswers> = {}): CsraAssessmentStageAnswers => ({
@@ -73,5 +77,32 @@ describe('EvidenceCheckboxQuestion', () => {
     expect(question.getFormValues(makeAssessment({ pncChecked: true, dpsChecked: true }))).toEqual({
       evidenceSources: ['pncChecked', 'dpsChecked'],
     })
+  })
+
+  it('clears all source flags and conditional answers without changing unrelated answers or the original', () => {
+    const question = new EvidenceCheckboxQuestion()
+    question.items[0] = {
+      ...question.items[0],
+      conditional: new ConditionalQuestion('Conditional', 'conditionalField', 'govukInput'),
+    }
+    const assessment = makeAssessment({
+      pncChecked: true,
+      warrantChecked: false,
+      dpsChecked: true,
+      perChecked: false,
+      likelyToHarmCellmateDetail: 'Recorded detail',
+      officerSpokeToPrisoner: true,
+    })
+    const original = structuredClone(assessment)
+
+    expect(question.eraseAnswers(assessment)).toEqual({
+      ...assessment,
+      pncChecked: null,
+      warrantChecked: null,
+      dpsChecked: null,
+      perChecked: null,
+      likelyToHarmCellmateDetail: null,
+    })
+    expect(assessment).toEqual(original)
   })
 })

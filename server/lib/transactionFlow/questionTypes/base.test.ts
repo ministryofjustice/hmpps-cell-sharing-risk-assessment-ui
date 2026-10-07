@@ -21,6 +21,10 @@ class TestQuestion extends Question {
   override mutateAssessmentAnswers(assessment: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
     return assessment
   }
+
+  override eraseAnswers(assessment: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
+    return assessment
+  }
 }
 
 describe('Question base class', () => {

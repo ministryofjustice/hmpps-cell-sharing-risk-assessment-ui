@@ -57,4 +57,15 @@ describe('TextAreaQuestion', () => {
     expect(question.isAnswered(makeAssessment({ likelyToHarmCellmateDetail: 'Done' }))).toBe(true)
     expect(question.isAnswered(makeAssessment({ likelyToHarmCellmateDetail: '' }))).toBe(false)
   })
+
+  it('clears only its own answer without mutating the original assessment', () => {
+    const assessment = makeAssessment({
+      likelyToHarmCellmateDetail: 'Recorded detail',
+      significantlyVulnerableDetail: 'Unrelated detail',
+    })
+    const original = structuredClone(assessment)
+
+    expect(question.eraseAnswers(assessment)).toEqual({ ...assessment, likelyToHarmCellmateDetail: null })
+    expect(assessment).toEqual(original)
+  })
 })

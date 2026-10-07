@@ -39,6 +39,20 @@ export default class EvidenceCheckboxQuestion extends CheckboxQuestion {
     return mutatedAssessmentAnswers
   }
 
+  override eraseAnswers(assessmentAnswers: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
+    let mutatedAssessmentAnswers = { ...assessmentAnswers }
+
+    this.items.forEach(item => {
+      mutatedAssessmentAnswers[item.value] = null
+
+      if (item.conditional) {
+        mutatedAssessmentAnswers = item.conditional.eraseAnswers(mutatedAssessmentAnswers)
+      }
+    })
+
+    return mutatedAssessmentAnswers
+  }
+
   override getFormValues(assessmentAnswers: CsraAssessmentStageAnswers) {
     const values = this.items
       .map(item => (assessmentAnswers[item.value as keyof CsraAssessmentStageAnswers] ? item.value : undefined))

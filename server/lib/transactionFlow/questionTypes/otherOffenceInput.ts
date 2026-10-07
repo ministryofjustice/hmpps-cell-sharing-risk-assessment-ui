@@ -24,12 +24,12 @@ export default class OtherOffenceInputQuestion extends Question {
       },
       classes: 'govuk-input--width-10',
       value: values[this.id],
-      errorMessage: validationErrors ? validationErrors[this.id]?.text : undefined,
+      errorMessage: validationErrors ? validationErrors[this.id] : undefined,
     }
   }
 
   override validations(): ValidationFunction[] {
-    return [required('TODO: enter a reason')]
+    return [required('Enter the source of the evidence')]
   }
 
   override mutateAssessmentAnswers(
@@ -38,7 +38,7 @@ export default class OtherOffenceInputQuestion extends Question {
   ): CsraAssessmentStageAnswers {
     return {
       ...assessmentAnswers,
-      offenceEvidence: assessmentAnswers.offenceEvidence.map(e => {
+      offenceEvidence: (assessmentAnswers.offenceEvidence ?? []).map(e => {
         if (e.offence !== this.offenceType) {
           return e
         }
@@ -46,6 +46,11 @@ export default class OtherOffenceInputQuestion extends Question {
         return { ...e, otherSourceDetail: formValues[this.id] as string }
       }),
     }
+  }
+
+  override eraseAnswers(assessmentAnswers: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
+    // Erasure is handled by OffenceEvidenceStep, so we don't need to do anything here
+    return assessmentAnswers
   }
 
   private getEvidenceData(assessmentAnswers: CsraAssessmentStageAnswers) {

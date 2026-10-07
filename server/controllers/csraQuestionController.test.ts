@@ -218,7 +218,11 @@ describe('csraQuestionController', () => {
       'pages/csraQuestion',
       expect.objectContaining({
         backLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/conversationAndVulnerability/0`,
-        validationErrors: { likelyToHarmCellmate: { text: 'TODO: select one' } },
+        validationErrors: {
+          likelyToHarmCellmate: {
+            text: 'Select yes if there is reason to believe the prisoner is likely to cause harm to someone they share a cell with',
+          },
+        },
       }),
     )
   })
@@ -244,7 +248,9 @@ describe('csraQuestionController', () => {
         backLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}`,
         saveButtonText: 'Save and return',
         validationErrors: {
-          officerSpokeToPrisoner: { text: 'TODO: select one' },
+          officerSpokeToPrisoner: {
+            text: 'Select yes if an officer has spoken with the prisoner about sharing a cell',
+          },
         },
       }),
     )
@@ -318,32 +324,138 @@ describe('csraQuestionController', () => {
     )
   })
 
-  it('skips conditional offence evidence steps after saving negative offence answers', async () => {
-    csraService.getCsraAssessment.mockResolvedValue(
-      makeAssessment({ stages: [makeStageAnswers({ pncChecked: true })] }),
-    )
-    csraService.updateCsraAssessment.mockResolvedValue(
-      makeAssessment({
-        stages: [
-          makeStageAnswers({ pncChecked: true, offenceMurderManslaughter: false, offenceAssistingSuicide: false }),
-        ],
-      }),
-    )
+  it.each([
+    {
+      sectionId: 'conversationAndVulnerability',
+      prerequisite: 'officerSpokeToPrisoner',
+      dependentAnswers: {
+        likelyToHarmCellmate: true,
+        likelyToHarmCellmateDetail: 'Risk detail',
+        significantlyVulnerable: true,
+        significantlyVulnerableDetail: 'Vulnerability detail',
+      },
+    },
+    {
+      sectionId: 'healthcare',
+      prerequisite: 'seenByHealthcare',
+      dependentAnswers: {
+        healthcareIncreasedRisk: true,
+        healthcareIncreasedRiskDetail: 'Healthcare detail',
+      },
+    },
+  ])(
+    'updates dependent answers in $sectionId when the prerequisite changes',
+    async ({ sectionId, prerequisite, dependentAnswers }) => {
+      const assessment = makeStageAnswers({
+        ...dependentAnswers,
+        [prerequisite]: true,
+        causeForConcernSharing: true,
+        causeForConcernSharingDetail: 'Unrelated observation',
+      })
+      const original = structuredClone(assessment)
+      csraService.getCsraAssessment.mockResolvedValue(makeAssessment({ stages: [assessment] }))
+      const clearedAnswers = Object.fromEntries(Object.keys(dependentAnswers).map((key): [string, null] => [key, null]))
+      const savedAnswers = makeStageAnswers({
+        ...assessment,
+        [prerequisite]: false,
+        ...clearedAnswers,
+      })
+      csraService.updateCsraAssessment.mockResolvedValue(makeAssessment({ stages: [savedAnswers] }))
+      const res = response()
+
+      await controller()(request('POST', { [prerequisite]: 'NO' }, '0', sectionId), res, jest.fn())
+
+      expect(csraService.updateCsraAssessment).toHaveBeenCalledWith('user1', 'A1234BC', ASSESSMENT_ID, savedAnswers)
+      expect(assessment).toEqual(original)
+      expect(res.redirect).toHaveBeenCalledWith(`/prisoner/A1234BC/csra/${ASSESSMENT_ID}`)
+    },
+  )
+
+  it('retains dependent answers when the prerequisite remains fulfilled', async () => {
+    const assessment = makeStageAnswers({
+      officerSpokeToPrisoner: true,
+      likelyToHarmCellmate: true,
+      likelyToHarmCellmateDetail: 'Risk detail',
+      significantlyVulnerable: false,
+      seenByHealthcare: true,
+    })
+    const original = structuredClone(assessment)
+    csraService.getCsraAssessment.mockResolvedValue(makeAssessment({ stages: [assessment] }))
+    csraService.updateCsraAssessment.mockResolvedValue(makeAssessment({ stages: [assessment] }))
+    const res = response()
+
+    await controller()(request('POST', { officerSpokeToPrisoner: 'YES' }, '0'), res, jest.fn())
+
+    expect(csraService.updateCsraAssessment).toHaveBeenCalledWith('user1', 'A1234BC', ASSESSMENT_ID, original)
+    expect(assessment).toEqual(original)
+  })
+
+  it.each([{ offenceEvidence: null }, { offenceEvidence: [] }])(
+    'skips conditional offence evidence steps with empty evidence $offenceEvidence',
+    async ({ offenceEvidence }) => {
+      csraService.getCsraAssessment.mockResolvedValue(
+        makeAssessment({ stages: [makeStageAnswers({ pncChecked: true, offenceEvidence })] }),
+      )
+      csraService.updateCsraAssessment.mockResolvedValue(
+        makeAssessment({
+          stages: [
+            makeStageAnswers({ pncChecked: true, offenceMurderManslaughter: false, offenceAssistingSuicide: false }),
+          ],
+        }),
+      )
+      const res = response()
+
+      await controller()(
+        request('POST', { offenceMurderManslaughter: 'NO', offenceAssistingSuicide: 'NO' }, '1', 'evidenceAndOffences'),
+        res,
+        jest.fn(),
+      )
+
+      expect(csraService.updateCsraAssessment).toHaveBeenCalledWith(
+        'user1',
+        'A1234BC',
+        ASSESSMENT_ID,
+        expect.objectContaining({ offenceMurderManslaughter: false, offenceAssistingSuicide: false, offenceEvidence }),
+      )
+      expect(res.redirect).toHaveBeenCalledWith(`/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/4`)
+    },
+  )
+
+  it('clears evidence for a removed offence step while preserving evidence for an available step', async () => {
+    const assessment = makeStageAnswers({
+      pncChecked: true,
+      offenceMurderManslaughter: true,
+      offenceAssistingSuicide: true,
+      offenceEvidence: [
+        { offence: 'MURDER_MANSLAUGHTER', sources: ['PNC'], details: 'Evidence to clear' },
+        {
+          offence: 'ASSISTING_SUICIDE',
+          sources: ['OTHER'],
+          otherSourceDetail: 'Other source',
+          details: 'Evidence to retain',
+        },
+      ],
+      likelyToHarmCellmateDetail: 'Unrelated detail',
+    })
+    const original = structuredClone(assessment)
+    const savedAnswers = makeStageAnswers({
+      ...assessment,
+      offenceMurderManslaughter: false,
+      offenceEvidence: [assessment.offenceEvidence[1]],
+    })
+    csraService.getCsraAssessment.mockResolvedValue(makeAssessment({ stages: [assessment] }))
+    csraService.updateCsraAssessment.mockResolvedValue(makeAssessment({ stages: [savedAnswers] }))
     const res = response()
 
     await controller()(
-      request('POST', { offenceMurderManslaughter: 'NO', offenceAssistingSuicide: 'NO' }, '1', 'evidenceAndOffences'),
+      request('POST', { offenceMurderManslaughter: 'NO', offenceAssistingSuicide: 'YES' }, '1', 'evidenceAndOffences'),
       res,
       jest.fn(),
     )
 
-    expect(csraService.updateCsraAssessment).toHaveBeenCalledWith(
-      'user1',
-      'A1234BC',
-      ASSESSMENT_ID,
-      expect.objectContaining({ offenceMurderManslaughter: false, offenceAssistingSuicide: false }),
-    )
-    expect(res.redirect).toHaveBeenCalledWith(`/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/4`)
+    expect(csraService.updateCsraAssessment).toHaveBeenCalledWith('user1', 'A1234BC', ASSESSMENT_ID, savedAnswers)
+    expect(assessment).toEqual(original)
+    expect(res.redirect).toHaveBeenCalledWith(`/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/3`)
   })
 
   it('throws when the section is unknown', async () => {

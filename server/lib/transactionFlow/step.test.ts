@@ -1,5 +1,6 @@
 import { CsraAssessmentStageAnswers } from '../../data/csraApiTypes'
 import Question from './questionTypes/base'
+import YesNoWithDetailQuestion from './questionTypes/yesNoWithDetail'
 import Step from './step'
 
 class TestQuestion extends Question {
@@ -33,6 +34,10 @@ class TestQuestion extends Question {
       ...assessment,
       likelyToHarmCellmateDetail: `${assessment.likelyToHarmCellmateDetail ?? ''}${this.nextField}`,
     }
+  }
+
+  override eraseAnswers(assessment: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
+    return { ...assessment, likelyToHarmCellmateDetail: null }
   }
 }
 
@@ -85,5 +90,32 @@ describe('Step', () => {
     })
 
     expect(step.getFormValues(makeAssessment())).toEqual({ one: '1', two: '2' })
+  })
+
+  it('clears every question and its details without clearing the prerequisite or unrelated answers', () => {
+    const step = new Step({
+      questions: [
+        new YesNoWithDetailQuestion('Likely to harm?', 'likelyToHarmCellmate', 'likelyToHarmCellmateDetail'),
+        new YesNoWithDetailQuestion('Vulnerable?', 'significantlyVulnerable', 'significantlyVulnerableDetail'),
+      ],
+    }).dependsOn('officerSpokeToPrisoner', true)
+    const assessment = makeAssessment({
+      officerSpokeToPrisoner: false,
+      likelyToHarmCellmate: true,
+      likelyToHarmCellmateDetail: 'Risk detail',
+      significantlyVulnerable: true,
+      significantlyVulnerableDetail: 'Vulnerability detail',
+      seenByHealthcare: true,
+    })
+    const original = structuredClone(assessment)
+
+    expect(step.eraseAnswers(assessment)).toEqual({
+      ...assessment,
+      likelyToHarmCellmate: null,
+      likelyToHarmCellmateDetail: null,
+      significantlyVulnerable: null,
+      significantlyVulnerableDetail: null,
+    })
+    expect(assessment).toEqual(original)
   })
 })

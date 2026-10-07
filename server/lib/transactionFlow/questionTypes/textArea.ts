@@ -54,4 +54,8 @@ export default class TextAreaQuestion extends Question {
   ): CsraAssessmentStageAnswers {
     return { ...assessmentAnswers, [this.id]: formValues[this.id] }
   }
+
+  override eraseAnswers(assessmentAnswers: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
+    return { ...assessmentAnswers, [this.id]: null }
+  }
 }

@@ -47,7 +47,7 @@ export default abstract class CheckboxQuestion extends Question {
         })
         .filter(i => i),
       values: values[this.id],
-      errorMessage: validationErrors ? validationErrors[this.id]?.text : undefined,
+      errorMessage: validationErrors ? validationErrors[this.id] : undefined,
     }
   }
 

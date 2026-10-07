@@ -1,5 +1,6 @@
 import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 import YesNoQuestion from './yesNo'
+import TextAreaQuestion from './textArea'
 
 const makeAssessment = (overrides: Partial<CsraAssessmentStageAnswers> = {}): CsraAssessmentStageAnswers => ({
   stage: 'PROVISIONAL',
@@ -36,7 +37,7 @@ describe('YesNoQuestion', () => {
   it('uses required validation', () => {
     const [validate] = question.validations()
 
-    expect(validate(undefined)).toBe('TODO: select one')
+    expect(validate(undefined)).toBe('There is a problem')
     expect(validate('YES')).toBeNull()
   })
 
@@ -69,5 +70,35 @@ describe('YesNoQuestion', () => {
     expect(
       question.mutateAssessmentAnswers(makeAssessment(), { offenceMurderManslaughter: 'NO' }).offenceMurderManslaughter,
     ).toBe(false)
+  })
+
+  it.each([true, false])('clears an answer of %s and conditionals on both options', value => {
+    const conditionalQuestion = new YesNoQuestion('Any risk?', 'likelyToHarmCellmate', undefined, [
+      {
+        text: 'Yes',
+        value: 'YES',
+        conditional: new TextAreaQuestion('Risk detail', 'likelyToHarmCellmateDetail'),
+      },
+      {
+        text: 'No',
+        value: 'NO',
+        conditional: new TextAreaQuestion('Other detail', 'significantlyVulnerableDetail'),
+      },
+    ])
+    const assessment = makeAssessment({
+      likelyToHarmCellmate: value,
+      likelyToHarmCellmateDetail: 'Risk detail',
+      significantlyVulnerableDetail: 'Other detail',
+      seenByHealthcare: true,
+    })
+    const original = structuredClone(assessment)
+
+    expect(conditionalQuestion.eraseAnswers(assessment)).toEqual({
+      ...assessment,
+      likelyToHarmCellmate: null,
+      likelyToHarmCellmateDetail: null,
+      significantlyVulnerableDetail: null,
+    })
+    expect(assessment).toEqual(original)
   })
 })
