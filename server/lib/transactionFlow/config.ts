@@ -58,7 +58,14 @@ const questions = {
     'Based on observed behaviour, is there any cause for concern about this prisoner sharing a cell?',
     'causeForConcernSharing',
     'causeForConcernSharingDetail',
-    { hint: 'This includes behaviour observed by you or by other officers.' },
+    {
+      hint: 'This includes behaviour observed by you or by other officers.',
+      validationMessages: {
+        required: 'Select yes if there is any cause for concern about the prisoner sharing a cell',
+      },
+      detailValidationMessages: { required: 'Enter details of the concern' },
+      detailLabel: 'Provide details of the concern',
+    },
   ),
   otherHighRiskIndicators: new YesNoWithDetailQuestion(
     'Are there any other factors to suggest the prisoner is high risk?',

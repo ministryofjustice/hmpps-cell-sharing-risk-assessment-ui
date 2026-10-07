@@ -7,6 +7,7 @@ type YesNoWithDetailQuestionOptions = {
   hint?: string
   validationMessages?: { required?: string }
   detailValidationMessages?: TextAreaValidationMessages
+  detailLabel?: string
 }
 
 export default class YesNoWithDetailQuestion extends YesNoQuestion {
@@ -20,7 +21,7 @@ export default class YesNoWithDetailQuestion extends YesNoQuestion {
 
     this.items[0] = {
       ...this.items[0],
-      conditional: new TextAreaQuestion('Provide details of the risk', detailField, {
+      conditional: new TextAreaQuestion(options.detailLabel ?? 'Provide details of the risk', detailField, {
         validationMessages: options.detailValidationMessages,
       }),
     }
