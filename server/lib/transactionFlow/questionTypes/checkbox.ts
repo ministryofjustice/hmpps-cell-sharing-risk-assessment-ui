@@ -1,7 +1,6 @@
 import Question from './base'
 import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 import FeComponentsService from '../../../services/feComponentsService'
-import required from '../validations/required'
 
 export default abstract class CheckboxQuestion extends Question {
   constructor(
@@ -49,9 +48,5 @@ export default abstract class CheckboxQuestion extends Question {
       values: values[this.id],
       errorMessage: validationErrors ? validationErrors[this.id] : undefined,
     }
-  }
-
-  override validations(): ValidationFunction[] {
-    return [required('At least 1 evidence source must be checked')]
   }
 }

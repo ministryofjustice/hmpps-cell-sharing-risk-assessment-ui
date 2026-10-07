@@ -1,5 +1,6 @@
 import CheckboxQuestion from './checkbox'
 import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
+import required from '../validations/required'
 
 export default class EvidenceCheckboxQuestion extends CheckboxQuestion {
   override items: (Omit<CheckboxItem, 'value'> & { value: keyof PickByType<CsraAssessmentStageAnswers, boolean> })[] = [
@@ -59,5 +60,9 @@ export default class EvidenceCheckboxQuestion extends CheckboxQuestion {
       .filter(s => s)
 
     return { [this.id]: values }
+  }
+
+  override validations(): ValidationFunction[] {
+    return [required('Select at least one evidence source you have checked')]
   }
 }

@@ -2,6 +2,7 @@ import CheckboxQuestion from './checkbox'
 import YesNoQuestion from './yesNo'
 import { CsraAssessmentStageAnswers, EvidenceSource, OffenceType } from '../../../data/csraApiTypes'
 import OtherOffenceInputQuestion from './otherOffenceInput'
+import required from '../validations/required'
 
 export default class OffenceEvidenceSourceCheckboxQuestion extends CheckboxQuestion {
   constructor(
@@ -97,5 +98,9 @@ export default class OffenceEvidenceSourceCheckboxQuestion extends CheckboxQuest
 
   override isAnswered(assessmentAnswers: CsraAssessmentStageAnswers): boolean {
     return !!this.getEvidenceData(assessmentAnswers)?.sources
+  }
+
+  override validations(): ValidationFunction[] {
+    return [required('Select at least one evidence source')]
   }
 }

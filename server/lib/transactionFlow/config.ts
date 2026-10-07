@@ -12,8 +12,7 @@ const questions = {
     'offenceMurderManslaughter',
     {
       validationMessages: {
-        required:
-          'Select yes if there is evidence of murder, manslaughter or a life-threatening assault on another prisoner while in custody',
+        required: 'Select yes if there is evidence of murder, manslaughter or a life-threatening assault',
       },
     },
   ),
@@ -21,7 +20,7 @@ const questions = {
     'Is there any evidence of assisting a suicide while in custody?',
     'offenceAssistingSuicide',
     {
-      validationMessages: { required: 'Select yes if there is evidence of assisting a suicide while in custody' },
+      validationMessages: { required: 'Select yes if there is evidence of assisting a suicide' },
     },
   ),
   offenceSexualAssault: new YesNoQuestion(
@@ -126,7 +125,7 @@ const questions = {
     'healthcareIncreasedRisk',
     {
       hint: 'If increased risk has been identified, you must discuss this with healthcare before completing your risk rating.',
-      validationMessages: { required: 'Select no if healthcare did not identify any signs of increased risk' },
+      validationMessages: { required: 'Select whether healthcare identified any signs of increased risk' },
     },
     [
       { text: 'No increased risk', value: 'NO' },

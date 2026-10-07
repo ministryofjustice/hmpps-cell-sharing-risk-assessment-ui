@@ -105,4 +105,13 @@ describe('EvidenceCheckboxQuestion', () => {
     })
     expect(assessment).toEqual(original)
   })
+
+  it('uses required validation', () => {
+    const question = new EvidenceCheckboxQuestion()
+
+    const [validate] = question.validations()
+
+    expect(validate([])).toBe('Select at least one evidence source you have checked')
+    expect(validate(['PNC'])).toBeNull()
+  })
 })

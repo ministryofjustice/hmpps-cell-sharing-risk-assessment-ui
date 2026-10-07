@@ -50,6 +50,10 @@ class TestCheckboxQuestion extends CheckboxQuestion {
   override eraseAnswers(assessment: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
     return assessment
   }
+
+  override validations(): ValidationFunction[] {
+    return []
+  }
 }
 
 const makeAssessment = (overrides: Partial<CsraAssessmentStageAnswers> = {}): CsraAssessmentStageAnswers => ({
@@ -97,14 +101,5 @@ describe('CheckboxQuestion', () => {
     expect(result.values).toEqual(['OTHER'])
     expect(result.errorMessage).toEqual({ text: 'Choose one' })
     expect(componentSpy).toHaveBeenCalledWith('govukInput', { id: 'otherSource' })
-  })
-
-  it('uses required validation', () => {
-    const question = new TestCheckboxQuestion([{ text: 'PNC', value: 'PNC' }])
-
-    const [validate] = question.validations()
-
-    expect(validate([])).toBe('At least 1 evidence source must be checked')
-    expect(validate(['PNC'])).toBeNull()
   })
 })
