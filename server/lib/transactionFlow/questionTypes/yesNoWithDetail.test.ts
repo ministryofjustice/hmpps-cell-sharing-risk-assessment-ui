@@ -10,7 +10,7 @@ describe('YesNoWithDetailQuestion', () => {
     )
     const [validate] = question.validations()
 
-    expect(validate(undefined)).toBe('TODO: select one')
+    expect(validate(undefined)).toBe('There is a problem')
   })
 
   it('uses a configured required-selection message independently of the detail message', () => {

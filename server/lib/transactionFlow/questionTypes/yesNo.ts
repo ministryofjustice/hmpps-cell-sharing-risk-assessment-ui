@@ -3,17 +3,26 @@ import required from '../validations/required'
 import FeComponentsService from '../../../services/feComponentsService'
 import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 
+export type YesNoQuestionOptions = {
+  hint?: string
+  validationMessages?: { required?: string }
+}
+
 export default class YesNoQuestion extends Question {
   constructor(
     question: string | null,
     public override id: keyof PickByType<CsraAssessmentStageAnswers, boolean>,
-    public hint?: string,
+    protected readonly options: YesNoQuestionOptions = {},
     public items: { text: string; value: string; conditional?: Question }[] = [
       { text: 'Yes', value: 'YES' },
       { text: 'No', value: 'NO' },
     ],
   ) {
     super(question, id, 'govukRadios')
+  }
+
+  get hint() {
+    return this.options.hint
   }
 
   override componentAttributes(
@@ -30,7 +39,7 @@ export default class YesNoQuestion extends Question {
           classes: 'govuk-fieldset__legend--m',
         },
       },
-      ...(this.hint ? { hint: { text: this.hint } } : {}),
+      ...(this.options.hint ? { hint: { text: this.options.hint } } : {}),
       items: this.items
         .map(item => {
           return {
@@ -52,7 +61,7 @@ export default class YesNoQuestion extends Question {
   }
 
   override validations(): ValidationFunction[] {
-    return [required('TODO: select one')]
+    return [required(this.options.validationMessages?.required ?? 'There is a problem')]
   }
 
   override getFormValues(assessmentAnswers: CsraAssessmentStageAnswers): FormValues {
@@ -101,18 +110,30 @@ export default class YesNoQuestion extends Question {
     assessmentAnswers: CsraAssessmentStageAnswers,
     formValues: FormValues,
   ): CsraAssessmentStageAnswers {
-    let mutatedAnswers = { ...assessmentAnswers, [this.id]: formValues[this.id] === 'YES' }
+    let mutatedAssessmentAnswers = { ...assessmentAnswers, [this.id]: formValues[this.id] === 'YES' }
 
     this.items
       .filter(i => i.conditional)
       .forEach(item => {
         if (formValues[this.id] === item.value) {
-          mutatedAnswers = item.conditional.mutateAssessmentAnswers(mutatedAnswers, formValues)
-        } else if (item.conditional.id in mutatedAnswers) {
-          mutatedAnswers[item.conditional.id as keyof PickByType<CsraAssessmentStageAnswers, string>] = null
+          mutatedAssessmentAnswers = item.conditional.mutateAssessmentAnswers(mutatedAssessmentAnswers, formValues)
+        } else if (item.conditional.id in mutatedAssessmentAnswers) {
+          mutatedAssessmentAnswers[item.conditional.id as keyof PickByType<CsraAssessmentStageAnswers, string>] = null
         }
       })
 
-    return mutatedAnswers
+    return mutatedAssessmentAnswers
+  }
+
+  override eraseAnswers(assessmentAnswers: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
+    let mutatedAssessmentAnswers: CsraAssessmentStageAnswers = { ...assessmentAnswers, [this.id]: null }
+
+    this.items
+      .filter(i => i.conditional)
+      .forEach(item => {
+        mutatedAssessmentAnswers = item.conditional.eraseAnswers(mutatedAssessmentAnswers)
+      })
+
+    return mutatedAssessmentAnswers
   }
 }

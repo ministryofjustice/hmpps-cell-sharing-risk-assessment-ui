@@ -2,6 +2,7 @@ import CheckboxQuestion from './checkbox'
 import YesNoQuestion from './yesNo'
 import { CsraAssessmentStageAnswers, EvidenceSource, OffenceType } from '../../../data/csraApiTypes'
 import OtherOffenceInputQuestion from './otherOffenceInput'
+import required from '../validations/required'
 
 export default class OffenceEvidenceSourceCheckboxQuestion extends CheckboxQuestion {
   constructor(
@@ -45,9 +46,9 @@ export default class OffenceEvidenceSourceCheckboxQuestion extends CheckboxQuest
     assessmentAnswers: CsraAssessmentStageAnswers,
     formValues: FormValues,
   ): CsraAssessmentStageAnswers {
-    let mutatedAssessment = {
+    let mutatedAssessmentAnswers = {
       ...assessmentAnswers,
-      offenceEvidence: assessmentAnswers.offenceEvidence.map(e => {
+      offenceEvidence: (assessmentAnswers.offenceEvidence ?? []).map(e => {
         if (e.offence !== this.offenceType) {
           return e
         }
@@ -57,17 +58,27 @@ export default class OffenceEvidenceSourceCheckboxQuestion extends CheckboxQuest
             ? [formValues[this.id] as EvidenceSource]
             : (formValues[this.id] as EvidenceSource[])
 
-        return { ...e, sources: value }
+        return {
+          ...e,
+          sources: value,
+          // If the user has deselected "Other", we need to clear the otherSourceDetail field
+          ...(!value.includes('OTHER') ? { otherSourceDetail: null } : {}),
+        }
       }),
     }
 
-    this.items.forEach(item => {
-      if (((formValues[this.id] || []) as string[]).includes(item.value) && item.conditional) {
-        mutatedAssessment = item.conditional.mutateAssessmentAnswers(mutatedAssessment, formValues)
-      }
-    })
+    this.items
+      .filter(i => i.conditional && ((formValues[this.id] || []) as string[]).includes(i.value))
+      .forEach(item => {
+        mutatedAssessmentAnswers = item.conditional.mutateAssessmentAnswers(mutatedAssessmentAnswers, formValues)
+      })
 
-    return mutatedAssessment
+    return mutatedAssessmentAnswers
+  }
+
+  override eraseAnswers(assessmentAnswers: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
+    // Erasure is handled by OffenceEvidenceStep, so we don't need to do anything here
+    return assessmentAnswers
   }
 
   private getEvidenceData(assessmentAnswers: CsraAssessmentStageAnswers) {
@@ -87,5 +98,9 @@ export default class OffenceEvidenceSourceCheckboxQuestion extends CheckboxQuest
 
   override isAnswered(assessmentAnswers: CsraAssessmentStageAnswers): boolean {
     return !!this.getEvidenceData(assessmentAnswers)?.sources
+  }
+
+  override validations(): ValidationFunction[] {
+    return [required('Select at least one evidence source')]
   }
 }

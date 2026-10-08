@@ -24,6 +24,10 @@ class ConditionalQuestion extends Question {
   override mutateAssessmentAnswers(assessment: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
     return assessment
   }
+
+  override eraseAnswers(assessment: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
+    return assessment
+  }
 }
 
 class TestCheckboxQuestion extends CheckboxQuestion {
@@ -41,6 +45,14 @@ class TestCheckboxQuestion extends CheckboxQuestion {
 
   override mutateAssessmentAnswers(assessment: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
     return assessment
+  }
+
+  override eraseAnswers(assessment: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
+    return assessment
+  }
+
+  override validations(): ValidationFunction[] {
+    return []
   }
 }
 
@@ -79,7 +91,7 @@ describe('CheckboxQuestion', () => {
       makeAssessment(),
     ) as {
       items: Array<{ text: string; conditional?: { html: string } }>
-      errorMessage?: string
+      errorMessage?: { text: string }
       values: string[]
     }
 
@@ -87,16 +99,7 @@ describe('CheckboxQuestion', () => {
     expect(result.items[0].text).toBe('Shown item')
     expect(result.items[1].conditional).toEqual({ html: '<input />' })
     expect(result.values).toEqual(['OTHER'])
-    expect(result.errorMessage).toBe('Choose one')
+    expect(result.errorMessage).toEqual({ text: 'Choose one' })
     expect(componentSpy).toHaveBeenCalledWith('govukInput', { id: 'otherSource' })
-  })
-
-  it('uses required validation', () => {
-    const question = new TestCheckboxQuestion([{ text: 'PNC', value: 'PNC' }])
-
-    const [validate] = question.validations()
-
-    expect(validate([])).toBe('At least 1 evidence source must be checked')
-    expect(validate(['PNC'])).toBeNull()
   })
 })

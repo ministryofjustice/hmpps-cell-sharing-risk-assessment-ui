@@ -1,5 +1,6 @@
 import CheckboxQuestion from './checkbox'
 import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
+import required from '../validations/required'
 
 export default class EvidenceCheckboxQuestion extends CheckboxQuestion {
   override items: (Omit<CheckboxItem, 'value'> & { value: keyof PickByType<CsraAssessmentStageAnswers, boolean> })[] = [
@@ -39,11 +40,29 @@ export default class EvidenceCheckboxQuestion extends CheckboxQuestion {
     return mutatedAssessmentAnswers
   }
 
+  override eraseAnswers(assessmentAnswers: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
+    let mutatedAssessmentAnswers = { ...assessmentAnswers }
+
+    this.items.forEach(item => {
+      mutatedAssessmentAnswers[item.value] = null
+
+      if (item.conditional) {
+        mutatedAssessmentAnswers = item.conditional.eraseAnswers(mutatedAssessmentAnswers)
+      }
+    })
+
+    return mutatedAssessmentAnswers
+  }
+
   override getFormValues(assessmentAnswers: CsraAssessmentStageAnswers) {
     const values = this.items
       .map(item => (assessmentAnswers[item.value as keyof CsraAssessmentStageAnswers] ? item.value : undefined))
       .filter(s => s)
 
     return { [this.id]: values }
+  }
+
+  override validations(): ValidationFunction[] {
+    return [required('Select at least one evidence source you have checked')]
   }
 }

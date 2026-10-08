@@ -28,4 +28,6 @@ export default abstract class Question {
     assessmentAnswers: CsraAssessmentStageAnswers,
     formValues: FormValues,
   ): CsraAssessmentStageAnswers
+
+  abstract eraseAnswers(assessmentAnswers: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers
 }

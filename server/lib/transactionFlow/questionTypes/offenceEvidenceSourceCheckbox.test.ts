@@ -42,6 +42,29 @@ describe('OffenceEvidenceSourceCheckboxQuestion', () => {
     })
   })
 
+  it('clears the other source detail when OTHER is deselected', () => {
+    const assessment = makeAssessment({
+      offenceEvidence: [
+        {
+          offence: 'MURDER_MANSLAUGHTER',
+          sources: ['OTHER', 'PNC'],
+          otherSourceDetail: 'Intel report',
+          details: 'A detail',
+        },
+        { offence: 'ASSISTING_SUICIDE', sources: ['DPS'], details: 'Keep this' },
+      ],
+    })
+    const original = structuredClone(assessment)
+
+    const mutated = question.mutateAssessmentAnswers(assessment, { evidenceSources: ['PNC'] })
+
+    expect(mutated.offenceEvidence).toEqual([
+      { offence: 'MURDER_MANSLAUGHTER', sources: ['PNC'], otherSourceDetail: null, details: 'A detail' },
+      { offence: 'ASSISTING_SUICIDE', sources: ['DPS'], details: 'Keep this' },
+    ])
+    expect(assessment).toEqual(original)
+  })
+
   it('returns source values plus conditional values', () => {
     expect(
       question.getFormValues(

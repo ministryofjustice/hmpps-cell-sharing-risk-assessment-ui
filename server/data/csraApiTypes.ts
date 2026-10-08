@@ -381,7 +381,7 @@ export interface CsraAssessmentStageAnswers {
   offenceArson?: boolean | null
   offenceKidnapHostage?: boolean | null
 
-  offenceEvidence: CsraOffenceEvidence[]
+  offenceEvidence: CsraOffenceEvidence[] | null
 
   // Prisoner conversation and vulnerability (null = not answered)
   officerSpokeToPrisoner?: boolean | null
@@ -401,8 +401,8 @@ export interface CsraAssessmentStageAnswers {
   healthcareIncreasedRisk?: boolean | null
   healthcareIncreasedRiskDetail?: string | null
 
-  riskTo: CsraRiskToDetail[]
-  vulnerabilities: CsraVulnerabilityDetail[]
+  riskTo: CsraRiskToDetail[] | null
+  vulnerabilities: CsraVulnerabilityDetail[] | null
 
   version: number
 }

@@ -35,7 +35,9 @@ describe('OffenceEvidenceStep', () => {
   it('initialises offence evidence entry when missing and mutates values', () => {
     const step = new OffenceEvidenceStep(yesNoQuestion, 'MURDER_MANSLAUGHTER')
 
-    const mutated = step.mutateAssessmentAnswers(makeAssessment(), {
+    const assessment = makeAssessment()
+    const original = structuredClone(assessment)
+    const mutated = step.mutateAssessmentAnswers(assessment, {
       evidenceSources: ['PNC'],
       likelyToHarmCellmateDetail: 'Found in records',
     })
@@ -44,9 +46,11 @@ describe('OffenceEvidenceStep', () => {
       {
         offence: 'MURDER_MANSLAUGHTER',
         sources: ['PNC'],
+        otherSourceDetail: null,
         details: 'Found in records',
       },
     ])
+    expect(assessment).toEqual(original)
   })
 
   it('does not duplicate existing evidence entries for the offence', () => {
@@ -63,4 +67,40 @@ describe('OffenceEvidenceStep', () => {
 
     expect(mutated.offenceEvidence).toHaveLength(1)
   })
+
+  it('removes only the matching offence evidence without mutating the original assessment', () => {
+    const step = new OffenceEvidenceStep(yesNoQuestion, 'MURDER_MANSLAUGHTER')
+    const assessment = makeAssessment({
+      offenceMurderManslaughter: false,
+      offenceEvidence: [
+        {
+          offence: 'MURDER_MANSLAUGHTER',
+          sources: ['OTHER'],
+          otherSourceDetail: 'Other source',
+          details: 'Evidence to clear',
+        },
+        { offence: 'SEXUAL_ASSAULT', sources: ['PNC'], details: 'Evidence to retain' },
+      ],
+      likelyToHarmCellmateDetail: 'Unrelated detail',
+    })
+    const original = structuredClone(assessment)
+
+    expect(step.eraseAnswers(assessment)).toEqual({
+      ...assessment,
+      offenceEvidence: [assessment.offenceEvidence[1]],
+    })
+    expect(assessment).toEqual(original)
+  })
+
+  it.each([{ offenceEvidence: null }, { offenceEvidence: [] }])(
+    'handles empty offence evidence $offenceEvidence without changing the assessment',
+    ({ offenceEvidence }) => {
+      const step = new OffenceEvidenceStep(yesNoQuestion, 'MURDER_MANSLAUGHTER')
+      const assessment = makeAssessment({ offenceEvidence })
+      const original = structuredClone(assessment)
+
+      expect(step.eraseAnswers(assessment)).toEqual(original)
+      expect(assessment).toEqual(original)
+    },
+  )
 })

@@ -31,7 +31,7 @@ export default class OffenceEvidenceStep extends Step {
   ): CsraAssessmentStageAnswers {
     const mutatedAssessmentAnswers = {
       ...assessmentAnswers,
-      offenceEvidence: assessmentAnswers.offenceEvidence ? assessmentAnswers.offenceEvidence : [],
+      offenceEvidence: [...(assessmentAnswers.offenceEvidence ?? [])],
     }
 
     if (!this.getEvidenceData(mutatedAssessmentAnswers)) {
@@ -39,5 +39,16 @@ export default class OffenceEvidenceStep extends Step {
     }
 
     return super.mutateAssessmentAnswers(mutatedAssessmentAnswers, formValues)
+  }
+
+  override eraseAnswers(assessmentAnswers: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
+    if (!assessmentAnswers.offenceEvidence) {
+      return assessmentAnswers
+    }
+
+    return {
+      ...assessmentAnswers,
+      offenceEvidence: assessmentAnswers.offenceEvidence.filter(e => e.offence !== this.offenceType),
+    }
   }
 }

@@ -8,7 +8,10 @@ export default class Step {
 
   questions: Question[]
 
-  protected dependants: { attribute: keyof CsraAssessmentStageAnswers; answer: string | boolean }[]
+  protected dependencies: {
+    attribute: keyof Omit<CsraAssessmentStageAnswers, 'stage' | 'prisonId' | 'version'>
+    answer: string | boolean
+  }[]
 
   protected incompleteUnlessConditions: { attribute: keyof CsraAssessmentStageAnswers; answer: string | boolean }[]
 
@@ -16,7 +19,7 @@ export default class Step {
     this.questions = questions
     this.title = title
     this.bodyHtml = bodyHtml
-    this.dependants = []
+    this.dependencies = []
     this.incompleteUnlessConditions = []
   }
 
@@ -25,13 +28,13 @@ export default class Step {
     return this
   }
 
-  dependsOn(attribute: keyof CsraAssessmentStageAnswers, answer: string | boolean) {
-    this.dependants.push({ attribute, answer })
+  dependsOn(attribute: (typeof this.dependencies)[0]['attribute'], answer: string | boolean) {
+    this.dependencies.push({ attribute, answer })
     return this
   }
 
   removeIf(assessmentAnswers: CsraAssessmentStageAnswers) {
-    return this.dependants.some(({ attribute, answer }) => assessmentAnswers[attribute] !== answer)
+    return this.dependencies.some(({ attribute, answer }) => assessmentAnswers[attribute] !== answer)
   }
 
   isComplete(assessmentAnswers: CsraAssessmentStageAnswers) {
@@ -60,5 +63,15 @@ export default class Step {
 
   getFormValues(assessmentAnswers: CsraAssessmentStageAnswers) {
     return Object.fromEntries(this.questions.flatMap(q => Object.entries(q.getFormValues(assessmentAnswers))))
+  }
+
+  eraseAnswers(assessmentAnswers: CsraAssessmentStageAnswers) {
+    let mutatedAssessmentAnswers = assessmentAnswers
+
+    this.questions.forEach(question => {
+      mutatedAssessmentAnswers = question.eraseAnswers(mutatedAssessmentAnswers)
+    })
+
+    return mutatedAssessmentAnswers
   }
 }

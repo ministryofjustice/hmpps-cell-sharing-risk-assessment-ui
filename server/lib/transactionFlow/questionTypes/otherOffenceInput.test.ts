@@ -22,17 +22,17 @@ describe('OtherOffenceInputQuestion', () => {
       { otherSource: { text: 'Enter a reason' } },
       { otherSource: 'intelligence report' },
       makeAssessment(),
-    ) as { value?: string; errorMessage?: string; classes: string }
+    ) as { value?: string; errorMessage?: { text: string }; classes: string }
 
     expect(result.value).toBe('intelligence report')
     expect(result.classes).toBe('govuk-input--width-10')
-    expect(result.errorMessage).toBe('Enter a reason')
+    expect(result.errorMessage).toEqual({ text: 'Enter a reason' })
   })
 
   it('uses required validation', () => {
     const [validate] = question.validations()
 
-    expect(validate('')).toBe('TODO: enter a reason')
+    expect(validate('')).toBe('Enter the source of the evidence')
     expect(validate('detail')).toBeNull()
   })
 

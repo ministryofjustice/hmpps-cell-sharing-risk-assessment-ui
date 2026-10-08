@@ -187,10 +187,19 @@ export default function csraQuestionController({ auditService, csraService }: De
       })
 
       if (Object.keys(validationErrors).length === 0) {
-        const mutatedAssessmentAnswers = {
+        let mutatedAssessmentAnswers = {
           ...currentStep.mutateAssessmentAnswers(assessmentAnswers, newValues),
           version: assessmentAnswers.version || 0,
         }
+
+        // Check if any subsequent steps should be removed based on the new answers and erase their answers if so
+        for (let i = currentStepId + 1; i < section.steps.length; i += 1) {
+          const step = section.steps[i]
+          if (step.removeIf(mutatedAssessmentAnswers)) {
+            mutatedAssessmentAnswers = step.eraseAnswers(mutatedAssessmentAnswers)
+          }
+        }
+
         const newAssessment = await csraService.updateCsraAssessment(
           username,
           res.locals.prisoner.prisonerNumber,

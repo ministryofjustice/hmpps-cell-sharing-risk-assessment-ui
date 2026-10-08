@@ -1,11 +1,9 @@
-import YesNoQuestion from './yesNo'
+import YesNoQuestion, { YesNoQuestionOptions } from './yesNo'
 import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 import TextAreaQuestion, { TextAreaValidationMessages } from './textArea'
 import required from '../validations/required'
 
-type YesNoWithDetailQuestionOptions = {
-  hint?: string
-  validationMessages?: { required?: string }
+type YesNoWithDetailQuestionOptions = YesNoQuestionOptions & {
   detailValidationMessages?: TextAreaValidationMessages
   detailLabel?: string
 }
@@ -15,9 +13,9 @@ export default class YesNoWithDetailQuestion extends YesNoQuestion {
     question: string,
     booleanField: keyof PickByType<CsraAssessmentStageAnswers, boolean>,
     public detailField: keyof PickByType<CsraAssessmentStageAnswers, string>,
-    private readonly options: YesNoWithDetailQuestionOptions = {},
+    protected override readonly options: YesNoWithDetailQuestionOptions = {},
   ) {
-    super(question, booleanField as keyof PickByType<CsraAssessmentStageAnswers, boolean>, options.hint)
+    super(question, booleanField as keyof PickByType<CsraAssessmentStageAnswers, boolean>, options)
 
     this.items[0] = {
       ...this.items[0],
