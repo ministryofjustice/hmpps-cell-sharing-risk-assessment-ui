@@ -1,0 +1,131 @@
+{% macro csraAnswersSummary(params) %}
+  {% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+
+  {% set prisoner = params.prisoner %}
+  {% set assessment = params.assessment %}
+  {% set assessmentAnswers = params.assessmentAnswers %}
+  {% set flowConfig = params.flowConfig %}
+  {% set showChangeLinks = params.showChangeLinks !== false %}
+
+  <h2 class="govuk-heading-m">Evidence sources</h2>
+
+  {{ govukSummaryList({
+    rows: [
+      {
+        key: {
+          text: "DPS"
+        },
+        value: {
+          text: "Checked" if assessmentAnswers.dpsChecked else "Not checked"
+        },
+        actions: {
+          items: [
+            {
+              href: "/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/evidenceAndOffences/0",
+              text: "Change",
+              visuallyHiddenText: "DPS"
+            }
+          ]
+        } if showChangeLinks
+      },
+      {
+        key: {
+          text: "PER"
+        },
+        value: {
+          text: "Checked" if assessmentAnswers.perChecked else "Not checked"
+        },
+        actions: {
+          items: [
+            {
+              href: "/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/evidenceAndOffences/0",
+              text: "Change",
+              visuallyHiddenText: "PER"
+            }
+          ]
+        } if showChangeLinks
+      },
+      {
+        key: {
+          text: "Warrant"
+        },
+        value: {
+          text: "Checked" if assessmentAnswers.warrantChecked else "Not checked"
+        },
+        actions: {
+          items: [
+            {
+              href: "/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/evidenceAndOffences/0",
+              text: "Change",
+              visuallyHiddenText: "Warrant"
+            }
+          ]
+        } if showChangeLinks
+      },
+      {
+        key: {
+          text: "PNC"
+        },
+        value: {
+          text: "Checked" if assessmentAnswers.pncChecked else "Not checked"
+        },
+        actions: {
+          items: [
+            {
+              href: "/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/evidenceAndOffences/0",
+              text: "Change",
+              visuallyHiddenText: "PNC"
+            }
+          ]
+        } if showChangeLinks
+      }
+    ]
+  }) }}
+
+  {% for sectionId in ['evidenceAndOffences',
+    'conversationAndVulnerability',
+    'observation',
+    'otherRisks',
+    'healthcare'] %}
+    {% set section = flowConfig[sectionId] %}
+
+    <h2 class="govuk-heading-m">{{ section.title }}</h2>
+
+    {% set sectionList = [] %}
+
+    {% for step in section.steps %}
+      {% set stepId = loop.index - 1 %}
+
+      {% if sectionId !== 'evidenceAndOffences' or stepId !== 0 %}
+        {% for question in step.questions %}
+          {% if question.question !== 'Provide details of the evidence' and not question.question.startsWith('Where did you find evidence of') %}
+            {% set sectionList = (sectionList.push(
+              {
+                key: {
+                  text: question.question
+                },
+                value: {
+                  text: (assessmentAnswers[question.id] | yesNoValue) or "Not answered"
+                },
+                actions: {
+                  items: [
+                    {
+                      href: "/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/" + sectionId + "/" + stepId,
+                      text: "Change",
+                      visuallyHiddenText: "blah??"
+                    }
+                  ]
+                } if showChangeLinks
+              }
+            ), sectionList) %}
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+    {% endfor %}
+
+    {{ govukSummaryList({
+      rows: sectionList
+    }) }}
+
+  {% endfor %}
+{% endmacro %}

@@ -8,12 +8,6 @@
 
 {% set pageTitle = applicationName + " - Assessments in progress" %}
 
-{% set assessmentButtonHtml %}
-  {% if canEditAssessments %}
-    <a class="govuk-button govuk-button--secondary continue-assessment-button" href="#">Continue assessment</a>
-  {% endif %}
-{% endset %}
-
 {% block content %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-full">
@@ -32,6 +26,11 @@
                 <a class="govuk-link" href="/prisoner/{{ assessment.prisonerNumber }}">{{ name }}</a>
                 <br>
                 <span class="csra-recent-arrivals__prisoner-number">{{ assessment.prisonerNumber }}</span>
+              {% endset %}
+              {% set assessmentButtonHtml %}
+                {% if canEditAssessments %}
+                  <a class="govuk-button govuk-button--secondary continue-assessment-button" href="/prisoner/{{ assessment.prisonerNumber }}/csra/{{ assessment.reviewId }}">Continue assessment</a>
+                {% endif %}
               {% endset %}
               {% set row = [
                 { html: imageHtml },
