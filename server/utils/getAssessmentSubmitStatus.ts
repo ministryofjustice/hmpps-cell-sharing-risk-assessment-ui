@@ -26,7 +26,11 @@ function getRemainingTasks(assessmentAnswers: CsraAssessmentStageAnswers): strin
 
   if (!assessmentAnswers.officerSpokeToPrisoner) {
     remainingTasks.push('speak to the prisoner about sharing a cell')
-  } else if (assessmentAnswers.likelyToHarmCellmate === null || !assessmentAnswers.likelyToHarmCellmateDetail) {
+  } else if (
+    assessmentAnswers.likelyToHarmCellmate === null ||
+    assessmentAnswers.likelyToHarmCellmate === undefined ||
+    (assessmentAnswers.likelyToHarmCellmate && !assessmentAnswers.likelyToHarmCellmateDetail)
+  ) {
     remainingTasks.push('record if there is reason to believe the prisoner may harm someone they share a cell with')
   }
 
@@ -59,6 +63,10 @@ export function getAssessmentSubmitStatus(
   submitType: AssessmentSubmitType
   remainingTasks: string[]
 } {
+  if (assessment.finalResult) {
+    return { submitType: AssessmentSubmitType.NONE, remainingTasks: [] }
+  }
+
   const sections = getTaskListSections(assessment, assessmentAnswers, prisoner)
 
   const canSubmitProvisionalRating =

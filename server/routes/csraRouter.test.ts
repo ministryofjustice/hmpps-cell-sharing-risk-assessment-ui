@@ -167,7 +167,25 @@ describe('csraRouter', () => {
       expect(task).toContain('govuk-tag--blue')
       expect(task).not.toContain('Cannot start yet')
     }
-    expect(response.text).toContain(`href="${assessmentUrl}/confirm-rating"`)
+    expect(response.text).toContain(`href="${assessmentUrl}/check-answers"`)
+  })
+
+  it('redirects from check answers when no rating can be entered', async () => {
+    csraService.getCsraAssessment.mockResolvedValue(assessment())
+
+    const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      .get(`${assessmentUrl}/check-answers`)
+      .expect(302)
+      .expect('Location', assessmentUrl)
+
+    expect(response.text).not.toContain('Check answers before you confirm a CSRA rating')
+    expect(auditService.logPageView).not.toHaveBeenCalled()
+  })
+
+  it.each(['get', 'post'] as const)('does not expose the retired confirm-rating %s route', async method => {
+    await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      [method](`${assessmentUrl}/confirm-rating`)
+      .expect(404)
   })
 
   it('renders a back link to the task list and a paragraph-wrapped cancel link on the first question', async () => {
@@ -200,29 +218,44 @@ describe('csraRouter', () => {
     )
   })
 
-  it('uses zero-based step ids for confirmation change links and displays unanswered values explicitly', async () => {
+  it('uses zero-based step ids for check answers change links and displays unanswered values explicitly', async () => {
     csraService.getCsraAssessment.mockResolvedValue(
       assessment({
-        stages: [stageAnswers({ pncChecked: true, officerSpokeToPrisoner: true, likelyToHarmCellmate: false })],
+        stages: [
+          stageAnswers({
+            pncChecked: true,
+            offenceMurderManslaughter: false,
+            offenceAssistingSuicide: false,
+            offenceSexualAssault: false,
+            offenceRepeatedViolence: false,
+            offencePrejudiceMotivated: false,
+            offenceArson: false,
+            offenceKidnapHostage: false,
+            seenByHealthcare: true,
+            healthcareIncreasedRisk: false,
+            officerSpokeToPrisoner: true,
+            likelyToHarmCellmate: false,
+          }),
+        ],
       }),
     )
 
     const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
-      .get(`${assessmentUrl}/confirm-rating`)
+      .get(`${assessmentUrl}/check-answers`)
       .expect(200)
     const rows = response.text.match(/<div class="govuk-summary-list__row">[\s\S]*?<\/div>/g) ?? []
 
     for (const [sectionId, stepId, questionId, answer] of [
-      ['evidenceAndOffences', 1, 'offenceMurderManslaughter', 'Not answered'],
-      ['evidenceAndOffences', 1, 'offenceAssistingSuicide', 'Not answered'],
-      ['evidenceAndOffences', 4, 'offenceSexualAssault', 'Not answered'],
+      ['evidenceAndOffences', 1, 'offenceMurderManslaughter', 'No'],
+      ['evidenceAndOffences', 1, 'offenceAssistingSuicide', 'No'],
+      ['evidenceAndOffences', 4, 'offenceSexualAssault', 'No'],
       ['conversationAndVulnerability', 0, 'officerSpokeToPrisoner', 'Yes'],
       ['conversationAndVulnerability', 1, 'likelyToHarmCellmate', 'No'],
       ['conversationAndVulnerability', 2, 'significantlyVulnerable', 'Not answered'],
       ['observation', 0, 'causeForConcernSharing', 'Not answered'],
       ['otherRisks', 0, 'otherHighRiskIndicators', 'Not answered'],
-      ['healthcare', 0, 'seenByHealthcare', 'Not answered'],
-      ['healthcare', 1, 'healthcareIncreasedRisk', 'Not answered'],
+      ['healthcare', 0, 'seenByHealthcare', 'Yes'],
+      ['healthcare', 1, 'healthcareIncreasedRisk', 'No'],
     ] as const) {
       const question = flowConfig[sectionId].steps[stepId].questions.find(q => q.id === questionId)
       const row = rows.find(item => item.includes(question.question))
@@ -237,5 +270,63 @@ describe('csraRouter', () => {
       expect(row).toContain(`href="${assessmentUrl}/section/evidenceAndOffences/0"`)
       expect(row).toContain(source === 'PNC' ? 'Checked' : 'Not checked')
     }
+  })
+
+  it('renders offence evidence with formatted sources and escaped details', async () => {
+    const evidenceDetails = '<script>previous arson</script>'
+    const otherSourceDetails = '<script>local archive</script>'
+    csraService.getCsraAssessment.mockResolvedValue(
+      assessment({
+        stages: [
+          stageAnswers({
+            pncChecked: true,
+            offenceMurderManslaughter: false,
+            offenceAssistingSuicide: false,
+            offenceSexualAssault: false,
+            offenceRepeatedViolence: false,
+            offencePrejudiceMotivated: false,
+            offenceArson: true,
+            offenceKidnapHostage: false,
+            offenceEvidence: [
+              {
+                offence: 'ARSON',
+                sources: ['PNC', 'WARRANT', 'OTHER'],
+                otherSourceDetail: otherSourceDetails,
+                details: evidenceDetails,
+              },
+            ],
+            officerSpokeToPrisoner: true,
+            likelyToHarmCellmate: true,
+            likelyToHarmCellmateDetail: 'Threatened to assault a cellmate.',
+            significantlyVulnerable: true,
+            significantlyVulnerableDetail: 'Requires protection.',
+            causeForConcernSharing: true,
+            causeForConcernSharingDetail: '<script>observed altercation</script>',
+            otherHighRiskIndicators: true,
+            otherHighRiskIndicatorsDetail: 'Has made repeated threats.',
+            seenByHealthcare: false,
+          }),
+        ],
+      }),
+    )
+
+    const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      .get(`${assessmentUrl}/check-answers`)
+      .expect(200)
+
+    expect(response.text).toContain('Arson or fire setting')
+    expect(response.text).toContain('&lt;script&gt;previous arson&lt;/script&gt;')
+    expect(response.text).toContain('PNC, Warrant, and Other')
+    expect(response.text).toContain('&lt;script&gt;local archive&lt;/script&gt;')
+    expect(response.text).toContain('Threatened to assault a cellmate.')
+    expect(response.text).toContain('Requires protection.')
+    expect(response.text).toContain('&lt;script&gt;observed altercation&lt;/script&gt;')
+    expect(response.text).toContain('Has made repeated threats.')
+    expect(response.text).not.toContain(evidenceDetails)
+    const arsonStepId = flowConfig.evidenceAndOffences.steps.findIndex(step =>
+      step.questions.some(question => question.id === 'offenceArson'),
+    )
+    expect(response.text).toContain(`href="${assessmentUrl}/section/evidenceAndOffences/${arsonStepId}"`)
+    expect(response.text).toContain('Continue to provisional rating')
   })
 })

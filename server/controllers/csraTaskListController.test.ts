@@ -268,7 +268,7 @@ describe('csraTaskListController', () => {
       expect(taskLists[2].sections[0]).toEqual(
         expect.objectContaining({
           status: ratingStatus,
-          href: ratingStatus === 'LOCKED' ? undefined : `/prisoner/A1234BC/csra/${ASSESSMENT_ID}/confirm-rating`,
+          href: ratingStatus === 'LOCKED' ? undefined : `/prisoner/A1234BC/csra/${ASSESSMENT_ID}/check-answers`,
         }),
       )
     },
@@ -294,7 +294,7 @@ describe('csraTaskListController', () => {
     )
   })
 
-  it('allows confirmation when every assessment section is fully complete', async () => {
+  it('enables check answers when every assessment section is fully complete', async () => {
     csraService.getCsraAssessment.mockResolvedValue(
       makeAssessment({
         stages: [
@@ -326,7 +326,7 @@ describe('csraTaskListController', () => {
     expect(taskLists.at(-1).sections[0]).toEqual(
       expect.objectContaining({
         status: 'IN_PROGRESS',
-        href: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}/confirm-rating`,
+        href: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}/check-answers`,
       }),
     )
   })

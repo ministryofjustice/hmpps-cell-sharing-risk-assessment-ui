@@ -45,7 +45,7 @@ export default function csraCheckAnswersController({
       return
     }
 
-    await auditService.logPageView(Page.PRISONER_CSRA_CONFIRM_RATING, {
+    await auditService.logPageView(Page.PRISONER_CSRA_CHECK_ANSWERS, {
       who: username,
       subjectId: assessmentId,
       subjectType: 'ASSESSMENT_ID',
