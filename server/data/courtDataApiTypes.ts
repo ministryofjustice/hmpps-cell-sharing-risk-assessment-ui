@@ -8,10 +8,7 @@
  * others are ingested for other consumers.
  */
 export type CourtDocumentType =
-  | 'PRISON_COURT_REGISTER'
-  | 'SENTENCING_WARRANT'
-  | 'REMAND_WARRANT'
-  | 'COMMON_PLATFORM_DOCUMENT'
+  'PRISON_COURT_REGISTER' | 'SENTENCING_WARRANT' | 'REMAND_WARRANT' | 'COMMON_PLATFORM_DOCUMENT'
 
 export interface CourtHearingDocument {
   documentType: CourtDocumentType
