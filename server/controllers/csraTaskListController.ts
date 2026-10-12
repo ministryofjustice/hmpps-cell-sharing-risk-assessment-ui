@@ -2,58 +2,13 @@ import { type RequestHandler } from 'express'
 
 import { NotFound } from 'http-errors'
 import type { Services } from '../services'
-import flowConfig from '../lib/transactionFlow/config'
 import getAnswersFromAssessment from './getAnswersFromAssessment'
-import { CsraAssessmentStageAnswers } from '../data/csraApiTypes'
 import config from '../config'
 import { Page } from '../services/auditService'
+import getTaskListSections, { getSectionForTaskList } from '../utils/getTaskListSections'
+import { getAssessmentSubmitStatus } from '../utils/getAssessmentSubmitStatus'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService' | 'warrantsService'>
-
-/**
- * SectionStatus represents the status of a section in the CSRA assessment task list.
- * - 'LOCKED': The section is locked and cannot be accessed.
- * - 'NOT_STARTED': The section has not been started yet.
- * - 'IN_PROGRESS': The section is currently in progress.
- * - 'PROVISIONAL_COMPLETE': Every question in the section is answered, but some are not fully complete.
- * - 'COMPLETE': The section is fully complete.
- */
-type SectionStatus = 'LOCKED' | 'NOT_STARTED' | 'IN_PROGRESS' | 'PROVISIONAL_COMPLETE' | 'COMPLETE'
-
-function getSectionStatus(assessmentAnswers: CsraAssessmentStageAnswers, section: Section): SectionStatus {
-  if (!section) {
-    return 'LOCKED'
-  }
-
-  const steps = section.steps.filter(s => !s.removeIf(assessmentAnswers))
-
-  if (steps.length === 0) {
-    return 'LOCKED'
-  }
-
-  if (steps.every(s => s.isComplete(assessmentAnswers))) {
-    return 'COMPLETE'
-  }
-
-  if (steps.every(s => s.isAnswered(assessmentAnswers))) {
-    return 'PROVISIONAL_COMPLETE'
-  }
-
-  if (steps.some(s => s.isComplete(assessmentAnswers) || s.isAnswered(assessmentAnswers))) {
-    return 'IN_PROGRESS'
-  }
-
-  return 'NOT_STARTED'
-}
-
-function getSectionForTaskList(title: string, status: SectionStatus, href: string, hint?: string) {
-  return {
-    title,
-    status,
-    href: status !== 'LOCKED' ? href : undefined,
-    hint,
-  }
-}
 
 export default function csraTaskListController({
   auditService,
@@ -73,69 +28,44 @@ export default function csraTaskListController({
     }
 
     const assessmentAnswers = getAnswersFromAssessment(assessment)
-
-    function assessmentSectionToTaskListSection(title: string, sectionId: string) {
-      return getSectionForTaskList(
-        title,
-        getSectionStatus(assessmentAnswers, flowConfig[sectionId]),
-        `/prisoner/${prisoner.prisonerNumber}/csra/${assessment.assessmentId}/section/${sectionId}`,
-      )
-    }
-
-    const [
-      evidenceAndOffencesSection,
-      conversationAndVulnerabilitySection,
-      observationSection,
-      otherRisksSection,
-      healthcareSection,
-    ] = [
-      assessmentSectionToTaskListSection('Evidence sources and offences', 'evidenceAndOffences'),
-      assessmentSectionToTaskListSection('Prisoner conversation and vulnerability', 'conversationAndVulnerability'),
-      assessmentSectionToTaskListSection('Officer observation', 'observation'),
-      assessmentSectionToTaskListSection('Other risk factors', 'otherRisks'),
-      assessmentSectionToTaskListSection('Healthcare assessment', 'healthcare'),
-    ]
+    const {
+      evidenceAndOffences,
+      conversationAndVulnerability,
+      observation,
+      otherRisks,
+      healthcare,
+      reviewProvisional,
+    } = getTaskListSections(assessment, assessmentAnswers, prisoner)
 
     // TODO: implement reviewProvisional section in flowConfig
     const taskLists = [
-      ...(assessment.interimResult
+      ...(reviewProvisional
         ? [
             {
               title: 'Provisional assessment',
-              sections: [assessmentSectionToTaskListSection('Review provisional assessment', 'reviewProvisional')],
+              sections: [reviewProvisional],
             },
           ]
         : []),
       {
         title: 'Operational assessment',
-        sections: [
-          evidenceAndOffencesSection,
-          conversationAndVulnerabilitySection,
-          observationSection,
-          otherRisksSection,
-        ],
+        sections: [evidenceAndOffences, conversationAndVulnerability, observation, otherRisks],
       },
       {
         title: 'Healthcare assessment',
-        sections: [healthcareSection],
+        sections: [healthcare],
       },
     ]
 
-    const canSubmitFinalRating = taskLists.every(taskList =>
-      taskList.sections.every(section => section.status === 'COMPLETE'),
-    )
-
-    const canSubmitProvisionalRating =
-      ['COMPLETE', 'PROVISIONAL_COMPLETE'].includes(evidenceAndOffencesSection.status) &&
-      ['COMPLETE', 'PROVISIONAL_COMPLETE'].includes(healthcareSection.status)
+    const submitStatus = getAssessmentSubmitStatus(assessment, assessmentAnswers, prisoner)
 
     taskLists.push({
       title: 'Rating',
       sections: [
         getSectionForTaskList(
           'Check answers and confirm rating',
-          canSubmitFinalRating || (!assessment.interimResult && canSubmitProvisionalRating) ? 'IN_PROGRESS' : 'LOCKED',
-          `/prisoner/${prisoner.prisonerNumber}/csra/${assessment.assessmentId}/confirm-rating`,
+          submitStatus.submitType === 'NONE' ? 'LOCKED' : 'IN_PROGRESS',
+          `/prisoner/${prisoner.prisonerNumber}/csra/${assessment.assessmentId}/check-answers`,
           assessment.interimResult ? 'You must complete all sections to enter a final rating.' : undefined,
         ),
       ],

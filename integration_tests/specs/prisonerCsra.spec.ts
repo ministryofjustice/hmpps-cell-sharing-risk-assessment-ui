@@ -352,7 +352,7 @@ test.describe('Prisoner CSRA', () => {
     await expect(page.getByText('Check answers and confirm rating')).toBeVisible()
   })
 
-  test('can reach the confirm-rating page and submit the provisional rating', async ({ page }) => {
+  test('can reach the check answers page for a provisional rating', async ({ page }) => {
     await csraApi.stubGetInfo(['MDI'])
     await login(page, {
       roles: ['ROLE_CSRA__ASSESSMENT_EDIT'],
@@ -381,6 +381,13 @@ test.describe('Prisoner CSRA', () => {
           seenByHealthcare: true,
           healthcareIncreasedRisk: true,
           healthcareIncreasedRiskDetail: 'Healthcare flagged an increased risk.',
+          offenceMurderManslaughter: false,
+          offenceAssistingSuicide: false,
+          offenceSexualAssault: false,
+          offenceRepeatedViolence: false,
+          offencePrejudiceMotivated: false,
+          offenceArson: false,
+          offenceKidnapHostage: false,
           offenceEvidence: [],
           riskTo: [],
           vulnerabilities: [],
@@ -388,15 +395,14 @@ test.describe('Prisoner CSRA', () => {
         },
       ],
     })
-    await csraApi.stubSubmitProvisionalRating('A1234BC', 'assessment-123')
 
-    await page.goto('/prisoner/A1234BC/csra/assessment-123/confirm-rating')
+    await page.goto('/prisoner/A1234BC/csra/assessment-123')
+    await page.getByRole('link', { name: 'Check answers and confirm rating' }).click()
 
     await expect(page.getByRole('heading', { name: 'Check answers before you confirm a CSRA rating' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'WIP: Save provisional rating' })).toBeVisible()
-
-    await page.getByRole('button', { name: 'WIP: Save provisional rating' }).click()
-
-    await expect(page).toHaveURL('/prisoner/A1234BC')
+    await expect(page.getByRole('link', { name: 'Continue to provisional rating' })).toBeVisible()
+    await expect(page.getByText('Warrant', { exact: true }).first()).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Remaining tasks to complete' })).toBeVisible()
+    await expect(page.getByText('check remaining evidence sources (Warrant)')).toBeVisible()
   })
 })

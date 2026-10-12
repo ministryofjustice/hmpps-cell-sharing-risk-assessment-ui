@@ -26,7 +26,31 @@ import {
   parseUkDate,
   validateUkDate,
   taskListStatus,
+  capFirst,
+  formatSources,
 } from './utils'
+
+describe('capFirst', () => {
+  it.each([
+    ['lower case text', 'arson or fire setting', 'Arson or fire setting'],
+    ['already capitalized text', 'Arson', 'Arson'],
+    ['empty input', '', ''],
+  ])('capitalizes the first character of %s', (_description, input, expected) => {
+    expect(capFirst(input)).toBe(expected)
+  })
+})
+
+describe('formatSources', () => {
+  it.each([
+    [[], ''],
+    [['PNC'], 'PNC'],
+    [['PNC', 'WARRANT'], 'PNC and Warrant'],
+    [['DPS', 'PER', 'PNC'], 'DPS, PER, and PNC'],
+    [['DPS', 'PER', 'PNC', 'WARRANT', 'OTHER'], 'DPS, PER, PNC, Warrant, and Other'],
+  ])('formats evidence sources %j', (sources, expected) => {
+    expect(formatSources(sources)).toBe(expected)
+  })
+})
 
 describe('taskListStatus', () => {
   it.each([

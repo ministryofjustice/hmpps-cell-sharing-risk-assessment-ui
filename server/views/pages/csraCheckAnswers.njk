@@ -1,0 +1,215 @@
+{% extends "../partials/layout.njk" %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/details/macro.njk" import govukDetails %}
+{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "govuk/components/task-list/macro.njk" import govukTaskList %}
+
+{% set prisonerName = (prisoner.firstName + " " + prisoner.lastName) | convertToTitleCase %}
+{% set title = "Check answers before you confirm a CSRA rating" %}
+{% set pageTitle = applicationName + " - " + title %}
+
+{% block outerHeading %}
+  {% include "../partials/compactPrisonerBanner.njk" %}
+
+  {{ super() }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <div class="csra-check-answers-section">
+        <h2 class="govuk-heading-m">Evidence sources</h2>
+
+        {{ govukSummaryList({
+          rows: [
+            {
+              key: {
+                text: "DPS"
+              },
+              value: {
+                text: "Checked" if assessmentAnswers.dpsChecked else "Not checked"
+              },
+              actions: {
+                items: [
+                  {
+                    href: "/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/evidenceAndOffences/0",
+                    text: "Change",
+                    visuallyHiddenText: "DPS"
+                  }
+                ]
+              }
+            },
+            {
+              key: {
+                text: "PER"
+              },
+              value: {
+                text: "Checked" if assessmentAnswers.perChecked else "Not checked"
+              },
+              actions: {
+                items: [
+                  {
+                    href: "/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/evidenceAndOffences/0",
+                    text: "Change",
+                    visuallyHiddenText: "PER"
+                  }
+                ]
+              }
+            },
+            {
+              key: {
+                text: "Warrant"
+              },
+              value: {
+                text: "Checked" if assessmentAnswers.warrantChecked else "Not checked"
+              },
+              actions: {
+                items: [
+                  {
+                    href: "/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/evidenceAndOffences/0",
+                    text: "Change",
+                    visuallyHiddenText: "Warrant"
+                  }
+                ]
+              }
+            },
+            {
+              key: {
+                text: "PNC"
+              },
+              value: {
+                text: "Checked" if assessmentAnswers.pncChecked else "Not checked"
+              },
+              actions: {
+                items: [
+                  {
+                    href: "/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/evidenceAndOffences/0",
+                    text: "Change",
+                    visuallyHiddenText: "PNC"
+                  }
+                ]
+              }
+            }
+          ]
+        }) }}
+      </div>
+
+      {% for sectionId in ['evidenceAndOffences',
+        'conversationAndVulnerability',
+        'observation',
+        'otherRisks',
+        'healthcare'] %}
+        {% set section = flowConfig[sectionId] %}
+
+        <div class="csra-check-answers-section">
+          <h2 class="govuk-heading-m">{{ section.title }}</h2>
+
+          {% set sectionList = [] %}
+
+          {% for step in section.steps %}
+            {% set stepId = loop.index - 1 %}
+
+            {% if (sectionId !== 'evidenceAndOffences' or stepId !== 0) and not step.removeIf(assessmentAnswers) %}
+              {% for question in step.questions %}
+              {% if question.question !== 'Provide details of the evidence' and not question.question.startsWith('Where did you find evidence of') %}
+                {% set questionText = question.question %}
+
+                {% set answerHtml = ((assessmentAnswers[question.id] | yesNoValue) or "Not answered") | e %}
+
+                {% if sectionId === 'evidenceAndOffences' %}
+                  {% set questionText = questionText.replace(r/^Is there( any)? evidence of /, '').replace('?', '') | capFirst %}
+
+                    {% set offenceEvidence = offenceEvidenceMap[question.id] %}
+                    {% if offenceEvidence %}
+                    {% set answerHtml = answerHtml + " – " + (offenceEvidence.details | e) + "<br><br>Source" %}
+
+                  {% if offenceEvidence.sources.length > 1 %}
+                    {% set answerHtml = answerHtml + "s" %}
+                  {% endif %}
+
+                  {% set answerHtml = answerHtml + ": " + (offenceEvidence.sources | formatSources) %}
+
+                  {% if offenceEvidence.otherSourceDetail %}
+                    {% set answerHtml = answerHtml + " - " + (offenceEvidence.otherSourceDetail | e) %}
+                  {% endif %}
+                {% endif %}
+              {% elseif assessmentAnswers[question.id] === true and assessmentAnswers[question.id + 'Detail'] %}
+                {% set answerHtml = answerHtml + " – " + (assessmentAnswers[question.id + 'Detail'] | e) %}
+              {% endif %}
+
+              {% set sectionList = (sectionList.push(
+                {
+                  key: {
+                  text: questionText
+                },
+                  value: {
+                  text: answerHtml | safe
+                },
+                  actions: {
+                  items: [
+                    {
+                      href: "/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/" + sectionId + "/" + stepId,
+                      text: "Change",
+                      visuallyHiddenText: question.question
+                    }
+                  ]
+                }
+                }
+              ), sectionList) %}
+            {% endif %}
+          {% endfor %}
+          {% endif %}
+          {% endfor %}
+
+          {% if sectionId === 'evidenceAndOffences' %}
+            <p class="govuk-body">
+              Is there any evidence of the following:
+            </p>
+          {% endif %}
+
+          {{ govukSummaryList({
+            rows: sectionList
+          }) }}
+        </div>
+      {% endfor %}
+
+      {% if remainingTasks.length %}
+        {% call govukInsetText({ classes: "guidance-panel" }) %}
+          <h2 class="govuk-heading-m">Remaining tasks to complete</h2>
+
+          <p>
+            To complete the assessment, you need to:
+          </p>
+
+          <ul class="govuk-list govuk-list--bullet">
+            {% for task in remainingTasks %}
+              <li>{{ task }}</li>
+            {% endfor %}
+          </ul>
+        {% endcall %}
+
+        {% call govukInsetText() %}
+          <p>
+            As the assessment is incomplete, you can only enter a provisional CSRA rating. It will stay provisional until the assessment is completed and a final rating is entered.
+          </p>
+        {% endcall %}
+      {% endif %}
+
+      <div class="govuk-body">
+        <a class="govuk-button" href="/prisoner/{{ prisoner.prisonerNumber }}/csra/{{ assessment.assessmentId }}/select-rating" data-qa="continue-button">
+          {% if submitType == 'PROVISIONAL' %}
+            Continue to provisional rating
+          {% else %}
+            Continue to rating
+          {% endif %}
+        </a>
+
+        <p>
+          <a href="{{ cancelLink }}" class="govuk-link">Cancel</a>
+        </p>
+      </div>
+    </div>
+  </div>
+{% endblock %}
