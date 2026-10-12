@@ -1,6 +1,6 @@
 import { CsraAssessment, CsraAssessmentStageAnswers } from '../data/csraApiTypes'
 import flowConfig from '../lib/transactionFlow/config'
-import csraConfirmRatingController from './csraConfirmRatingController'
+import csraCheckAnswersController from './csraCheckAnswersController'
 
 const ASSESSMENT_ID = 'assessment-123'
 
@@ -34,7 +34,7 @@ describe('csraConfirmRatingController', () => {
     logPageView: jest.fn().mockResolvedValue(null),
   }
 
-  const controller = () => csraConfirmRatingController({ auditService, csraService } as never)
+  const controller = () => csraCheckAnswersController({ auditService, csraService } as never)
 
   const request = (method: 'GET' | 'POST' = 'GET') =>
     ({

@@ -4,7 +4,7 @@ import csraStartController from '../controllers/csraStartController'
 import csraQuestionController from '../controllers/csraQuestionController'
 import csraTaskListController from '../controllers/csraTaskListController'
 import csraBreadcrumbs from '../middleware/csraBreadcrumbs'
-import csraConfirmRatingController from '../controllers/csraConfirmRatingController'
+import csraCheckAnswersController from '../controllers/csraCheckAnswersController'
 import csraWarrantsController, { csraWarrantFileController } from '../controllers/csraWarrantsController'
 import permissionGuard from '../middleware/permissionGuard'
 
@@ -24,8 +24,7 @@ export default function csraRouter(
   // The PDF proxy renders no page, so it gets no back link or breadcrumb trail.
   router.get('/:assessmentId/warrants/:documentId/file', csraWarrantFileController(services))
 
-  router.get('/:assessmentId/confirm-rating', csraConfirmRatingController(services))
-  router.post('/:assessmentId/confirm-rating', csraConfirmRatingController(services))
+  router.get('/:assessmentId/check-answers', csraCheckAnswersController(services))
 
   router.get('/:assessmentId/section/:sectionId{/:stepId}', csraQuestionController(services))
   router.post('/:assessmentId/section/:sectionId{/:stepId}', csraQuestionController(services))
