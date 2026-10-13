@@ -121,7 +121,9 @@ describe('csraRouter', () => {
       `href="${config.serviceUrls.digitalPrison}/prisoner/A1234BC" target="_blank" data-qa="prisoner-name">John Smith</a>`,
     )
     expect(response.text).toMatch(
-      /<p class="govuk-body">\s*<a href="#" class="govuk-link">Cancel this assessment<\/a>\s*<\/p>/,
+      new RegExp(
+        `<p class="govuk-body">\\s*<a href="${assessmentUrl}/cancel" class="govuk-link">Cancel this assessment</a>\\s*</p>`,
+      ),
     )
   })
 
@@ -328,5 +330,50 @@ describe('csraRouter', () => {
     )
     expect(response.text).toContain(`href="${assessmentUrl}/section/evidenceAndOffences/${arsonStepId}"`)
     expect(response.text).toContain('Continue to provisional rating')
+  })
+
+  describe('cancel assessment', () => {
+    it('renders the answers summary without change links and the confirmation radios', async () => {
+      csraService.getCsraAssessment.mockResolvedValue(assessment({ stages: [stageAnswers({ pncChecked: true })] }))
+
+      const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .get(`${assessmentUrl}/cancel`)
+        .expect(200)
+
+      expect(response.text).toContain('Evidence sources')
+      expect(response.text).not.toContain(`href="${assessmentUrl}/section/`)
+      expect(response.text).toContain('Are you sure you want to cancel this assessment?')
+      expect(response.text).not.toContain('Select yes if you want to cancel this assessment')
+    })
+
+    it('shows an error when no option is selected', async () => {
+      const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(`${assessmentUrl}/cancel`)
+        .type('form')
+        .send({})
+        .expect(200)
+
+      expect(response.text).toContain('There is a problem')
+      expect(response.text).toContain('href="#confirmCancel"')
+      expect(response.text).toContain('Select yes if you want to cancel this assessment')
+    })
+
+    it('returns to the task list when no is selected', async () => {
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(`${assessmentUrl}/cancel`)
+        .type('form')
+        .send({ confirmCancel: 'no' })
+        .expect(302)
+        .expect('Location', assessmentUrl)
+    })
+
+    it('stays on the cancel page when yes is selected', async () => {
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(`${assessmentUrl}/cancel`)
+        .type('form')
+        .send({ confirmCancel: 'yes' })
+        .expect(302)
+        .expect('Location', `${assessmentUrl}/cancel`)
+    })
   })
 })
