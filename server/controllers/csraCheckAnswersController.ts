@@ -5,20 +5,10 @@ import type { Services } from '../services'
 import getAnswersFromAssessment from './getAnswersFromAssessment'
 import flowConfig from '../lib/transactionFlow/config'
 import { Page } from '../services/auditService'
-import { CsraAssessmentStageAnswers, OffenceType } from '../data/csraApiTypes'
 import { AssessmentSubmitType, getAssessmentSubmitStatus } from '../utils/getAssessmentSubmitStatus'
+import getOffenceEvidenceMap from '../utils/getOffenceEvidenceMap'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
-
-const offenceEvidenceTypeToQuestionKeyMap: Record<OffenceType, keyof CsraAssessmentStageAnswers> = {
-  MURDER_MANSLAUGHTER: 'offenceMurderManslaughter',
-  ASSISTING_SUICIDE: 'offenceAssistingSuicide',
-  SEXUAL_ASSAULT: 'offenceSexualAssault',
-  REPEATED_VIOLENCE: 'offenceRepeatedViolence',
-  PREJUDICE_MOTIVATED: 'offencePrejudiceMotivated',
-  ARSON: 'offenceArson',
-  KIDNAP_HOSTAGE: 'offenceKidnapHostage',
-}
 
 export default function csraCheckAnswersController({
   auditService,
@@ -52,18 +42,11 @@ export default function csraCheckAnswersController({
       correlationId: req.id,
     })
 
-    const offenceEvidenceMap = Object.fromEntries(
-      assessmentAnswers.offenceEvidence.map(evidence => [
-        offenceEvidenceTypeToQuestionKeyMap[evidence.offence],
-        evidence,
-      ]),
-    )
-
     res.render('pages/csraCheckAnswers', {
       prisoner,
       assessment,
       assessmentAnswers,
-      offenceEvidenceMap,
+      offenceEvidenceMap: getOffenceEvidenceMap(assessmentAnswers),
       submitType: submitStatus.submitType,
       remainingTasks: submitStatus.remainingTasks,
       flowConfig,

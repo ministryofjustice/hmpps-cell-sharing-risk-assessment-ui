@@ -72,7 +72,7 @@
 
       {% if not assessment.interimResult %}
         <p class="govuk-body">
-          <a href="#" class="govuk-link">Cancel this assessment</a>
+          <a href="/prisoner/{{ prisoner.prisonerNumber }}/csra/{{ assessment.assessmentId }}/cancel" class="govuk-link">Cancel this assessment</a>
         </p>
       {% endif %}
     </div>

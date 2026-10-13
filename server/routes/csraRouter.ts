@@ -5,6 +5,7 @@ import csraQuestionController from '../controllers/csraQuestionController'
 import csraTaskListController from '../controllers/csraTaskListController'
 import csraBreadcrumbs from '../middleware/csraBreadcrumbs'
 import csraCheckAnswersController from '../controllers/csraCheckAnswersController'
+import csraCancelAssessmentController from '../controllers/csraCancelAssessmentController'
 import csraWarrantsController, { csraWarrantFileController } from '../controllers/csraWarrantsController'
 import permissionGuard from '../middleware/permissionGuard'
 
@@ -25,6 +26,9 @@ export default function csraRouter(
   router.get('/:assessmentId/warrants/:documentId/file', csraWarrantFileController(services))
 
   router.get('/:assessmentId/check-answers', csraCheckAnswersController(services))
+
+  router.get('/:assessmentId/cancel', csraCancelAssessmentController(services))
+  router.post('/:assessmentId/cancel', csraCancelAssessmentController(services))
 
   router.get('/:assessmentId/section/:sectionId{/:stepId}', csraQuestionController(services))
   router.post('/:assessmentId/section/:sectionId{/:stepId}', csraQuestionController(services))
