@@ -227,9 +227,7 @@ export default function csraQuestionController({ auditService, csraService }: De
 
     res.render('pages/csraQuestion', {
       title: currentStep.title ?? section.title,
-      saveButtonText: findNextAvailableStep(assessmentAnswers, section, currentStepId)
-        ? 'Save and continue'
-        : 'Save and return',
+      saveButtonText: currentStepId < section.steps.length - 1 ? 'Save and continue' : 'Save and return',
       prisoner,
       section,
       currentStep,
