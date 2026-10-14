@@ -26,6 +26,7 @@ describe('CsraService', () => {
       getCsraAssessment: jest.fn(),
       updateCsraAssessment: jest.fn(),
       startCsraAssessment: jest.fn(),
+      cancelCsraAssessment: jest.fn(),
       submitProvisionalRating: jest.fn(),
       getRatingSummary: jest.fn(),
       getHighRiskDueForReview: jest.fn(),
@@ -229,6 +230,22 @@ describe('CsraService', () => {
       expect(csraApiClient.startCsraAssessment).toHaveBeenCalledWith(
         'AUSER_GEN',
         { prisonerNumber: 'A1234BC' },
+        { prisonId: 'MDI' },
+      )
+    })
+  })
+
+  describe('cancelCsraAssessment', () => {
+    it('delegates to the client, passing the username, prisoner number, assessment id and prison id', async () => {
+      const currentRating = { prisonerNumber: 'A1234BC', status: 'NO_RATING' } as CsraCurrentRating
+      ;(csraApiClient.cancelCsraAssessment as unknown as jest.Mock).mockResolvedValue(currentRating)
+
+      const result = await csraService.cancelCsraAssessment('AUSER_GEN', 'A1234BC', 'assessment-1', 'MDI')
+
+      expect(result).toEqual(currentRating)
+      expect(csraApiClient.cancelCsraAssessment).toHaveBeenCalledWith(
+        'AUSER_GEN',
+        { prisonerNumber: 'A1234BC', assessmentId: 'assessment-1' },
         { prisonId: 'MDI' },
       )
     })
