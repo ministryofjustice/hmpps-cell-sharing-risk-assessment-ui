@@ -124,6 +124,7 @@ const questions = {
     'Did healthcare identify any signs of increased risk?',
     'healthcareIncreasedRisk',
     {
+      classes: 'govuk-!-margin-bottom-2',
       hint: 'If increased risk has been identified, you must discuss this with healthcare before completing your risk rating.',
       validationMessages: { required: 'Select whether healthcare identified any signs of increased risk' },
     },
@@ -135,7 +136,7 @@ const questions = {
         conditional: new TextAreaQuestion(
           'Provide a brief summary of why healthcare consider the prisoner an increased risk',
           'healthcareIncreasedRiskDetail',
-          { validationMessages: { required: 'Enter details of the risk' } },
+          { classes: 'govuk-!-margin-bottom-0', validationMessages: { required: 'Enter details of the risk' } },
         ),
       },
     ],
@@ -203,6 +204,7 @@ const healthcare: Section = {
     }).incompleteUnless('seenByHealthcare', true),
     new Step({
       questions: [questions.healthcareIncreasedRisk],
+      warningText: "Make sure the complete healthcare paper form is kept with the prisoner's records.",
     }).dependsOn('seenByHealthcare', true),
   ],
 }

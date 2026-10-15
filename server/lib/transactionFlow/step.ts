@@ -6,6 +6,8 @@ export default class Step {
 
   bodyHtml?: string
 
+  warningText?: string
+
   questions: Question[]
 
   protected dependencies: {
@@ -15,10 +17,16 @@ export default class Step {
 
   protected incompleteUnlessConditions: { attribute: keyof CsraAssessmentStageAnswers; answer: string | boolean }[]
 
-  constructor({ questions, title, bodyHtml }: Pick<Step, 'questions' | 'title' | 'bodyHtml'>) {
+  constructor({
+    questions,
+    title,
+    bodyHtml,
+    warningText,
+  }: Pick<Step, 'questions' | 'title' | 'bodyHtml' | 'warningText'>) {
     this.questions = questions
     this.title = title
     this.bodyHtml = bodyHtml
+    this.warningText = warningText
     this.dependencies = []
     this.incompleteUnlessConditions = []
   }
