@@ -460,15 +460,62 @@ test.describe('Prisoner CSRA', () => {
 
     await expect(page.getByRole('heading', { name: 'Select a CSRA rating' })).toBeVisible()
     await expect(page.getByText('This prisoner does not have a current CSRA rating.')).toBeVisible()
-    await expect(page.getByRole('radio', { name: /High risk - general/ })).toBeVisible()
-    await expect(page.getByRole('radio', { name: /High risk - specific/ })).toBeVisible()
+    await expect(page.getByRole('radio', { name: /High risk – general/ })).toBeVisible()
+    await expect(page.getByRole('radio', { name: /High risk – specific/ })).toBeVisible()
     await expect(page.getByRole('radio', { name: /Standard risk/ })).toBeVisible()
 
     await page.getByRole('button', { name: 'Continue' }).click()
     await expect(page.getByRole('alert')).toContainText('Select a CSRA rating')
 
     await page.goto('/prisoner/A1234BC/csra/assessment-123/select-rating?selectedRating=HIGH_SPECIFIC')
-    await expect(page.getByRole('radio', { name: /High risk - specific/ })).toBeChecked()
+    await expect(page.getByRole('radio', { name: /High risk – specific/ })).toBeChecked()
+  })
+
+  test('offers the local or remand exception for an incomplete assessment without a clear high-risk offence', async ({
+    page,
+  }) => {
+    await stubRatingSelectionAssessment(page, completeAssessmentAnswers({ seenByHealthcare: false }))
+
+    await page.goto('/prisoner/A1234BC/csra/assessment-123/select-rating')
+
+    await expect(page.getByRole('heading', { name: 'Provisional CSRA rating' })).toBeVisible()
+    await expect(page.getByText('This is because the assessment is incomplete.')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Exception for local or remand prisons' })).toBeVisible()
+    await expect(page.getByText(/manager to approve who the prisoner shares a cell with/)).toBeVisible()
+
+    const exceptionButton = page.getByRole('button', {
+      name: 'Continue with high risk – specific (provisional)',
+    })
+    await expect(exceptionButton).toBeVisible()
+    await Promise.all([
+      page.waitForURL(/\/confirm-rating\?selectedRating=HIGH_SPECIFIC_PROVISIONAL$/),
+      exceptionButton.click(),
+    ])
+  })
+
+  test('does not offer the local or remand exception when a clear high-risk offence requires high-general provisional', async ({
+    page,
+  }) => {
+    await stubRatingSelectionAssessment(
+      page,
+      completeAssessmentAnswers({
+        offenceMurderManslaughter: true,
+        offenceEvidence: [{ offence: 'MURDER_MANSLAUGHTER', sources: ['PNC'], details: 'Evidence details' }],
+        seenByHealthcare: false,
+      }),
+    )
+
+    await page.goto('/prisoner/A1234BC/csra/assessment-123/select-rating')
+
+    await expect(page.getByRole('heading', { name: 'Provisional CSRA rating' })).toBeVisible()
+    await expect(page.getByRole('button')).toHaveCount(1)
+    await expect(page.getByRole('button', { name: 'Continue with high risk – general (provisional)' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Exception for local or remand prisons' })).toHaveCount(0)
+
+    await Promise.all([
+      page.waitForURL(/\/confirm-rating\?selectedRating=HIGH_GENERAL_PROVISIONAL$/),
+      page.getByRole('button', { name: 'Continue with high risk – general (provisional)' }).click(),
+    ])
   })
 
   test('shows the fixed high-general rating when a clear high-risk offence is recorded', async ({ page }) => {
