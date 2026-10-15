@@ -531,6 +531,10 @@ describe('csraRouter', () => {
       expect(response.text).not.toContain(`href="${assessmentUrl}/section/`)
       expect(response.text).toContain('Are you sure you want to cancel this assessment?')
       expect(response.text).not.toContain('Select yes if you want to cancel this assessment')
+      expect(response.text).toContain(`href="${assessmentUrl}" class="govuk-back-link"`)
+      expect(response.text).toMatch(
+        new RegExp(`<p class="govuk-body">\\s*<a class="govuk-link" href="${assessmentUrl}">Cancel</a>\\s*</p>`),
+      )
     })
 
     it('redirects back to the cancel page with a flashed error when no option is selected', async () => {

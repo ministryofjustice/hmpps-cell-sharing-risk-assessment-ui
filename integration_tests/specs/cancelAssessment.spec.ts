@@ -52,6 +52,22 @@ test.describe('Cancel assessment', () => {
     await expect(page.getByRole('group')).toContainText('Are you sure you want to cancel this assessment?')
   })
 
+  test('Back returns to the task list without cancelling', async ({ page }) => {
+    await page.goto(CANCEL_URL)
+    await page.getByRole('link', { name: 'Back', exact: true }).click()
+
+    await expect(page).toHaveURL(TASK_LIST_URL)
+    expect(await cancelRequests()).toHaveLength(0)
+  })
+
+  test('Cancel returns to the task list without cancelling', async ({ page }) => {
+    await page.goto(CANCEL_URL)
+    await page.getByRole('link', { name: 'Cancel', exact: true }).click()
+
+    await expect(page).toHaveURL(TASK_LIST_URL)
+    expect(await cancelRequests()).toHaveLength(0)
+  })
+
   test('shows an error when no option is selected', async ({ page }) => {
     await page.goto(CANCEL_URL)
     await page.getByTestId('cancel-assessment-button').click()
