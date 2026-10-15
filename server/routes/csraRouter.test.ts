@@ -1,6 +1,6 @@
 import request from 'supertest'
 
-import { appWithAllRoutes, user } from './testutils/appSetup'
+import { appWithAllRoutes, flashProvider, user } from './testutils/appSetup'
 import type { Prisoner } from '../data/prisonerSearchApiTypes'
 import type { CsraAssessment, CsraAssessmentStageAnswers } from '../data/csraApiTypes'
 import { Role } from '../utils/roles'
@@ -42,6 +42,7 @@ describe('csraRouter', () => {
   const csraService = {
     getCsraAssessment: jest.fn(),
     startCsraAssessment: jest.fn(),
+    cancelCsraAssessment: jest.fn(),
   }
   const prisonerSearchService = {
     getPrisoner: jest.fn(),
@@ -82,6 +83,7 @@ describe('csraRouter', () => {
     csraService.startCsraAssessment.mockResolvedValue({ assessmentId: 'assessment-123' })
     csraService.getCsraAssessment.mockResolvedValue(assessment())
     activeAgenciesService.isPrisonActive.mockResolvedValue(true)
+    flashProvider.mockReturnValue([])
   })
 
   it('blocks CSRA routes when the user lacks permission to edit assessments', async () => {
@@ -346,13 +348,30 @@ describe('csraRouter', () => {
       expect(response.text).not.toContain('Select yes if you want to cancel this assessment')
     })
 
-    it('shows an error when no option is selected', async () => {
-      const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+    it('redirects back to the cancel page with a flashed error when no option is selected', async () => {
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
         .post(`${assessmentUrl}/cancel`)
         .type('form')
         .send({})
+        .expect(302)
+        .expect('Location', `${assessmentUrl}/cancel`)
+
+      expect(flashProvider).toHaveBeenCalledWith(
+        'confirmCancelError',
+        'Select yes if you want to cancel this assessment',
+      )
+      expect(csraService.getCsraAssessment).not.toHaveBeenCalled()
+      expect(csraService.cancelCsraAssessment).not.toHaveBeenCalled()
+    })
+
+    it('shows the flashed error on the cancel page', async () => {
+      flashProvider.mockReturnValue(['Select yes if you want to cancel this assessment'])
+
+      const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .get(`${assessmentUrl}/cancel`)
         .expect(200)
 
+      expect(flashProvider).toHaveBeenCalledWith('confirmCancelError')
       expect(response.text).toContain('There is a problem')
       expect(response.text).toContain('href="#confirmCancel"')
       expect(response.text).toContain('Select yes if you want to cancel this assessment')
@@ -365,15 +384,73 @@ describe('csraRouter', () => {
         .send({ confirmCancel: 'no' })
         .expect(302)
         .expect('Location', assessmentUrl)
+
+      expect(csraService.cancelCsraAssessment).not.toHaveBeenCalled()
     })
 
-    it('stays on the cancel page when yes is selected', async () => {
+    it('cancels the assessment and shows the success page when yes is selected', async () => {
+      csraService.cancelCsraAssessment.mockResolvedValue({ prisonerNumber: 'A1234BC', status: 'NO_RATING' })
+
       await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
         .post(`${assessmentUrl}/cancel`)
         .type('form')
         .send({ confirmCancel: 'yes' })
         .expect(302)
-        .expect('Location', `${assessmentUrl}/cancel`)
+        .expect('Location', `${assessmentUrl}/cancelled`)
+
+      expect(csraService.cancelCsraAssessment).toHaveBeenCalledWith('user1', 'A1234BC', 'assessment-123', undefined)
+      expect(csraService.getCsraAssessment).not.toHaveBeenCalled()
+    })
+
+    it('renders the cancelled confirmation panel with a finish button', async () => {
+      const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .get(`${assessmentUrl}/cancelled`)
+        .expect(200)
+
+      expect(response.text).toContain('govuk-panel--confirmation')
+      expect(response.text).toContain('Assessment cancelled')
+      expect(response.text).toContain('You have cancelled a cell sharing risk assessment for John Smith')
+      expect(response.text).toContain('You can start a new assessment for this prisoner if required.')
+      expect(response.text).toMatch(/href="\/prisoner\/A1234BC"[^>]*data-qa="finish-button"/)
+      expect(csraService.getCsraAssessment).not.toHaveBeenCalled()
+    })
+
+    it.each(['CsraAssessmentNotCancellable', 'CsraReviewNotWritable'])(
+      'shows the error page with a 409 when the API rejects the cancellation with %s',
+      async errorCode => {
+        csraService.cancelCsraAssessment.mockRejectedValue({
+          responseStatus: 409,
+          data: { status: 409, errorCode },
+        })
+
+        const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+          .post(`${assessmentUrl}/cancel`)
+          .type('form')
+          .send({ confirmCancel: 'yes' })
+          .expect(409)
+
+        expect(response.text).toContain(`cannot be cancelled: ${errorCode}`)
+      },
+    )
+
+    it('shows not found when the assessment does not exist', async () => {
+      csraService.cancelCsraAssessment.mockRejectedValue({ responseStatus: 404 })
+
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(`${assessmentUrl}/cancel`)
+        .type('form')
+        .send({ confirmCancel: 'yes' })
+        .expect(404)
+    })
+
+    it('passes other errors on', async () => {
+      csraService.cancelCsraAssessment.mockRejectedValue({ responseStatus: 500 })
+
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(`${assessmentUrl}/cancel`)
+        .type('form')
+        .send({ confirmCancel: 'yes' })
+        .expect(500)
     })
   })
 })

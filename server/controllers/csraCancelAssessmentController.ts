@@ -1,6 +1,7 @@
 import { type RequestHandler } from 'express'
+import type { SanitisedError } from '@ministryofjustice/hmpps-rest-client'
 
-import { NotFound } from 'http-errors'
+import { Conflict, NotFound } from 'http-errors'
 import type { Services } from '../services'
 import getAnswersFromAssessment from './getAnswersFromAssessment'
 import flowConfig from '../lib/transactionFlow/config'
@@ -8,12 +9,16 @@ import { Page } from '../services/auditService'
 import getOffenceEvidenceMap from '../utils/getOffenceEvidenceMap'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
+type Params = { prisonerNumber: string; assessmentId: string }
 
-export default function csraCancelAssessmentController({
-  auditService,
-  csraService,
-}: Dependencies): RequestHandler<{ prisonerNumber: string; assessmentId: string }> {
-  return async (req, res, _next) => {
+const CONFIRM_CANCEL_ERROR_FLASH = 'confirmCancelError'
+
+export default function csraCancelAssessmentController({ auditService, csraService }: Dependencies): {
+  get: RequestHandler<Params>
+  post: RequestHandler<Params>
+  cancelled: RequestHandler<Params>
+} {
+  const get: RequestHandler<Params> = async (req, res, _next) => {
     const { assessmentId, prisonerNumber } = req.params
     const {
       prisoner,
@@ -25,25 +30,8 @@ export default function csraCancelAssessmentController({
       throw NotFound(`No CSRA assessment found for ID: ${assessmentId}`)
     }
 
-    const assessmentUrl = `/prisoner/${prisoner.prisonerNumber}/csra/${assessmentId}`
-    let validationErrors: Record<string, { text: string }> | undefined
-
-    if (req.method === 'POST') {
-      const { confirmCancel } = req.body ?? {}
-
-      if (confirmCancel === 'no') {
-        res.redirect(assessmentUrl)
-        return
-      }
-
-      if (confirmCancel === 'yes') {
-        // TODO: call the cancel assessment API endpoint once it is implemented
-        res.redirect(`${assessmentUrl}/cancel`)
-        return
-      }
-
-      validationErrors = { confirmCancel: { text: 'Select yes if you want to cancel this assessment' } }
-    }
+    const confirmCancelError = req.flash(CONFIRM_CANCEL_ERROR_FLASH)?.[0]
+    const validationErrors = confirmCancelError ? { confirmCancel: { text: confirmCancelError } } : undefined
 
     await auditService.logPageView(Page.PRISONER_CSRA_CANCEL_ASSESSMENT, {
       who: username,
@@ -63,4 +51,56 @@ export default function csraCancelAssessmentController({
       ...(validationErrors ? { validationErrors } : {}),
     })
   }
+
+  const post: RequestHandler<Params> = async (req, res, _next) => {
+    const { assessmentId, prisonerNumber } = req.params
+    const {
+      user: { username },
+    } = res.locals
+    const assessmentUrl = `/prisoner/${prisonerNumber}/csra/${assessmentId}`
+    const { confirmCancel } = req.body ?? {}
+
+    if (confirmCancel === 'no') {
+      res.redirect(assessmentUrl)
+      return
+    }
+
+    if (confirmCancel !== 'yes') {
+      req.flash(CONFIRM_CANCEL_ERROR_FLASH, 'Select yes if you want to cancel this assessment')
+      res.redirect(`${assessmentUrl}/cancel`)
+      return
+    }
+
+    const prisonId = res.locals.feComponents?.sharedData?.activeCaseLoad?.caseLoadId
+
+    try {
+      await csraService.cancelCsraAssessment(username, prisonerNumber, assessmentId, prisonId)
+    } catch (error) {
+      const { responseStatus, data } = error as SanitisedError<{ errorCode?: string }>
+      if (responseStatus === 404) {
+        throw NotFound(`No CSRA assessment found for ID: ${assessmentId}`)
+      }
+      if (responseStatus === 409) {
+        throw Conflict(`CSRA assessment ${assessmentId} cannot be cancelled: ${data?.errorCode}`)
+      }
+      throw error
+    }
+
+    res.redirect(`${assessmentUrl}/cancelled`)
+  }
+
+  const cancelled: RequestHandler<Params> = async (req, res, _next) => {
+    const { prisoner, user } = res.locals
+
+    await auditService.logPageView(Page.PRISONER_CSRA_ASSESSMENT_CANCELLED, {
+      who: user.username,
+      subjectId: req.params.assessmentId,
+      subjectType: 'ASSESSMENT_ID',
+      correlationId: req.id,
+    })
+
+    res.render('pages/csraAssessmentCancelled', { prisoner })
+  }
+
+  return { get, post, cancelled }
 }

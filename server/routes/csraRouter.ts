@@ -27,8 +27,10 @@ export default function csraRouter(
 
   router.get('/:assessmentId/check-answers', csraCheckAnswersController(services))
 
-  router.get('/:assessmentId/cancel', csraCancelAssessmentController(services))
-  router.post('/:assessmentId/cancel', csraCancelAssessmentController(services))
+  const cancelAssessmentController = csraCancelAssessmentController(services)
+  router.get('/:assessmentId/cancel', cancelAssessmentController.get)
+  router.post('/:assessmentId/cancel', cancelAssessmentController.post)
+  router.get('/:assessmentId/cancelled', cancelAssessmentController.cancelled)
 
   router.get('/:assessmentId/section/:sectionId{/:stepId}', csraQuestionController(services))
   router.post('/:assessmentId/section/:sectionId{/:stepId}', csraQuestionController(services))

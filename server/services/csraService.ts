@@ -135,6 +135,15 @@ export default class CsraService {
     return this.csraApiClient.startCsraAssessment(username, { prisonerNumber }, { prisonId })
   }
 
+  cancelCsraAssessment(
+    username: string,
+    prisonerNumber: string,
+    assessmentId: string,
+    prisonId: string,
+  ): Promise<CsraCurrentRating> {
+    return this.csraApiClient.cancelCsraAssessment(username, { prisonerNumber, assessmentId }, { prisonId })
+  }
+
   async submitProvisionalRating(
     username: string,
     prisonerNumber: string,

@@ -181,6 +181,20 @@ export default class CsraApiClient extends BaseApiClient {
     options: { asSystem: true },
   })
 
+  /**
+   * Cancel an unrated initial assessment. Repeating a successful cancellation succeeds again, so a
+   * double-submit is safe. 409s once a rating has been submitted or a prisoner movement closed it.
+   */
+  cancelCsraAssessment = this.apiCall<
+    CsraCurrentRating,
+    { prisonerNumber: string; assessmentId: string },
+    { prisonId: string }
+  >({
+    path: '/csra-review/prisoner/:prisonerNumber/assessment/:assessmentId/cancel',
+    requestType: 'post',
+    options: { asSystem: true },
+  })
+
   updateCsraAssessment = this.apiCall<
     CsraAssessment,
     { prisonerNumber: string; assessmentId: string; stage: 'PROVISIONAL' | 'FINAL' },
