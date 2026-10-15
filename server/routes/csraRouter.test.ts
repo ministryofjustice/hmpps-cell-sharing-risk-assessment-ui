@@ -220,8 +220,8 @@ describe('csraRouter', () => {
 
     expect(response.text).toContain('Select a CSRA rating')
     expect(response.text).toContain('This prisoner does not have a current CSRA rating.')
-    expect(response.text).toContain('High risk - general')
-    expect(response.text).toContain('High risk - specific')
+    expect(response.text).toContain('High risk – general')
+    expect(response.text).toContain('High risk – specific')
     expect(response.text).toContain('Standard risk')
     expect(csraService.getCurrentRating).toHaveBeenCalledWith(user.username, prisoner.prisonerNumber)
     expect(auditService.logPageView).toHaveBeenCalledWith(
@@ -318,7 +318,7 @@ describe('csraRouter', () => {
       .send({ selectedRating: 'HIGH_SPECIFIC' })
       .expect(200)
 
-    expect(response.text).toContain('Select a provisional CSRA rating')
+    expect(response.text).toContain('Provisional CSRA rating')
   })
 
   it('allows only high-general provisional ratings for an incomplete assessment with a clear high-risk offence', async () => {
