@@ -1,0 +1,147 @@
+{% extends "../partials/layout.njk" %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
+{% from "govuk/components/radios/macro.njk" import govukRadios %}
+{% from "moj/components/ticket-panel/macro.njk" import mojTicketPanel %}
+
+{% set prisonerName = (prisoner.firstName + " " + prisoner.lastName) | convertToTitleCase %}
+{% if isHighGeneral %}
+  {% if isProvisional %}
+    {% set title = "Provisional CSRA rating" %}
+  {% else %}
+    {% set title = "CSRA rating" %}
+  {% endif %}
+{% else %}
+  {% if isProvisional %}
+    {% set title = "Select a provisional CSRA rating" %}
+  {% else %}
+    {% set title = "Select a CSRA rating" %}
+  {% endif %}
+{% endif %}
+{% set pageTitle = applicationName + " - " + title %}
+
+{% block outerHeading %}
+  {% include "../partials/compactPrisonerBanner.njk" %}
+
+  {{ super() }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <div class="govuk-body">
+        <form method="post" action>
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+
+          {% if isHighGeneral %}
+            {% if isProvisional %}
+              <p>
+                TODO: High provisional content
+              </p>
+            {% else %}
+              <input type="hidden" name="selectedRating" value="HIGH_GENERAL" />
+
+              {{ mojTicketPanel({
+                attributes: {
+                  "aria-label": "Sub navigation 1"
+                },
+                classes: 'govuk-!-margin-top-4',
+                items: [{
+                  html: '
+                    <p class="govuk-!-margin-bottom-0">CSRA rating</p>
+
+                    <p class="govuk-heading-m">
+                      High risk – general
+                    </p>',
+                  attributes: {
+                    "aria-label": "Section 1"
+                  },
+                  classes: "moj-ticket-panel__content--blue-background"
+                }]
+              }) }}
+
+              <p>
+                The rating must be high risk – general and the prisoner must not share a cell.
+              </p>
+
+              <p>
+                This is because there is evidence of a clear high risk indicator:
+              </p>
+
+              <ul class="govuk-!-margin-bottom-7">
+                {% if assessmentAnswers.offenceMurderManslaughter %}
+                  <li>murder, manslaughter or life-threatening assault in custody</li>
+                {% endif %}
+                {% if assessmentAnswers.offenceAssistingSuicide %}
+                  <li>assisting a suicide in custody</li>
+                {% endif %}
+                {% if assessmentAnswers.offenceSexualAssault %}
+                  <li>sexual assault of someone of the same gender</li>
+                {% endif %}
+              </ul>
+
+              {{ govukButton({
+                text: 'Continue with high risk – general'
+              }) }}
+            {% endif %}
+          {% else %}
+            {% if isProvisional %}
+              <p>
+                TODO: Non-high provisional content
+              </p>
+            {% else %}
+              {{ govukInsetText({
+                html: "This prisoner does not have a current CSRA rating." if not csra or not csra.rating else "Their current CSRA rating is " + csra.rating | csraRatingLabel(csra.ratingStage) + ".",
+                classes: 'govuk-!-margin-top-0'
+              }) }}
+
+              {{ govukRadios({
+                idPrefix: 'selectedRating',
+                name: 'selectedRating',
+                fieldset: {
+                  legend: {
+                    text: "Select a CSRA rating",
+                    classes: 'govuk-visually-hidden'
+                  }
+                },
+                items: [
+                  {
+                    value: 'HIGH_GENERAL',
+                    text: 'High risk - general',
+                    hint: {
+                    text: 'Cannot share with anyone.'
+                  },
+                    checked: true if selectedRating === 'HIGH_GENERAL' else false
+                  },
+                  {
+                    value: 'HIGH_SPECIFIC',
+                    text: 'High risk - specific',
+                    hint: {
+                    text: 'Can share with specific people.'
+                  },
+                    checked: true if selectedRating === 'HIGH_SPECIFIC' else false
+                  },
+                  {
+                    value: 'STANDARD',
+                    text: 'Standard risk',
+                    checked: true if selectedRating === 'STANDARD' else false
+                  }
+                ],
+                errorMessage: validationErrors.selectedRating if validationErrors
+              }) }}
+
+              {{ govukButton({
+                text: 'Continue'
+              }) }}
+            {% endif %}
+          {% endif %}
+        </form>
+
+        <p>
+          <a href="{{ cancelLink }}" class="govuk-link">Cancel</a>
+        </p>
+      </div>
+    </div>
+  </div>
+{% endblock %}
