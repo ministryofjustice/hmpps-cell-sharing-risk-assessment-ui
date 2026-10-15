@@ -7,6 +7,7 @@ export type TextAreaValidationMessages = {
 }
 
 type TextAreaQuestionOptions = {
+  classes?: string
   validationMessages?: TextAreaValidationMessages
 }
 
@@ -33,6 +34,7 @@ export default class TextAreaQuestion extends Question {
       },
       value: values[this.id],
       errorMessage: validationErrors ? validationErrors[this.id] : undefined,
+      classes: this.options.classes,
     }
   }
 
