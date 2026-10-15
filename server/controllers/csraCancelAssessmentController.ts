@@ -41,6 +41,7 @@ export default function csraCancelAssessmentController({ auditService, csraServi
     })
 
     const assessmentAnswers = getAnswersFromAssessment(assessment)
+    const assessmentUrl = `/prisoner/${prisonerNumber}/csra/${assessmentId}`
 
     res.render('pages/csraCancelAssessment', {
       prisoner,
@@ -48,6 +49,8 @@ export default function csraCancelAssessmentController({ auditService, csraServi
       assessmentAnswers,
       offenceEvidenceMap: getOffenceEvidenceMap(assessmentAnswers),
       flowConfig,
+      backLink: assessmentUrl,
+      cancelLink: assessmentUrl,
       ...(validationErrors ? { validationErrors } : {}),
     })
   }
