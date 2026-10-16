@@ -48,7 +48,12 @@ test.describe('Cancel assessment', () => {
     await page.getByRole('link', { name: 'Cancel this assessment', exact: true }).click()
 
     await expect(page).toHaveURL(CANCEL_URL)
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Check answers before you cancel this assessment')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Confirm cancellation')
+    await expect(
+      page.getByText(
+        'The following information will be removed. You can start a new assessment for this prisoner after cancelling.',
+      ),
+    ).toBeVisible()
     await expect(page.getByRole('group')).toContainText('Are you sure you want to cancel this assessment?')
   })
 
