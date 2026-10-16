@@ -87,6 +87,24 @@ export default {
       },
     }),
 
+  stubCancelAssessment: (
+    prisonerNumber: string,
+    assessmentId: string,
+    httpStatus = 200,
+    jsonBody: object = { prisonerNumber, status: 'NO_RATING', provisional: false, riskTo: [], vulnerabilities: [] },
+  ): SuperAgentRequest =>
+    stubFor({
+      request: {
+        method: 'POST',
+        urlPattern: `/csra-api/csra-review/prisoner/${prisonerNumber}/assessment/${assessmentId}/cancel`,
+      },
+      response: {
+        status: httpStatus,
+        headers: { 'Content-Type': 'application/json;charset=UTF-8' },
+        jsonBody,
+      },
+    }),
+
   stubSubmitProvisionalRating: (prisonerNumber: string, assessmentId: string): SuperAgentRequest =>
     stubFor({
       request: {

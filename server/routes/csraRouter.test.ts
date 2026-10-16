@@ -1,6 +1,6 @@
 import request from 'supertest'
 
-import { appWithAllRoutes, user } from './testutils/appSetup'
+import { appWithAllRoutes, flashProvider, user } from './testutils/appSetup'
 import type { Prisoner } from '../data/prisonerSearchApiTypes'
 import type { CsraAssessment, CsraAssessmentStageAnswers } from '../data/csraApiTypes'
 import { Role } from '../utils/roles'
@@ -27,6 +27,29 @@ const stageAnswers = (overrides: Partial<CsraAssessmentStageAnswers> = {}): Csra
   ...overrides,
 })
 
+const completeStageAnswers = (overrides: Partial<CsraAssessmentStageAnswers> = {}): CsraAssessmentStageAnswers =>
+  stageAnswers({
+    dpsChecked: true,
+    perChecked: true,
+    warrantChecked: true,
+    pncChecked: true,
+    offenceMurderManslaughter: false,
+    offenceAssistingSuicide: false,
+    offenceSexualAssault: false,
+    offenceRepeatedViolence: false,
+    offencePrejudiceMotivated: false,
+    offenceArson: false,
+    offenceKidnapHostage: false,
+    officerSpokeToPrisoner: true,
+    likelyToHarmCellmate: false,
+    significantlyVulnerable: false,
+    causeForConcernSharing: false,
+    otherHighRiskIndicators: false,
+    seenByHealthcare: true,
+    healthcareIncreasedRisk: false,
+    ...overrides,
+  })
+
 const assessment = (overrides: Partial<CsraAssessment> = {}): CsraAssessment => ({
   assessmentId: 'assessment-123',
   prisonerNumber: prisoner.prisonerNumber,
@@ -41,7 +64,9 @@ describe('csraRouter', () => {
   const auditService = { logPageView: jest.fn().mockResolvedValue(null) }
   const csraService = {
     getCsraAssessment: jest.fn(),
+    getCurrentRating: jest.fn(),
     startCsraAssessment: jest.fn(),
+    cancelCsraAssessment: jest.fn(),
   }
   const prisonerSearchService = {
     getPrisoner: jest.fn(),
@@ -81,7 +106,9 @@ describe('csraRouter', () => {
     })
     csraService.startCsraAssessment.mockResolvedValue({ assessmentId: 'assessment-123' })
     csraService.getCsraAssessment.mockResolvedValue(assessment())
+    csraService.getCurrentRating.mockResolvedValue({ status: 'NO_RATING', rating: null })
     activeAgenciesService.isPrisonActive.mockResolvedValue(true)
+    flashProvider.mockReturnValue([])
   })
 
   it('blocks CSRA routes when the user lacks permission to edit assessments', async () => {
@@ -121,7 +148,9 @@ describe('csraRouter', () => {
       `href="${config.serviceUrls.digitalPrison}/prisoner/A1234BC" target="_blank" data-qa="prisoner-name">John Smith</a>`,
     )
     expect(response.text).toMatch(
-      /<p class="govuk-body">\s*<a href="#" class="govuk-link">Cancel this assessment<\/a>\s*<\/p>/,
+      new RegExp(
+        `<p class="govuk-body">\\s*<a href="${assessmentUrl}/cancel" class="govuk-link">Cancel this assessment</a>\\s*</p>`,
+      ),
     )
   })
 
@@ -167,7 +196,185 @@ describe('csraRouter', () => {
       expect(task).toContain('govuk-tag--blue')
       expect(task).not.toContain('Cannot start yet')
     }
-    expect(response.text).toContain(`href="${assessmentUrl}/confirm-rating"`)
+    expect(response.text).toContain(`href="${assessmentUrl}/check-answers"`)
+  })
+
+  it('redirects from check answers when no rating can be entered', async () => {
+    csraService.getCsraAssessment.mockResolvedValue(assessment())
+
+    const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      .get(`${assessmentUrl}/check-answers`)
+      .expect(302)
+      .expect('Location', assessmentUrl)
+
+    expect(response.text).not.toContain('Check answers before you confirm a CSRA rating')
+    expect(auditService.logPageView).not.toHaveBeenCalled()
+  })
+
+  it('renders the rating choices and no-rating message when no current rating exists', async () => {
+    csraService.getCsraAssessment.mockResolvedValue(assessment({ stages: [completeStageAnswers()] }))
+
+    const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      .get(`${assessmentUrl}/select-rating`)
+      .expect(200)
+
+    expect(response.text).toContain('Select a CSRA rating')
+    expect(response.text).toContain('This prisoner does not have a current CSRA rating.')
+    expect(response.text).toContain('High risk – general')
+    expect(response.text).toContain('High risk – specific')
+    expect(response.text).toContain('Standard risk')
+    expect(csraService.getCurrentRating).toHaveBeenCalledWith(user.username, prisoner.prisonerNumber)
+    expect(auditService.logPageView).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ subjectId: 'assessment-123', subjectType: 'ASSESSMENT_ID' }),
+    )
+  })
+
+  it('preselects the rating passed back in the query string', async () => {
+    csraService.getCsraAssessment.mockResolvedValue(assessment({ stages: [completeStageAnswers()] }))
+
+    const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      .get(`${assessmentUrl}/select-rating?selectedRating=HIGH_SPECIFIC`)
+      .expect(200)
+
+    expect(response.text).toMatch(/value="HIGH_SPECIFIC"[^>]*checked/)
+  })
+
+  it('shows the fixed high-general rating when a clear high-risk offence is recorded', async () => {
+    csraService.getCsraAssessment.mockResolvedValue(
+      assessment({
+        stages: [
+          completeStageAnswers({
+            offenceMurderManslaughter: true,
+            offenceEvidence: [{ offence: 'MURDER_MANSLAUGHTER', sources: ['PNC'], details: 'Evidence details' }],
+          }),
+        ],
+      }),
+    )
+
+    const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      .get(`${assessmentUrl}/select-rating`)
+      .expect(200)
+
+    expect(response.text).toContain('The rating must be high risk – general and the prisoner must not share a cell.')
+    expect(response.text).toContain('murder, manslaughter or life-threatening assault in custody')
+    expect(response.text).not.toContain('name="selectedRating" type="radio"')
+  })
+
+  it('renders the page with its validation error when no rating is selected', async () => {
+    csraService.getCsraAssessment.mockResolvedValue(assessment({ stages: [completeStageAnswers()] }))
+
+    const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      .post(`${assessmentUrl}/select-rating`)
+      .type('form')
+      .send({})
+      .expect(200)
+
+    expect(response.text).toContain('Select a CSRA rating')
+    expect(response.text).toContain('This prisoner does not have a current CSRA rating.')
+    expect(response.text).toContain('govuk-error-message')
+    expect(response.text).toContain('Error:</span> Select a CSRA rating')
+  })
+
+  it('rejects a rating that is not one of the available choices', async () => {
+    csraService.getCsraAssessment.mockResolvedValue(assessment({ stages: [completeStageAnswers()] }))
+
+    const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      .post(`${assessmentUrl}/select-rating`)
+      .type('form')
+      .send({ selectedRating: 'UNSUPPORTED' })
+      .expect(200)
+
+    expect(response.text).toContain('This prisoner does not have a current CSRA rating.')
+    expect(response.text).toContain('govuk-error-message')
+  })
+
+  it('redirects a valid rating selection to the confirmation step', async () => {
+    csraService.getCsraAssessment.mockResolvedValue(assessment({ stages: [completeStageAnswers()] }))
+
+    await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      .post(`${assessmentUrl}/select-rating`)
+      .type('form')
+      .send({ selectedRating: 'HIGH_SPECIFIC' })
+      .expect(302)
+      .expect('Location', `${assessmentUrl}/confirm-rating?selectedRating=HIGH_SPECIFIC`)
+  })
+
+  it('accepts only provisional ratings while the assessment is incomplete', async () => {
+    csraService.getCsraAssessment.mockResolvedValue(
+      assessment({ stages: [completeStageAnswers({ seenByHealthcare: false })] }),
+    )
+
+    await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      .post(`${assessmentUrl}/select-rating`)
+      .type('form')
+      .send({ selectedRating: 'HIGH_SPECIFIC_PROVISIONAL' })
+      .expect(302)
+      .expect('Location', `${assessmentUrl}/confirm-rating?selectedRating=HIGH_SPECIFIC_PROVISIONAL`)
+
+    const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      .post(`${assessmentUrl}/select-rating`)
+      .type('form')
+      .send({ selectedRating: 'HIGH_SPECIFIC' })
+      .expect(200)
+
+    expect(response.text).toContain('Provisional CSRA rating')
+  })
+
+  it('allows only high-general provisional ratings for an incomplete assessment with a clear high-risk offence', async () => {
+    csraService.getCsraAssessment.mockResolvedValue(
+      assessment({
+        stages: [
+          completeStageAnswers({
+            offenceMurderManslaughter: true,
+            offenceEvidence: [{ offence: 'MURDER_MANSLAUGHTER', sources: ['PNC'], details: 'Evidence details' }],
+            seenByHealthcare: false,
+          }),
+        ],
+      }),
+    )
+
+    await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      .post(`${assessmentUrl}/select-rating`)
+      .type('form')
+      .send({ selectedRating: 'HIGH_GENERAL_PROVISIONAL' })
+      .expect(302)
+      .expect('Location', `${assessmentUrl}/confirm-rating?selectedRating=HIGH_GENERAL_PROVISIONAL`)
+
+    const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      .post(`${assessmentUrl}/select-rating`)
+      .type('form')
+      .send({ selectedRating: 'HIGH_SPECIFIC_PROVISIONAL' })
+      .expect(200)
+
+    expect(response.text).toContain('Provisional CSRA rating')
+  })
+
+  it('allows only high-general for a complete assessment with a clear high-risk offence', async () => {
+    csraService.getCsraAssessment.mockResolvedValue(
+      assessment({
+        stages: [
+          completeStageAnswers({
+            offenceMurderManslaughter: true,
+            offenceEvidence: [{ offence: 'MURDER_MANSLAUGHTER', sources: ['PNC'], details: 'Evidence details' }],
+          }),
+        ],
+      }),
+    )
+
+    const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      .post(`${assessmentUrl}/select-rating`)
+      .type('form')
+      .send({ selectedRating: 'HIGH_SPECIFIC' })
+      .expect(200)
+
+    expect(response.text).toContain('The rating must be high risk – general')
+  })
+
+  it.each(['get', 'post'] as const)('does not expose the retired confirm-rating %s route', async method => {
+    await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      [method](`${assessmentUrl}/confirm-rating`)
+      .expect(404)
   })
 
   it('renders a back link to the task list and a paragraph-wrapped cancel link on the first question', async () => {
@@ -200,29 +407,44 @@ describe('csraRouter', () => {
     )
   })
 
-  it('uses zero-based step ids for confirmation change links and displays unanswered values explicitly', async () => {
+  it('uses zero-based step ids for check answers change links and displays unanswered values explicitly', async () => {
     csraService.getCsraAssessment.mockResolvedValue(
       assessment({
-        stages: [stageAnswers({ pncChecked: true, officerSpokeToPrisoner: true, likelyToHarmCellmate: false })],
+        stages: [
+          stageAnswers({
+            pncChecked: true,
+            offenceMurderManslaughter: false,
+            offenceAssistingSuicide: false,
+            offenceSexualAssault: false,
+            offenceRepeatedViolence: false,
+            offencePrejudiceMotivated: false,
+            offenceArson: false,
+            offenceKidnapHostage: false,
+            seenByHealthcare: true,
+            healthcareIncreasedRisk: false,
+            officerSpokeToPrisoner: true,
+            likelyToHarmCellmate: false,
+          }),
+        ],
       }),
     )
 
     const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
-      .get(`${assessmentUrl}/confirm-rating`)
+      .get(`${assessmentUrl}/check-answers`)
       .expect(200)
     const rows = response.text.match(/<div class="govuk-summary-list__row">[\s\S]*?<\/div>/g) ?? []
 
     for (const [sectionId, stepId, questionId, answer] of [
-      ['evidenceAndOffences', 1, 'offenceMurderManslaughter', 'Not answered'],
-      ['evidenceAndOffences', 1, 'offenceAssistingSuicide', 'Not answered'],
-      ['evidenceAndOffences', 4, 'offenceSexualAssault', 'Not answered'],
+      ['evidenceAndOffences', 1, 'offenceMurderManslaughter', 'No'],
+      ['evidenceAndOffences', 1, 'offenceAssistingSuicide', 'No'],
+      ['evidenceAndOffences', 4, 'offenceSexualAssault', 'No'],
       ['conversationAndVulnerability', 0, 'officerSpokeToPrisoner', 'Yes'],
       ['conversationAndVulnerability', 1, 'likelyToHarmCellmate', 'No'],
       ['conversationAndVulnerability', 2, 'significantlyVulnerable', 'Not answered'],
       ['observation', 0, 'causeForConcernSharing', 'Not answered'],
       ['otherRisks', 0, 'otherHighRiskIndicators', 'Not answered'],
-      ['healthcare', 0, 'seenByHealthcare', 'Not answered'],
-      ['healthcare', 1, 'healthcareIncreasedRisk', 'Not answered'],
+      ['healthcare', 0, 'seenByHealthcare', 'Yes'],
+      ['healthcare', 1, 'healthcareIncreasedRisk', 'No'],
     ] as const) {
       const question = flowConfig[sectionId].steps[stepId].questions.find(q => q.id === questionId)
       const row = rows.find(item => item.includes(question.question))
@@ -237,5 +459,187 @@ describe('csraRouter', () => {
       expect(row).toContain(`href="${assessmentUrl}/section/evidenceAndOffences/0"`)
       expect(row).toContain(source === 'PNC' ? 'Checked' : 'Not checked')
     }
+  })
+
+  it('renders offence evidence with formatted sources and escaped details', async () => {
+    const evidenceDetails = '<script>previous arson</script>'
+    const otherSourceDetails = '<script>local archive</script>'
+    csraService.getCsraAssessment.mockResolvedValue(
+      assessment({
+        stages: [
+          stageAnswers({
+            pncChecked: true,
+            offenceMurderManslaughter: false,
+            offenceAssistingSuicide: false,
+            offenceSexualAssault: false,
+            offenceRepeatedViolence: false,
+            offencePrejudiceMotivated: false,
+            offenceArson: true,
+            offenceKidnapHostage: false,
+            offenceEvidence: [
+              {
+                offence: 'ARSON',
+                sources: ['PNC', 'WARRANT', 'OTHER'],
+                otherSourceDetail: otherSourceDetails,
+                details: evidenceDetails,
+              },
+            ],
+            officerSpokeToPrisoner: true,
+            likelyToHarmCellmate: true,
+            likelyToHarmCellmateDetail: 'Threatened to assault a cellmate.',
+            significantlyVulnerable: true,
+            significantlyVulnerableDetail: 'Requires protection.',
+            causeForConcernSharing: true,
+            causeForConcernSharingDetail: '<script>observed altercation</script>',
+            otherHighRiskIndicators: true,
+            otherHighRiskIndicatorsDetail: 'Has made repeated threats.',
+            seenByHealthcare: false,
+          }),
+        ],
+      }),
+    )
+
+    const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      .get(`${assessmentUrl}/check-answers`)
+      .expect(200)
+
+    expect(response.text).toContain('Arson or fire setting')
+    expect(response.text).toContain('&lt;script&gt;previous arson&lt;/script&gt;')
+    expect(response.text).toContain('PNC, Warrant, and Other')
+    expect(response.text).toContain('&lt;script&gt;local archive&lt;/script&gt;')
+    expect(response.text).toContain('Threatened to assault a cellmate.')
+    expect(response.text).toContain('Requires protection.')
+    expect(response.text).toContain('&lt;script&gt;observed altercation&lt;/script&gt;')
+    expect(response.text).toContain('Has made repeated threats.')
+    expect(response.text).not.toContain(evidenceDetails)
+    const arsonStepId = flowConfig.evidenceAndOffences.steps.findIndex(step =>
+      step.questions.some(question => question.id === 'offenceArson'),
+    )
+    expect(response.text).toContain(`href="${assessmentUrl}/section/evidenceAndOffences/${arsonStepId}"`)
+    expect(response.text).toContain('Continue to provisional rating')
+  })
+
+  describe('cancel assessment', () => {
+    it('renders the answers summary without change links and the confirmation radios', async () => {
+      csraService.getCsraAssessment.mockResolvedValue(assessment({ stages: [stageAnswers({ pncChecked: true })] }))
+
+      const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .get(`${assessmentUrl}/cancel`)
+        .expect(200)
+
+      expect(response.text).toContain('Evidence sources')
+      expect(response.text).not.toContain(`href="${assessmentUrl}/section/`)
+      expect(response.text).toContain('Are you sure you want to cancel this assessment?')
+      expect(response.text).not.toContain('Select yes if you want to cancel this assessment')
+      expect(response.text).toContain(`href="${assessmentUrl}" class="govuk-back-link"`)
+      expect(response.text).toMatch(
+        new RegExp(`<p class="govuk-body">\\s*<a class="govuk-link" href="${assessmentUrl}">Cancel</a>\\s*</p>`),
+      )
+    })
+
+    it('redirects back to the cancel page with a flashed error when no option is selected', async () => {
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(`${assessmentUrl}/cancel`)
+        .type('form')
+        .send({})
+        .expect(302)
+        .expect('Location', `${assessmentUrl}/cancel`)
+
+      expect(flashProvider).toHaveBeenCalledWith(
+        'confirmCancelError',
+        'Select yes if you want to cancel this assessment',
+      )
+      expect(csraService.getCsraAssessment).not.toHaveBeenCalled()
+      expect(csraService.cancelCsraAssessment).not.toHaveBeenCalled()
+    })
+
+    it('shows the flashed error on the cancel page', async () => {
+      flashProvider.mockReturnValue(['Select yes if you want to cancel this assessment'])
+
+      const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .get(`${assessmentUrl}/cancel`)
+        .expect(200)
+
+      expect(flashProvider).toHaveBeenCalledWith('confirmCancelError')
+      expect(response.text).toContain('There is a problem')
+      expect(response.text).toContain('href="#confirmCancel"')
+      expect(response.text).toContain('Select yes if you want to cancel this assessment')
+    })
+
+    it('returns to the task list when no is selected', async () => {
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(`${assessmentUrl}/cancel`)
+        .type('form')
+        .send({ confirmCancel: 'no' })
+        .expect(302)
+        .expect('Location', assessmentUrl)
+
+      expect(csraService.cancelCsraAssessment).not.toHaveBeenCalled()
+    })
+
+    it('cancels the assessment and shows the success page when yes is selected', async () => {
+      csraService.cancelCsraAssessment.mockResolvedValue({ prisonerNumber: 'A1234BC', status: 'NO_RATING' })
+
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(`${assessmentUrl}/cancel`)
+        .type('form')
+        .send({ confirmCancel: 'yes' })
+        .expect(302)
+        .expect('Location', `${assessmentUrl}/cancelled`)
+
+      expect(csraService.cancelCsraAssessment).toHaveBeenCalledWith('user1', 'A1234BC', 'assessment-123', undefined)
+      expect(csraService.getCsraAssessment).not.toHaveBeenCalled()
+    })
+
+    it('renders the cancelled confirmation panel with a finish button', async () => {
+      const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .get(`${assessmentUrl}/cancelled`)
+        .expect(200)
+
+      expect(response.text).toContain('govuk-panel--confirmation')
+      expect(response.text).toContain('Assessment cancelled')
+      expect(response.text).toContain('You have cancelled a cell sharing risk assessment for John Smith')
+      expect(response.text).toContain('You can start a new assessment for this prisoner if required.')
+      expect(response.text).toMatch(/href="\/prisoner\/A1234BC"[^>]*data-qa="finish-button"/)
+      expect(csraService.getCsraAssessment).not.toHaveBeenCalled()
+    })
+
+    it.each(['CsraAssessmentNotCancellable', 'CsraReviewNotWritable'])(
+      'shows the error page with a 409 when the API rejects the cancellation with %s',
+      async errorCode => {
+        csraService.cancelCsraAssessment.mockRejectedValue({
+          responseStatus: 409,
+          data: { status: 409, errorCode },
+        })
+
+        const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+          .post(`${assessmentUrl}/cancel`)
+          .type('form')
+          .send({ confirmCancel: 'yes' })
+          .expect(409)
+
+        expect(response.text).toContain(`cannot be cancelled: ${errorCode}`)
+      },
+    )
+
+    it('shows not found when the assessment does not exist', async () => {
+      csraService.cancelCsraAssessment.mockRejectedValue({ responseStatus: 404 })
+
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(`${assessmentUrl}/cancel`)
+        .type('form')
+        .send({ confirmCancel: 'yes' })
+        .expect(404)
+    })
+
+    it('passes other errors on', async () => {
+      csraService.cancelCsraAssessment.mockRejectedValue({ responseStatus: 500 })
+
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(`${assessmentUrl}/cancel`)
+        .type('form')
+        .send({ confirmCancel: 'yes' })
+        .expect(500)
+    })
   })
 })

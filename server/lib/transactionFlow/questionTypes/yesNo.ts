@@ -4,6 +4,7 @@ import FeComponentsService from '../../../services/feComponentsService'
 import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 
 export type YesNoQuestionOptions = {
+  classes?: string
   hint?: string
   validationMessages?: { required?: string }
 }
@@ -40,6 +41,7 @@ export default class YesNoQuestion extends Question {
         },
       },
       ...(this.options.hint ? { hint: { text: this.options.hint } } : {}),
+      ...(this.options.classes ? { formGroup: { classes: this.options.classes } } : {}),
       items: this.items
         .map(item => {
           return {

@@ -5,6 +5,7 @@ import prisonApi from '../mockApis/prisonApi'
 import manageUsersApi from '../mockApis/manageUsersApi'
 import { login, resetStubs } from '../testUtils'
 import PrisonerCsraPage from '../pages/prisonerCsraPage'
+import type { CsraAssessmentStageAnswers } from '../../server/data/csraApiTypes'
 
 const prisoner = {
   prisonerNumber: 'A1234BC',
@@ -29,6 +30,52 @@ const stubPrisonerPage = async (page: Page, currentRating: Parameters<typeof csr
   await csraApi.stubGetCurrentRating('A1234BC', currentRating)
   await page.goto('/prisoner/A1234BC')
   return PrisonerCsraPage.verifyOnPage(page, 'John Smith')
+}
+
+const completeAssessmentAnswers = (
+  overrides: Partial<CsraAssessmentStageAnswers> = {},
+): CsraAssessmentStageAnswers => ({
+  stage: 'PROVISIONAL',
+  prisonId: prisoner.prisonId,
+  dpsChecked: true,
+  perChecked: true,
+  warrantChecked: true,
+  pncChecked: true,
+  offenceMurderManslaughter: false,
+  offenceAssistingSuicide: false,
+  offenceSexualAssault: false,
+  offenceRepeatedViolence: false,
+  offencePrejudiceMotivated: false,
+  offenceArson: false,
+  offenceKidnapHostage: false,
+  offenceEvidence: [],
+  officerSpokeToPrisoner: true,
+  likelyToHarmCellmate: false,
+  significantlyVulnerable: false,
+  causeForConcernSharing: false,
+  otherHighRiskIndicators: false,
+  seenByHealthcare: true,
+  healthcareIncreasedRisk: false,
+  riskTo: [],
+  vulnerabilities: [],
+  version: 0,
+  ...overrides,
+})
+
+const stubRatingSelectionAssessment = async (page: Page, answers: CsraAssessmentStageAnswers) => {
+  await login(page, {
+    roles: ['ROLE_CSRA__ASSESSMENT_EDIT'],
+    activeCaseLoad: { caseLoadId: prisoner.prisonId, description: prisoner.prisonName },
+  })
+  await csraApi.stubGetInfo(['MDI'])
+  await prisonerSearchApi.stubGetPrisoner(prisoner)
+  await prisonApi.stubGetPrisonerImage(prisoner.prisonerNumber)
+  await manageUsersApi.stubGetUserCaseloads(['MDI'])
+  await csraApi.stubGetCurrentRating(prisoner.prisonerNumber, { status: 'NO_RATING', rating: null })
+  await csraApi.stubGetAssessment(prisoner.prisonerNumber, 'assessment-123', {
+    status: 'IN_PROGRESS',
+    stages: [answers],
+  })
 }
 
 test.describe('Prisoner CSRA', () => {
@@ -352,7 +399,7 @@ test.describe('Prisoner CSRA', () => {
     await expect(page.getByText('Check answers and confirm rating')).toBeVisible()
   })
 
-  test('can reach the confirm-rating page and submit the provisional rating', async ({ page }) => {
+  test('can reach the check answers page for a provisional rating', async ({ page }) => {
     await csraApi.stubGetInfo(['MDI'])
     await login(page, {
       roles: ['ROLE_CSRA__ASSESSMENT_EDIT'],
@@ -381,6 +428,13 @@ test.describe('Prisoner CSRA', () => {
           seenByHealthcare: true,
           healthcareIncreasedRisk: true,
           healthcareIncreasedRiskDetail: 'Healthcare flagged an increased risk.',
+          offenceMurderManslaughter: false,
+          offenceAssistingSuicide: false,
+          offenceSexualAssault: false,
+          offenceRepeatedViolence: false,
+          offencePrejudiceMotivated: false,
+          offenceArson: false,
+          offenceKidnapHostage: false,
           offenceEvidence: [],
           riskTo: [],
           vulnerabilities: [],
@@ -388,15 +442,99 @@ test.describe('Prisoner CSRA', () => {
         },
       ],
     })
-    await csraApi.stubSubmitProvisionalRating('A1234BC', 'assessment-123')
 
-    await page.goto('/prisoner/A1234BC/csra/assessment-123/confirm-rating')
+    await page.goto('/prisoner/A1234BC/csra/assessment-123')
+    await page.getByRole('link', { name: 'Check answers and confirm rating' }).click()
 
     await expect(page.getByRole('heading', { name: 'Check answers before you confirm a CSRA rating' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'WIP: Save provisional rating' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Continue to provisional rating' })).toBeVisible()
+    await expect(page.getByText('Warrant', { exact: true }).first()).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Remaining tasks to complete' })).toBeVisible()
+    await expect(page.getByText('check remaining evidence sources (Warrant)')).toBeVisible()
+  })
 
-    await page.getByRole('button', { name: 'WIP: Save provisional rating' }).click()
+  test('selects a rating with an accessible validation error and preserves the choice', async ({ page }) => {
+    await stubRatingSelectionAssessment(page, completeAssessmentAnswers())
 
-    await expect(page).toHaveURL('/prisoner/A1234BC')
+    await page.goto('/prisoner/A1234BC/csra/assessment-123/select-rating')
+
+    await expect(page.getByRole('heading', { name: 'Select a CSRA rating' })).toBeVisible()
+    await expect(page.getByText('This prisoner does not have a current CSRA rating.')).toBeVisible()
+    await expect(page.getByRole('radio', { name: /High risk – general/ })).toBeVisible()
+    await expect(page.getByRole('radio', { name: /High risk – specific/ })).toBeVisible()
+    await expect(page.getByRole('radio', { name: /Standard risk/ })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Continue' }).click()
+    await expect(page.getByRole('alert')).toContainText('Select a CSRA rating')
+
+    await page.goto('/prisoner/A1234BC/csra/assessment-123/select-rating?selectedRating=HIGH_SPECIFIC')
+    await expect(page.getByRole('radio', { name: /High risk – specific/ })).toBeChecked()
+  })
+
+  test('offers the local or remand exception for an incomplete assessment without a clear high-risk offence', async ({
+    page,
+  }) => {
+    await stubRatingSelectionAssessment(page, completeAssessmentAnswers({ seenByHealthcare: false }))
+
+    await page.goto('/prisoner/A1234BC/csra/assessment-123/select-rating')
+
+    await expect(page.getByRole('heading', { name: 'Provisional CSRA rating' })).toBeVisible()
+    await expect(page.getByText('This is because the assessment is incomplete.')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Exception for local or remand prisons' })).toBeVisible()
+    await expect(page.getByText(/manager to approve who the prisoner shares a cell with/)).toBeVisible()
+
+    const exceptionButton = page.getByRole('button', {
+      name: 'Continue with high risk – specific (provisional)',
+    })
+    await expect(exceptionButton).toBeVisible()
+    await Promise.all([
+      page.waitForURL(/\/confirm-rating\?selectedRating=HIGH_SPECIFIC_PROVISIONAL$/),
+      exceptionButton.click(),
+    ])
+  })
+
+  test('does not offer the local or remand exception when a clear high-risk offence requires high-general provisional', async ({
+    page,
+  }) => {
+    await stubRatingSelectionAssessment(
+      page,
+      completeAssessmentAnswers({
+        offenceMurderManslaughter: true,
+        offenceEvidence: [{ offence: 'MURDER_MANSLAUGHTER', sources: ['PNC'], details: 'Evidence details' }],
+        seenByHealthcare: false,
+      }),
+    )
+
+    await page.goto('/prisoner/A1234BC/csra/assessment-123/select-rating')
+
+    await expect(page.getByRole('heading', { name: 'Provisional CSRA rating' })).toBeVisible()
+    await expect(page.getByRole('button')).toHaveCount(1)
+    await expect(page.getByRole('button', { name: 'Continue with high risk – general (provisional)' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Exception for local or remand prisons' })).toHaveCount(0)
+
+    await Promise.all([
+      page.waitForURL(/\/confirm-rating\?selectedRating=HIGH_GENERAL_PROVISIONAL$/),
+      page.getByRole('button', { name: 'Continue with high risk – general (provisional)' }).click(),
+    ])
+  })
+
+  test('shows the fixed high-general rating when a clear high-risk offence is recorded', async ({ page }) => {
+    await stubRatingSelectionAssessment(
+      page,
+      completeAssessmentAnswers({
+        offenceMurderManslaughter: true,
+        offenceEvidence: [{ offence: 'MURDER_MANSLAUGHTER', sources: ['PNC'], details: 'Evidence details' }],
+      }),
+    )
+
+    await page.goto('/prisoner/A1234BC/csra/assessment-123/select-rating')
+
+    await expect(page.getByRole('heading', { name: 'CSRA rating' })).toBeVisible()
+    await expect(
+      page.getByText('The rating must be high risk – general and the prisoner must not share a cell.'),
+    ).toBeVisible()
+    await expect(page.getByText('murder, manslaughter or life-threatening assault in custody')).toBeVisible()
+    await expect(page.getByRole('radio')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Continue with high risk – general' })).toBeVisible()
   })
 })

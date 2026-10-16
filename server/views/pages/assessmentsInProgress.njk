@@ -6,13 +6,13 @@
 {% from "../macros/mojFilter.njk" import mojFilter %}
 {% from "../macros/riskBadge.njk" import riskBadge %}
 
-{% set pageTitle = applicationName + " - Assessments in progress" %}
-
-{% set assessmentButtonHtml %}
+{% macro continueAssessmentButton(canEditAssessments, prisonerNumber, reviewId) %}
   {% if canEditAssessments %}
-    <a class="govuk-button govuk-button--secondary continue-assessment-button" href="#">Continue assessment</a>
+    <a class="govuk-button govuk-button--secondary continue-assessment-button" href="/prisoner/{{ prisonerNumber }}/csra/{{ reviewId }}">Continue assessment</a>
   {% endif %}
-{% endset %}
+{% endmacro %}
+
+{% set pageTitle = applicationName + " - Assessments in progress" %}
 
 {% block content %}
   <div class="govuk-grid-row">
@@ -38,7 +38,7 @@
                 { html: nameHtml },
                 { text: assessment.startedOn | formatDayMonthYear },
                 { text: assessment.startedBy | userDisplayName },
-                { html: assessmentButtonHtml }
+                { html: continueAssessmentButton(canEditAssessments, assessment.prisonerNumber, assessment.reviewId) }
               ] %}
               {% set _ = rows.push(row) %}
             {% endfor %}
@@ -83,7 +83,7 @@
                 { text: assessment.assessedOn | formatDayMonthYear },
                 { text: assessment.assessedBy | userDisplayName },
                 { html: ratingHtml },
-                { html: assessmentButtonHtml }
+                { html: continueAssessmentButton(canEditAssessments, assessment.prisonerNumber, assessment.reviewId) }
               ] %}
               {% set _ = rows.push(row) %}
             {% endfor %}

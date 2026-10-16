@@ -85,3 +85,13 @@
     margin-bottom: 0
   }
 }
+
+.csra-check-answers-section {
+  margin-top: govuk-spacing(2);
+
+  @media(min-width: 40.0625em) {
+    .govuk-summary-list__key, .govuk-summary-list__value {
+      width: 40%;
+    }
+  }
+}

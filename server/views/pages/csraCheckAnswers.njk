@@ -1,0 +1,67 @@
+{% extends "../partials/layout.njk" %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/details/macro.njk" import govukDetails %}
+{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
+{% from "govuk/components/task-list/macro.njk" import govukTaskList %}
+{% from "../macros/csraAnswersSummary.njk" import csraAnswersSummary %}
+
+{% set prisonerName = (prisoner.firstName + " " + prisoner.lastName) | convertToTitleCase %}
+{% set title = "Check answers before you confirm a CSRA rating" %}
+{% set pageTitle = applicationName + " - " + title %}
+
+{% block outerHeading %}
+  {% include "../partials/compactPrisonerBanner.njk" %}
+
+  {{ super() }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      {{ csraAnswersSummary({
+        prisoner: prisoner,
+        assessment: assessment,
+        assessmentAnswers: assessmentAnswers,
+        offenceEvidenceMap: offenceEvidenceMap,
+        flowConfig: flowConfig
+      }) }}
+
+      {% if remainingTasks.length %}
+        {% call govukInsetText({ classes: "guidance-panel" }) %}
+          <h2 class="govuk-heading-m">Remaining tasks to complete</h2>
+
+          <p>
+            To complete the assessment, you need to:
+          </p>
+
+          <ul class="govuk-list govuk-list--bullet">
+            {% for task in remainingTasks %}
+              <li>{{ task }}</li>
+            {% endfor %}
+          </ul>
+        {% endcall %}
+
+        {% call govukInsetText() %}
+          <p>
+            As the assessment is incomplete, you can only enter a provisional CSRA rating. It will stay provisional until the assessment is completed and a final rating is entered.
+          </p>
+        {% endcall %}
+      {% endif %}
+
+      <div class="govuk-body">
+        <a class="govuk-button" href="/prisoner/{{ prisoner.prisonerNumber }}/csra/{{ assessment.assessmentId }}/select-rating" data-qa="continue-button">
+          {% if submitType == 'PROVISIONAL' %}
+            Continue to provisional rating
+          {% else %}
+            Continue to rating
+          {% endif %}
+        </a>
+
+        <p>
+          <a href="{{ cancelLink }}" class="govuk-link">Cancel</a>
+        </p>
+      </div>
+    </div>
+  </div>
+{% endblock %}

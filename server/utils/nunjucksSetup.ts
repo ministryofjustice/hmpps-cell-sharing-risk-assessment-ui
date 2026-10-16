@@ -26,6 +26,8 @@ import {
   formatDayMonthYear,
   csraRatingPanelClass,
   taskListStatus,
+  capFirst,
+  formatSources,
 } from './utils'
 import { userDisplayName } from './populateUserDisplayNames'
 import { yesNoValue } from './yesNoValue'
@@ -108,4 +110,6 @@ export default function nunjucksSetup(app: express.Express): void {
   njkEnv.addFilter('userDisplayName', userDisplayName)
   njkEnv.addFilter('taskListStatus', taskListStatus)
   njkEnv.addFilter('yesNoValue', yesNoValue)
+  njkEnv.addFilter('capFirst', capFirst)
+  njkEnv.addFilter('formatSources', formatSources)
 }

@@ -1,0 +1,31 @@
+{% extends "../partials/layout.njk" %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/panel/macro.njk" import govukPanel %}
+
+{% set title = "Assessment cancelled" %}
+{% set pageTitle = applicationName + " - " + title %}
+
+{% block outerHeading %}
+  {% include "../partials/compactPrisonerBanner.njk" %}
+{% endblock %}
+
+{% block content %}
+  {% set prisonerName = (prisoner.firstName + " " + prisoner.lastName) | convertToTitleCase %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      {{ govukPanel({
+        titleText: title,
+        text: "You have cancelled a cell sharing risk assessment for " + prisonerName
+      }) }}
+
+      <p class="govuk-body">You can start a new assessment for this prisoner if required.</p>
+
+      {{ govukButton({
+        text: "Finish",
+        href: "/prisoner/" + prisoner.prisonerNumber,
+        attributes: { "data-qa": "finish-button" }
+      }) }}
+    </div>
+  </div>
+{% endblock %}

@@ -629,3 +629,26 @@ export const buildPagination = (
     items,
   }
 }
+
+export function capFirst(str: string): string {
+  if (!str) return ''
+
+  return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
+const sourceMap: Record<string, string> = {
+  WARRANT: 'Warrant',
+  OTHER: 'Other',
+}
+
+export function formatSources(sources: string[]): string {
+  if (!sources || sources.length === 0) return ''
+
+  const formattedSources = sources.map(source => sourceMap[source] || source)
+  if (sources.length === 1) return formattedSources[0]
+  if (sources.length === 2) return `${formattedSources[0]} and ${formattedSources[1]}`
+
+  const allButLast = formattedSources.slice(0, -1).join(', ')
+  const last = formattedSources[formattedSources.length - 1]
+  return `${allButLast}, and ${last}`
+}

@@ -88,7 +88,7 @@ describe('csraQuestionController', () => {
       'pages/csraQuestion',
       expect.objectContaining({
         title: 'Prisoner conversation and vulnerability',
-        saveButtonText: 'Save and return',
+        saveButtonText: 'Save and continue',
         prisoner: { prisonerNumber: 'A1234BC' },
         backLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}`,
         cancelLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}`,
@@ -246,7 +246,7 @@ describe('csraQuestionController', () => {
       'pages/csraQuestion',
       expect.objectContaining({
         backLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}`,
-        saveButtonText: 'Save and return',
+        saveButtonText: 'Save and continue',
         validationErrors: {
           officerSpokeToPrisoner: {
             text: 'Select yes if an officer has spoken with the prisoner about sharing a cell',
@@ -287,7 +287,7 @@ describe('csraQuestionController', () => {
       description: 'all later steps are skipped',
       stageAnswers: { officerSpokeToPrisoner: false },
       stepId: '0',
-      saveButtonText: 'Save and return',
+      saveButtonText: 'Save and continue',
     },
   ])('chooses the button text when $description', async ({ stageAnswers, stepId, saveButtonText }) => {
     csraService.getCsraAssessment.mockResolvedValue(makeAssessment({ stages: [makeStageAnswers(stageAnswers)] }))

@@ -1,0 +1,165 @@
+{% extends "../partials/layout.njk" %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
+{% from "govuk/components/radios/macro.njk" import govukRadios %}
+{% from "moj/components/ticket-panel/macro.njk" import mojTicketPanel %}
+
+{% set prisonerName = (prisoner.firstName + " " + prisoner.lastName) | convertToTitleCase %}
+
+{% if isProvisional %}
+  {% set title = "Provisional CSRA rating" %}
+{% elseif isHighGeneral %}
+  {% set title = "CSRA rating" %}
+{% else %}
+  {% set title = "Select a CSRA rating" %}
+{% endif %}
+
+{% set pageTitle = applicationName + " - " + title %}
+
+{% block outerHeading %}
+  {% include "../partials/compactPrisonerBanner.njk" %}
+
+  {{ super() }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <div class="govuk-body">
+        <form method="post" action>
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+
+          {% if isHighGeneral or isProvisional %}
+            {% set highGeneralValue = 'HIGH_GENERAL' + ('_PROVISIONAL' if isProvisional else '') %}
+            {% set highGeneralLabel = 'HIGH_GENERAL' | csraRatingLabel('PROVISIONAL' if isProvisional) %}
+
+            {{ mojTicketPanel({
+              classes: 'govuk-!-margin-top-4',
+              items: [{
+                html: '
+                      <p class="govuk-!-margin-bottom-0">CSRA rating</p>
+
+                      <p class="govuk-heading-m">
+                        ' + highGeneralLabel + '
+                      </p>',
+                classes: "moj-ticket-panel__content--blue-background"
+              }]
+            }) }}
+
+            {% if isHighGeneral %}
+              <p>
+                The rating must be {{ highGeneralLabel | lower }} and the prisoner must not share a cell.
+              </p>
+
+              <p>
+                This is because there is evidence of a clear high risk indicator:
+              </p>
+
+              <ul class="govuk-!-margin-bottom-7">
+                {% if assessmentAnswers.offenceMurderManslaughter %}
+                  <li>murder, manslaughter or life-threatening assault in custody</li>
+                {% endif %}
+                {% if assessmentAnswers.offenceAssistingSuicide %}
+                  <li>assisting a suicide in custody</li>
+                {% endif %}
+                {% if assessmentAnswers.offenceSexualAssault %}
+                  <li>sexual assault of someone of the same gender</li>
+                {% endif %}
+              </ul>
+            {% else %}
+              <p>
+                The provisional rating must be {{ highGeneralLabel | lower }} and the prisoner must not share a cell.
+              </p>
+
+              <p>
+                This is because the assessment is incomplete.
+              </p>
+            {% endif %}
+
+            {{ govukButton({
+              text: 'Continue with ' + (highGeneralLabel | lower),
+              attributes: {
+                name: "selectedRating",
+                value: highGeneralValue
+              }
+            }) }}
+
+            {% if isProvisional and not isHighGeneral %}
+              <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible govuk-!-margin-top-2">
+
+              <h2 class="govuk-heading-m">Exception for local or remand prisons</h2>
+
+              <p>
+                Local and remand prisons can allow a prisoner with an incomplete assessment to share a cell temporarily
+                if all available information sources have been checked, including any historical PNC information.
+              </p>
+
+              <p>
+                CSRA policy also requires a manager to approve who the prisoner shares a cell with.
+                Follow your local process for this.
+              </p>
+
+              {{ govukButton({
+                text: 'Continue with ' + ('HIGH_SPECIFIC' | csraRatingLabel('PROVISIONAL') | lower),
+                classes: 'govuk-button--secondary',
+                attributes: {
+                  name: "selectedRating",
+                  value: 'HIGH_SPECIFIC_PROVISIONAL'
+                }
+              }) }}
+            {% endif %}
+          {% else %}
+            {{ govukInsetText({
+              html: "This prisoner does not have a current CSRA rating." if not csra or not csra.rating else "Their current CSRA rating is " + csra.rating | csraRatingLabel(csra.ratingStage) + ".",
+              classes: 'govuk-!-margin-top-0'
+            }) }}
+
+            {{ govukRadios({
+              idPrefix: 'selectedRating',
+              name: 'selectedRating',
+              fieldset: {
+                legend: {
+                  text: "Select a CSRA rating",
+                  classes: 'govuk-visually-hidden'
+                }
+              },
+              items: [
+                {
+                  value: 'HIGH_GENERAL',
+                  text: 'HIGH_GENERAL' | csraRatingLabel,
+                  hint: {
+                  text: 'Cannot share with anyone.'
+                },
+                  checked: true if selectedRating === 'HIGH_GENERAL' else false
+                },
+                {
+                  value: 'HIGH_SPECIFIC',
+                  text: 'HIGH_SPECIFIC' | csraRatingLabel,
+                  hint: {
+                  text: 'Can share with specific people.'
+                },
+                  checked: true if selectedRating === 'HIGH_SPECIFIC' else false
+                },
+                {
+                  value: 'STANDARD',
+                  text: 'Standard risk',
+                  checked: true if selectedRating === 'STANDARD' else false
+                }
+              ],
+              errorMessage: validationErrors.selectedRating if validationErrors
+            }) }}
+
+            {{ govukButton({
+              text: 'Continue'
+            }) }}
+          {% endif %}
+        </form>
+
+        <p>
+          <a href="{{ cancelLink }}" class="govuk-link">Cancel</a>
+        </p>
+      </div>
+    </div>
+  </div>
+{% endblock %}

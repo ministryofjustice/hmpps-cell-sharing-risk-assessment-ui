@@ -1,0 +1,65 @@
+{% extends "../partials/layout.njk" %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/radios/macro.njk" import govukRadios %}
+{% from "../macros/csraAnswersSummary.njk" import csraAnswersSummary %}
+
+{% set title = "Confirm cancellation" %}
+{% set pageTitle = ("Error: " if validationErrors else "") + applicationName + " - " + title %}
+
+{% block outerHeading %}
+  {% include "../partials/compactPrisonerBanner.njk" %}
+
+  {{ super() }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <p class="govuk-body">The following information will be removed. You can start a new assessment for this prisoner after cancelling.</p>
+
+      {{ csraAnswersSummary({
+        prisoner: prisoner,
+        assessment: assessment,
+        assessmentAnswers: assessmentAnswers,
+        offenceEvidenceMap: offenceEvidenceMap,
+        flowConfig: flowConfig,
+        showChangeLinks: false
+      }) }}
+
+      <form method="post" action>
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+
+        {{ govukRadios({
+          name: "confirmCancel",
+          idPrefix: "confirmCancel",
+          classes: "govuk-radios--inline",
+          fieldset: {
+            legend: {
+              text: "Are you sure you want to cancel this assessment?",
+              classes: "govuk-fieldset__legend--m"
+            }
+          },
+          errorMessage: validationErrors.confirmCancel if validationErrors,
+          items: [
+            { value: "yes", text: "Yes" },
+            { value: "no", text: "No" }
+          ]
+        }) }}
+
+        {{ govukButton({
+          text: "Continue",
+          classes: "govuk-!-margin-bottom-0",
+          attributes: { "data-qa": "cancel-assessment-button" }
+        }) }}
+      </form>
+
+      <br>
+      <br>
+
+      <p class="govuk-body">
+        <a class="govuk-link" href="{{ cancelLink }}">Cancel</a>
+      </p>
+    </div>
+  </div>
+{% endblock %}
