@@ -4,7 +4,7 @@
 {% from "govuk/components/radios/macro.njk" import govukRadios %}
 {% from "../macros/csraAnswersSummary.njk" import csraAnswersSummary %}
 
-{% set title = "Check answers before you cancel this assessment" %}
+{% set title = "Confirm cancellation" %}
 {% set pageTitle = ("Error: " if validationErrors else "") + applicationName + " - " + title %}
 
 {% block outerHeading %}
@@ -16,6 +16,8 @@
 {% block content %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
+      <p class="govuk-body">The following information will be removed. You can start a new assessment for this prisoner after cancelling.</p>
+
       {{ csraAnswersSummary({
         prisoner: prisoner,
         assessment: assessment,
