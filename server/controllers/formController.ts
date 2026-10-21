@@ -27,6 +27,7 @@ export default abstract class FormController<ParamType extends object> {
   }
 
   /** Set up any locals required for the view. Return false to stop processing the request. */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   protected async setupLocals(req: Request<ParamType>, res: Response): Promise<boolean> {
     return true
   }
@@ -43,6 +44,7 @@ export default abstract class FormController<ParamType extends object> {
     await this.render(req, res)
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   protected getValidations(req: Request<ParamType>, res: Response) {
     return this.validations
   }
@@ -87,6 +89,7 @@ export default abstract class FormController<ParamType extends object> {
     return !Object.keys(validationErrors).length
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   protected async sendPost(req: Request<ParamType>, res: Response): Promise<void> {
     // Default implementation does nothing. Subclasses can override to send data to a service.
   }
