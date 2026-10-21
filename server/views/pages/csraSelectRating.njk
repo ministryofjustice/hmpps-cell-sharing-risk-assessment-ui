@@ -31,8 +31,8 @@
           <input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 
           {% if isHighGeneral or isProvisional %}
-            {% set highGeneralValue = 'HIGH_GENERAL' + ('_PROVISIONAL' if isProvisional else '') %}
-            {% set highGeneralLabel = 'HIGH_GENERAL' | csraRatingLabel('PROVISIONAL' if isProvisional) %}
+            {% set highGeneralValue = 'HIGH_GENERAL' %}
+            {% set highGeneralLabel = highGeneralValue | csraRatingLabel('PROVISIONAL' if isProvisional) %}
 
             {{ mojTicketPanel({
               classes: 'govuk-!-margin-top-4',
@@ -105,7 +105,7 @@
                 classes: 'govuk-button--secondary',
                 attributes: {
                   name: "selectedRating",
-                  value: 'HIGH_SPECIFIC_PROVISIONAL'
+                  value: 'HIGH_SPECIFIC'
                 }
               }) }}
             {% endif %}
@@ -127,7 +127,7 @@
               items: [
                 {
                   value: 'HIGH_GENERAL',
-                  text: 'HIGH_GENERAL' | csraRatingLabel,
+                  text: 'HIGH_GENERAL' | csraRiskRatingLabel,
                   hint: {
                   text: 'Cannot share with anyone.'
                 },
@@ -135,7 +135,7 @@
                 },
                 {
                   value: 'HIGH_SPECIFIC',
-                  text: 'HIGH_SPECIFIC' | csraRatingLabel,
+                  text: 'HIGH_SPECIFIC' | csraRiskRatingLabel,
                   hint: {
                   text: 'Can share with specific people.'
                 },
@@ -143,7 +143,7 @@
                 },
                 {
                   value: 'STANDARD',
-                  text: 'Standard risk',
+                  text: 'STANDARD' | csraRiskRatingLabel,
                   checked: true if selectedRating === 'STANDARD' else false
                 }
               ],

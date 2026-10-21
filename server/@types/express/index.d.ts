@@ -19,10 +19,17 @@ export declare global {
       authSource: string
     }
 
+    interface Flash {
+      title: string
+      content: string
+    }
+
     interface Request {
       verified?: boolean
       id: string
       logout(done: (err: unknown) => void): void
+      flash(message: string): Flash[]
+      flash(type: string, message: Flash): Flash[]
     }
 
     interface Locals {

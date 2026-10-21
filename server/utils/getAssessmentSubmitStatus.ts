@@ -62,9 +62,10 @@ export function getAssessmentSubmitStatus(
 ): {
   submitType: AssessmentSubmitType
   remainingTasks: string[]
+  allowedRatings: string[]
 } {
   if (assessment.finalResult) {
-    return { submitType: AssessmentSubmitType.NONE, remainingTasks: [] }
+    return { submitType: AssessmentSubmitType.NONE, remainingTasks: [], allowedRatings: [] }
   }
 
   const sections = getTaskListSections(assessment, assessmentAnswers, prisoner)
@@ -75,11 +76,28 @@ export function getAssessmentSubmitStatus(
     !assessment.interimResult
   const canSubmitFinalRating = Object.values(sections).every(section => section.status === 'COMPLETE')
   if (!canSubmitProvisionalRating && !canSubmitFinalRating) {
-    return { submitType: AssessmentSubmitType.NONE, remainingTasks: [] }
+    return { submitType: AssessmentSubmitType.NONE, remainingTasks: [], allowedRatings: [] }
+  }
+
+  const isHighGeneral = Boolean(
+    assessmentAnswers.offenceMurderManslaughter ||
+    assessmentAnswers.offenceAssistingSuicide ||
+    assessmentAnswers.offenceSexualAssault,
+  )
+
+  let allowedRatings: string[]
+
+  if (isHighGeneral) {
+    allowedRatings = ['HIGH_GENERAL']
+  } else if (!canSubmitFinalRating) {
+    allowedRatings = ['HIGH_GENERAL', 'HIGH_SPECIFIC']
+  } else {
+    allowedRatings = ['HIGH_GENERAL', 'HIGH_SPECIFIC', 'STANDARD']
   }
 
   return {
     submitType: canSubmitFinalRating ? AssessmentSubmitType.FINAL : AssessmentSubmitType.PROVISIONAL,
     remainingTasks: getRemainingTasks(assessmentAnswers),
+    allowedRatings,
   }
 }

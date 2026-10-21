@@ -6,6 +6,7 @@ import manageUsersApi from '../mockApis/manageUsersApi'
 import { login, resetStubs } from '../testUtils'
 import PrisonerCsraPage from '../pages/prisonerCsraPage'
 import type { CsraAssessmentStageAnswers } from '../../server/data/csraApiTypes'
+import { getMatchingRequests } from '../mockApis/wiremock'
 
 const prisoner = {
   prisonerNumber: 'A1234BC',
@@ -487,10 +488,30 @@ test.describe('Prisoner CSRA', () => {
       name: 'Continue with high risk – specific (provisional)',
     })
     await expect(exceptionButton).toBeVisible()
-    await Promise.all([
-      page.waitForURL(/\/confirm-rating\?selectedRating=HIGH_SPECIFIC_PROVISIONAL$/),
-      exceptionButton.click(),
-    ])
+    await exceptionButton.click()
+    await expect(page).toHaveURL(/\/confirm-rating\/HIGH_SPECIFIC$/)
+    await expect(page.getByRole('heading', { name: 'Confirm provisional CSRA rating' })).toBeVisible()
+    await expect(page.locator('.moj-ticket-panel')).toContainText('High risk – specific (provisional)')
+    await expect(page.getByLabel('Review date')).toHaveCount(0)
+
+    await csraApi.stubSubmitProvisionalRating(prisoner.prisonerNumber, 'assessment-123')
+    await page.getByLabel('Assessment comment').fill('All available sources checked. Manager approved sharing.')
+    await page.getByRole('button', { name: 'Confirm rating' }).click()
+    await expect(page).toHaveURL('/prisoner/A1234BC')
+    await expect(page.getByRole('alert')).toContainText(
+      'John’s CSRA rating has been confirmed as high risk – specific (provisional).',
+    )
+    const submissions = await getMatchingRequests({
+      method: 'PUT',
+      urlPath: '/csra-api/csra-review/prisoner/A1234BC/assessment/assessment-123/provisional',
+    })
+    expect(submissions.body.requests).toHaveLength(1)
+    expect(JSON.parse(submissions.body.requests[0].body)).toMatchObject({
+      rating: 'HIGH_SPECIFIC',
+      assessmentComment: 'All available sources checked. Manager approved sharing.',
+    })
+    await page.reload()
+    await expect(page.getByRole('alert')).toHaveCount(0)
   })
 
   test('does not offer the local or remand exception when a clear high-risk offence requires high-general provisional', async ({
@@ -512,10 +533,29 @@ test.describe('Prisoner CSRA', () => {
     await expect(page.getByRole('button', { name: 'Continue with high risk – general (provisional)' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Exception for local or remand prisons' })).toHaveCount(0)
 
-    await Promise.all([
-      page.waitForURL(/\/confirm-rating\?selectedRating=HIGH_GENERAL_PROVISIONAL$/),
-      page.getByRole('button', { name: 'Continue with high risk – general (provisional)' }).click(),
-    ])
+    await page.getByRole('button', { name: 'Continue with high risk – general (provisional)' }).click()
+    await expect(page).toHaveURL(/\/confirm-rating\/HIGH_GENERAL$/)
+    await expect(page.getByRole('heading', { name: 'Confirm provisional CSRA rating' })).toBeVisible()
+    await expect(page.locator('.moj-ticket-panel')).toContainText('High risk – general (provisional)')
+    await expect(page.getByLabel('Review date')).toHaveCount(0)
+
+    await csraApi.stubSubmitProvisionalRating(prisoner.prisonerNumber, 'assessment-123')
+    await page.getByLabel('Assessment comment').fill('High-risk evidence found. Awaiting healthcare assessment.')
+    await page.getByRole('button', { name: 'Confirm rating' }).click()
+    await expect(page).toHaveURL('/prisoner/A1234BC')
+    await expect(page.getByRole('alert')).toContainText(
+      'John’s CSRA rating has been confirmed as high risk – general (provisional).',
+    )
+    const submissions = await getMatchingRequests({
+      method: 'PUT',
+      urlPath: '/csra-api/csra-review/prisoner/A1234BC/assessment/assessment-123/provisional',
+    })
+    expect(submissions.body.requests).toHaveLength(1)
+    expect(JSON.parse(submissions.body.requests[0].body)).toMatchObject({
+      rating: 'HIGH_GENERAL',
+      assessmentComment: 'High-risk evidence found. Awaiting healthcare assessment.',
+    })
+    expect(JSON.parse(submissions.body.requests[0].body)).not.toHaveProperty('nextReviewDate')
   })
 
   test('shows the fixed high-general rating when a clear high-risk offence is recorded', async ({ page }) => {
@@ -536,5 +576,63 @@ test.describe('Prisoner CSRA', () => {
     await expect(page.getByText('murder, manslaughter or life-threatening assault in custody')).toBeVisible()
     await expect(page.getByRole('radio')).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Continue with high risk – general' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Continue with high risk – general' }).click()
+    await expect(page.getByRole('heading', { name: 'Confirm CSRA rating', exact: true })).toBeVisible()
+    await expect(page.getByLabel('Review date')).toBeVisible()
+
+    await page.getByRole('button', { name: 'Confirm rating' }).click()
+    await expect(page.getByRole('alert')).toContainText('Enter an assessment comment')
+    await expect(page.getByRole('alert')).toContainText('Enter or select a date')
+
+    await page.getByLabel('Assessment comment').fill('Clear evidence requires the prisoner not to share a cell.')
+    await page.getByLabel('Review date').fill('31/2/2099')
+    await page.getByRole('button', { name: 'Confirm rating' }).click()
+    await expect(page.getByRole('alert')).toContainText('Enter a real date')
+    await expect(page.getByLabel('Assessment comment')).toHaveValue(
+      'Clear evidence requires the prisoner not to share a cell.',
+    )
+
+    await csraApi.stubSubmitFinalRating(prisoner.prisonerNumber, 'assessment-123')
+    await page.getByLabel('Review date').fill('17/5/2099')
+    await page.getByRole('button', { name: 'Confirm rating' }).click()
+    await expect(page).toHaveURL('/prisoner/A1234BC')
+    await expect(page.getByRole('alert')).toContainText('John’s CSRA rating has been confirmed as high risk – general.')
+    const submissions = await getMatchingRequests({
+      method: 'PUT',
+      urlPath: '/csra-api/csra-review/prisoner/A1234BC/assessment/assessment-123/final',
+    })
+    expect(submissions.body.requests).toHaveLength(1)
+    expect(JSON.parse(submissions.body.requests[0].body)).toMatchObject({
+      rating: 'HIGH_GENERAL',
+      assessmentComment: 'Clear evidence requires the prisoner not to share a cell.',
+      nextReviewDate: '2099-05-17',
+    })
+  })
+
+  test('confirms a standard final rating without a review date and can return to change the selection', async ({
+    page,
+  }) => {
+    await stubRatingSelectionAssessment(page, completeAssessmentAnswers())
+    await csraApi.stubSubmitFinalRating(prisoner.prisonerNumber, 'assessment-123')
+    await page.goto('/prisoner/A1234BC/csra/assessment-123/select-rating')
+    await page.getByRole('radio', { name: 'Standard risk', exact: true }).check()
+    await page.getByRole('button', { name: 'Continue', exact: true }).click()
+    await expect(page).toHaveURL(/\/confirm-rating\/STANDARD$/)
+    await expect(page.getByLabel('Review date')).toHaveCount(0)
+    await page.getByRole('link', { name: 'Back', exact: true }).click()
+    await expect(page.getByRole('radio', { name: 'Standard risk', exact: true })).toBeChecked()
+    await page.getByRole('button', { name: 'Continue', exact: true }).click()
+    await page.getByLabel('Assessment comment').fill('No increased risks identified.')
+    await page.getByRole('button', { name: 'Confirm rating' }).click()
+    await expect(page).toHaveURL('/prisoner/A1234BC')
+    await expect(page.getByRole('alert')).toContainText('John’s CSRA rating has been confirmed as standard.')
+    const submissions = await getMatchingRequests({
+      method: 'PUT',
+      urlPath: '/csra-api/csra-review/prisoner/A1234BC/assessment/assessment-123/final',
+    })
+    expect(submissions.body.requests).toHaveLength(1)
+    expect(JSON.parse(submissions.body.requests[0].body)).toMatchObject({ rating: 'STANDARD' })
+    expect(JSON.parse(submissions.body.requests[0].body)).not.toHaveProperty('nextReviewDate')
   })
 })

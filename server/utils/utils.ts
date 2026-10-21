@@ -188,7 +188,7 @@ export const highRiskLabel = (rating: string): string => {
 }
 
 /** Human-readable label for the history page's richer rating filter values. */
-export const csraHistoryRatingLabel = (rating?: string | null): string => {
+export const csraRiskRatingLabel = (rating?: string | null): string => {
   switch (rating) {
     case 'HIGH':
       return 'High risk'
@@ -506,6 +506,12 @@ export const parseUkDate = (value?: string): string | undefined => {
   return format(parsed, 'yyyy-MM-dd')
 }
 
+export const formatUkDate = (date?: Date): string | undefined => {
+  if (!date) return undefined
+
+  return format(date, UK_DATE_FORMAT)
+}
+
 export interface ParsedCsraHistoryQuery {
   ratings: string[]
   establishments: string[]
@@ -569,7 +575,7 @@ export const getCsraHistoryRatingOptions = (
 ): HistoryRatingOption[] =>
   availableRatings.map(rating => ({
     value: rating,
-    text: csraHistoryRatingLabel(rating) || rating,
+    text: csraRiskRatingLabel(rating) || rating,
     checked: selectedRatings.includes(rating),
   }))
 

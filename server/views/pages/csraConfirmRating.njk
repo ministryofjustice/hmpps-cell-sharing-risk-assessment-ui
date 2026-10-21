@@ -1,0 +1,90 @@
+{% extends "../partials/layout.njk" %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/textarea/macro.njk" import govukTextarea %}
+{% from "moj/components/date-picker/macro.njk" import mojDatePicker -%}
+{% from "moj/components/ticket-panel/macro.njk" import mojTicketPanel %}
+
+{% set prisonerName = (prisoner.firstName + " " + prisoner.lastName) | convertToTitleCase %}
+{% set isProvisional = submitType === 'PROVISIONAL' %}
+
+{% if isProvisional %}
+  {% set title = "Confirm provisional CSRA rating" %}
+{% else %}
+  {% set title = "Confirm CSRA rating" %}
+{% endif %}
+
+{% set pageTitle = applicationName + " - " + title %}
+
+{% block outerHeading %}
+  {% include "../partials/compactPrisonerBanner.njk" %}
+
+  {{ super() }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <div class="govuk-body">
+        <form method="post" action>
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+
+          {{ mojTicketPanel({
+            classes: 'govuk-!-margin-top-4 govuk-!-margin-bottom-8',
+            items: [{
+              html: '
+                      <p class="govuk-!-margin-bottom-0">CSRA rating</p>
+
+                      <p class="govuk-heading-m">
+                        ' + rating | csraRatingLabel('PROVISIONAL' if isProvisional) + '
+                      </p>',
+              classes: "moj-ticket-panel__content--blue-background"
+            }]
+          }) }}
+
+          {{ govukTextarea({
+            name: "assessmentComment",
+            label: {
+              text: "Assessment comment",
+              classes: 'govuk-fieldset__legend--m'
+            },
+            hint: {
+              text: 'Briefly explain the outcome of the assessment including any risks related to the prisoner sharing a cell.'
+            },
+            value: values.assessmentComment,
+            errorMessage: validationErrors.assessmentComment,
+            attributes: {
+              rows: 5
+            }
+          }) }}
+
+          {% if rating === 'HIGH_GENERAL' and submitType === 'FINAL' %}
+            {{ mojDatePicker({
+              id: "nextReviewDate",
+              name: "nextReviewDate",
+              label: {
+                text: "Review date",
+                classes: 'govuk-fieldset__legend--m'
+              },
+              value: values.nextReviewDate,
+              errorMessage: validationErrors.nextReviewDate,
+              hint: {
+                html: "<p>Enter when the CSRA should be reviewed.</p>For example, 17/5/2026."
+              },
+              minDate: tomorrow() | formatUkDate
+            }) }}
+          {% endif %}
+
+          {{ govukButton({
+            text: "Confirm rating"
+          }) }}
+
+        </form>
+
+        <p>
+          <a href="{{ cancelLink }}" class="govuk-link">Cancel</a>
+        </p>
+      </div>
+    </div>
+  </div>
+{% endblock %}

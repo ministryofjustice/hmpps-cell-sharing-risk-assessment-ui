@@ -412,6 +412,10 @@ export type CsraAssessmentStageRequest = Omit<CsraAssessmentStageAnswers, 'stage
   assessmentComment: string
 }
 
+export type CsraAssessmentFinalStageRequest = CsraAssessmentStageRequest & {
+  nextReviewDate: string
+}
+
 export type CsraAssessmentStage = 'PROVISIONAL' | 'FINAL'
 
 export interface CsraOffenceEvidence {

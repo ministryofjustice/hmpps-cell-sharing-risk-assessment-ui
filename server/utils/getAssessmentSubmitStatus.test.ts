@@ -57,7 +57,7 @@ describe('getAssessmentSubmitStatus', () => {
       prisoner,
     )
 
-    expect(result).toEqual({ submitType: AssessmentSubmitType.NONE, remainingTasks: [] })
+    expect(result).toEqual({ submitType: AssessmentSubmitType.NONE, remainingTasks: [], allowedRatings: [] })
   })
 
   it('allows a provisional rating when evidence and healthcare are answered but the assessment is incomplete', () => {
@@ -66,6 +66,7 @@ describe('getAssessmentSubmitStatus', () => {
     expect(getAssessmentSubmitStatus(makeAssessment(answers), answers, prisoner)).toEqual({
       submitType: AssessmentSubmitType.PROVISIONAL,
       remainingTasks: ['ensure the prisoner has been seen by healthcare'],
+      allowedRatings: ['HIGH_GENERAL', 'HIGH_SPECIFIC'],
     })
   })
 
@@ -75,6 +76,7 @@ describe('getAssessmentSubmitStatus', () => {
     expect(getAssessmentSubmitStatus(makeAssessment(answers), answers, prisoner)).toEqual({
       submitType: AssessmentSubmitType.FINAL,
       remainingTasks: [],
+      allowedRatings: ['HIGH_GENERAL', 'HIGH_SPECIFIC', 'STANDARD'],
     })
   })
 
@@ -89,7 +91,7 @@ describe('getAssessmentSubmitStatus', () => {
       prisoner,
     )
 
-    expect(result.submitType).toBe(AssessmentSubmitType.NONE)
+    expect(result).toEqual({ submitType: AssessmentSubmitType.NONE, remainingTasks: [], allowedRatings: [] })
   })
 
   it('does not allow another provisional rating after an interim result has been entered', () => {
@@ -97,7 +99,7 @@ describe('getAssessmentSubmitStatus', () => {
 
     expect(
       getAssessmentSubmitStatus(makeAssessment(answers, { interimResult: 'HIGH_GENERAL' }), answers, prisoner),
-    ).toEqual({ submitType: AssessmentSubmitType.NONE, remainingTasks: [] })
+    ).toEqual({ submitType: AssessmentSubmitType.NONE, remainingTasks: [], allowedRatings: [] })
   })
 
   // TODO: this test requires the reviewProvisional section to also be complete, but that section is not yet implemented
@@ -123,6 +125,7 @@ describe('getAssessmentSubmitStatus', () => {
 
     expect(getAssessmentSubmitStatus(makeAssessment(answers), answers, prisoner)).toEqual({
       submitType: AssessmentSubmitType.PROVISIONAL,
+      allowedRatings: ['HIGH_GENERAL', 'HIGH_SPECIFIC'],
       remainingTasks: [
         'check remaining evidence sources (DPS, PER, Warrant)',
         'review offence questions after checking remaining evidence sources',
@@ -148,5 +151,37 @@ describe('getAssessmentSubmitStatus', () => {
     expect(
       getAssessmentSubmitStatus(makeAssessment(noHarmAnswers), noHarmAnswers, prisoner).remainingTasks,
     ).not.toContain('record if there is reason to believe the prisoner may harm someone they share a cell with')
+  })
+
+  describe.each([true, false])('when seenByHealthcare is %s', seenByHealthcare => {
+    it.each([
+      ['offenceMurderManslaughter', 'MURDER_MANSLAUGHTER'],
+      ['offenceAssistingSuicide', 'ASSISTING_SUICIDE'],
+      ['offenceSexualAssault', 'SEXUAL_ASSAULT'],
+    ] as const)('restricts ratings to high-general for %s', (field, offence) => {
+      const answers = makeStageAnswers({
+        seenByHealthcare,
+        [field]: true,
+        offenceEvidence: [{ offence, sources: ['PNC'], details: 'Evidence recorded' }],
+      })
+
+      expect(getAssessmentSubmitStatus(makeAssessment(answers), answers, prisoner)).toEqual({
+        submitType: seenByHealthcare ? AssessmentSubmitType.FINAL : AssessmentSubmitType.PROVISIONAL,
+        remainingTasks: seenByHealthcare ? [] : ['ensure the prisoner has been seen by healthcare'],
+        allowedRatings: ['HIGH_GENERAL'],
+      })
+    })
+
+    it('does not force high-general for other offences with recorded evidence', () => {
+      const answers = makeStageAnswers({
+        seenByHealthcare,
+        offenceArson: true,
+        offenceEvidence: [{ offence: 'ARSON', sources: ['PNC'], details: 'Evidence recorded' }],
+      })
+
+      expect(getAssessmentSubmitStatus(makeAssessment(answers), answers, prisoner).allowedRatings).toEqual(
+        seenByHealthcare ? ['HIGH_GENERAL', 'HIGH_SPECIFIC', 'STANDARD'] : ['HIGH_GENERAL', 'HIGH_SPECIFIC'],
+      )
+    })
   })
 })
