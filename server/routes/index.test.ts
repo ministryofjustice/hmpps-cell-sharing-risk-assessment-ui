@@ -15,6 +15,7 @@ import {
   NomisPrisonOnDpsError,
   NomisScreenNotSetUpError,
   NomisSwitchNotSetUpError,
+  NomisSwitchSetNationallyError,
 } from '../utils/nomisSplash'
 import type { SplashScreenCondition } from '../data/prisonApiTypes'
 
@@ -1350,6 +1351,23 @@ describe('Admin - manage enabled prisons', () => {
         })
     })
 
+    it('changes nothing and explains when the CSRA switch is on for every prison', () => {
+      prisonApiService.setPrisonOnDps.mockRejectedValue(new NomisSwitchSetNationallyError('CSRA'))
+
+      return request(adminApp())
+        .post('/admin/prisons/MDI')
+        .send({ active: 'false', name: 'Moorland (HMP)' })
+        .expect(302)
+        .expect(() => {
+          expect(flashProvider).toHaveBeenCalledWith(
+            'error',
+            'The NOMIS CSRA switch is on for every prison, so it cannot be turned off for Moorland (HMP) alone. ' +
+              'Nothing has been changed.',
+          )
+          expect(auditService.logAuditEvent).not.toHaveBeenCalled()
+        })
+    })
+
     it('is forbidden for a user without the admin role', () => {
       return request(app)
         .post('/admin/prisons/LEI')
@@ -1418,6 +1436,7 @@ describe('Admin - manage enabled prisons', () => {
       [new NomisSwitchNotSetUpError(['CSRA_AUTO_APPROVAL']), 'CSRA_AUTO_APPROVAL are not available'],
       [new NomisScreenNotSetUpError(['OIDCAPPR']), 'has not been set up yet for OIDCAPPR'],
       [new NomisPrisonOnDpsError('LEI'), 'Leeds (HMP) is blocked in NOMIS because it uses CSRA in DPS'],
+      [new NomisSwitchSetNationallyError('CSRA_AUTO_APPROVAL'), 'cannot be turned off for Leeds (HMP) alone'],
     ])('explains %p without auditing', (error, message) => {
       prisonApiService.setApprovalStep.mockRejectedValue(error)
 

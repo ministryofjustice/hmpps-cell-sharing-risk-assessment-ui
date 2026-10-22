@@ -9,6 +9,7 @@ import {
   NOMIS_CSRA_SWITCH,
   NomisPrisonOnDpsError,
   NomisScreenNotSetUpError,
+  NomisSwitchSetNationallyError,
 } from '../utils/nomisSplash'
 import type { SplashScreenCondition } from '../data/prisonApiTypes'
 
@@ -212,6 +213,16 @@ describe('PrisonApiService NOMIS CSRA screens', () => {
         expect(writeOrder()).toEqual(['DPS'])
       })
 
+      it('does not add a per-prison CSRA switch when it is already on for every prison', async () => {
+        stubBothScreens([])
+        stubSwitches({ csra: ['*ALL*'] })
+
+        await service.setPrisonOnDps('user1', 'MDI', true, changeDps)
+
+        expect(addAgencySwitch).not.toHaveBeenCalled()
+        expect(changeDps).toHaveBeenCalled()
+      })
+
       it('treats the CSRA switch already being on (409) as success', async () => {
         stubBothScreens([])
         addAgencySwitch.mockRejectedValue(Object.assign(new Error('Conflict'), { responseStatus: 409 }))
@@ -276,6 +287,18 @@ describe('PrisonApiService NOMIS CSRA screens', () => {
         })
         expect(removeAgencySwitch).toHaveBeenCalledTimes(1)
         expect(change.screens).toEqual({ [QUESTIONNAIRE]: 'NORMAL', [APPROVAL]: 'BLOCKED' })
+      })
+
+      it('is refused, changing nothing, when the CSRA switch is on for every prison', async () => {
+        stubBothScreens([caseload('MDI', true)])
+        stubSwitches({ csra: ['*ALL*'] })
+
+        await expect(service.setPrisonOnDps('user1', 'MDI', false, changeDps)).rejects.toMatchObject({
+          name: 'NomisSwitchSetNationallyError',
+          serviceCode: NOMIS_CSRA_SWITCH,
+        })
+        nothingChanged()
+        expect(changeDps).not.toHaveBeenCalled()
       })
 
       it('leaves NOMIS blocked when turning DPS off fails', async () => {
@@ -378,6 +401,14 @@ describe('PrisonApiService NOMIS CSRA screens', () => {
       stubSwitches({ csra: ['MDI'] })
 
       await expect(service.setApprovalStep('user1', 'MDI', 'NOT_REQUIRED')).rejects.toThrow(NomisPrisonOnDpsError)
+      nothingChanged()
+    })
+
+    it('refuses to restore the step, changing nothing, when it has been removed for every prison', async () => {
+      stubScreensSeparately({ [APPROVAL]: [caseload('MDI', true)] })
+      stubSwitches({ autoApproval: ['*ALL*'] })
+
+      await expect(service.setApprovalStep('user1', 'MDI', 'REQUIRED')).rejects.toThrow(NomisSwitchSetNationallyError)
       nothingChanged()
     })
 

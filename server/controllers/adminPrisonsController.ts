@@ -15,6 +15,7 @@ import {
   NomisPrisonOnDpsError,
   NomisScreenNotSetUpError,
   NomisSwitchNotSetUpError,
+  NomisSwitchSetNationallyError,
 } from '../utils/nomisSplash'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService' | 'prisonApiService' | 'activeAgenciesService'>
@@ -31,6 +32,11 @@ const backToList = (search: unknown): string => {
 const screenNotSetUpMessage = (error: NomisScreenNotSetUpError): string =>
   `The NOMIS splash screen has not been set up yet for ${error.missingModules.join(', ')}. ` +
   'Create it in NOMIS first. Nothing has been changed.'
+
+/** The error banner for a switch that is on for every prison in NOMIS, so cannot be turned off for one. */
+const switchSetNationallyMessage = (error: NomisSwitchSetNationallyError, name: string): string =>
+  `The NOMIS ${error.serviceCode} switch is on for every prison, so it cannot be turned off for ${name} alone. ` +
+  'Nothing has been changed.'
 
 /**
  * The rollout admin console actions grouped in one controller class.
@@ -110,8 +116,10 @@ export default class AdminPrisonsController {
         await activeAgenciesService.applyAgencyChange(agencyId, active)
       })
     } catch (error) {
-      if (!(error instanceof NomisScreenNotSetUpError)) throw error
-      req.flash('error', screenNotSetUpMessage(error))
+      if (error instanceof NomisScreenNotSetUpError) req.flash('error', screenNotSetUpMessage(error))
+      else if (error instanceof NomisSwitchSetNationallyError)
+        req.flash('error', switchSetNationallyMessage(error, name))
+      else throw error
       return res.redirect(backToList(req.body.q))
     }
 
@@ -174,6 +182,7 @@ const approvalStepErrorMessage = (error: unknown, name: string): string | undefi
   if (error instanceof NomisSwitchNotSetUpError) {
     return `The NOMIS switches for ${error.missingSwitches.join(', ')} are not available in this environment yet.`
   }
+  if (error instanceof NomisSwitchSetNationallyError) return switchSetNationallyMessage(error, name)
   if (error instanceof NomisPrisonOnDpsError) {
     return `${name} is blocked in NOMIS because it uses CSRA in DPS, so the NOMIS approval step does not apply.`
   }

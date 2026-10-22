@@ -3,11 +3,13 @@ import { PrisonApiAgencySwitchClient, PrisonApiClient, PrisonApiSplashClient } f
 import type { PrisonerImage } from '../data/prisonApiClient'
 import type { SplashScreenCondition } from '../data/prisonApiTypes'
 import {
+  ALL_AGENCIES,
   CASELOAD_CONDITION,
   deriveApprovalStep,
   deriveNomisState,
   expectedScreenState,
   isBlockedInNomis,
+  isSwitchedOn,
   NOMIS_APPROVAL_MODULE,
   NOMIS_AUTO_APPROVAL_SWITCH,
   NOMIS_CSRA_MODULES,
@@ -15,6 +17,7 @@ import {
   NomisPrisonOnDpsError,
   NomisScreenNotSetUpError,
   NomisSwitchNotSetUpError,
+  NomisSwitchSetNationallyError,
   type NomisApprovalStep,
   type NomisChange,
   type NomisScreen,
@@ -97,6 +100,9 @@ export default class PrisonApiService {
         throw error
       }),
     ])
+    if (!activeInDps && switches?.csra.includes(ALL_AGENCIES)) {
+      throw new NomisSwitchSetNationallyError(NOMIS_CSRA_SWITCH)
+    }
     const approval = deriveApprovalStep(switches, agencyId)
 
     const change: NomisChange = {
@@ -135,6 +141,9 @@ export default class PrisonApiService {
       this.readSwitchesForWrite(username),
     ])
     if (isBlockedInNomis(screens, agencyId)) throw new NomisPrisonOnDpsError(agencyId)
+    if (approval === 'REQUIRED' && switches.autoApproval.includes(ALL_AGENCIES)) {
+      throw new NomisSwitchSetNationallyError(NOMIS_AUTO_APPROVAL_SWITCH)
+    }
 
     const approvalScreens = screens.filter(screen => screen.moduleName === NOMIS_APPROVAL_MODULE)
     const notRequired = approval === 'NOT_REQUIRED'
@@ -177,8 +186,9 @@ export default class PrisonApiService {
   }
 
   /**
-   * Switches a service on or off for a prison, if it is not already. A 409 on adding means another
-   * change got there first, which is the state wanted, so it counts as success.
+   * Switches a service on or off for a prison, if it is not already. On counts a national `*ALL*` row,
+   * which already covers the prison; callers refuse to switch off under one before getting here. A 409
+   * on adding means another change got there first, which is the state wanted, so it counts as success.
    */
   private async applySwitch(
     username: string,
@@ -187,7 +197,7 @@ export default class PrisonApiService {
     agencyId: string,
     on: boolean,
   ): Promise<void> {
-    if (current.includes(agencyId) === on) return
+    if (on ? isSwitchedOn(current, agencyId) : !current.includes(agencyId)) return
     if (!on) {
       await this.prisonApiAgencySwitchClient.removeAgencySwitch(username, { serviceCode, agencyId })
       return

@@ -156,6 +156,18 @@ export class NomisSwitchNotSetUpError extends Error {
 }
 
 /**
+ * Thrown when an admin tries to switch a NOMIS switch off for one prison while it is on for every prison
+ * (`*ALL*`). Removing the prison's own row would change nothing, and removing the national row would
+ * affect every other prison, so the change is refused before anything, DPS included, is altered.
+ */
+export class NomisSwitchSetNationallyError extends Error {
+  constructor(readonly serviceCode: string) {
+    super(`The NOMIS ${serviceCode} switch is on for every prison, so it cannot be switched off for one`)
+    this.name = 'NomisSwitchSetNationallyError'
+  }
+}
+
+/**
  * Thrown when an admin changes the approval step for a prison that is blocked in NOMIS because it is on
  * DPS. The step only applies to prisons still recording CSRAs in NOMIS.
  */
