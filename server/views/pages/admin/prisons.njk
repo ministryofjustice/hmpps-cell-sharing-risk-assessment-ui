@@ -32,7 +32,18 @@
   {% if not nomisScreenAvailable %}
     <p class="govuk-inset-text" data-qa="nomis-unavailable">
       The NOMIS CSRA screen ({{ nomisModules }}) status is currently unavailable. One or more may not
-      have been set up in NOMIS yet, so the controls are hidden.
+      have been set up in NOMIS yet. Prisons cannot be turned on or off until it is.
+    </p>
+  {% elif not nomisSwitchesAvailable %}
+    <p class="govuk-inset-text" data-qa="nomis-switches-unavailable">
+      The NOMIS CSRA switches ({{ nomisSwitches }}) are currently unavailable. They may not have been set
+      up in this NOMIS environment yet. Turning a prison on still blocks its NOMIS CSRA screens, but the
+      NOMIS header will not change and the approval step cannot be removed.
+    </p>
+  {% elif approvalRemovedNationally %}
+    <p class="govuk-inset-text" data-qa="nomis-approval-national">
+      The NOMIS approval step has been removed for every prison in NOMIS, so it cannot be changed here
+      prison by prison.
     </p>
   {% endif %}
 
@@ -52,79 +63,87 @@
   </form>
 
   {% if agencies.length %}
+    {% set showApproval = nomisScreenAvailable and nomisSwitchesAvailable %}
     {% set rows = [] %}
     {% for agency in agencies %}
+      {% set prison %}
+        {{ agency.name }}
+        <span class="govuk-body-s govuk-hint govuk-!-display-block govuk-!-margin-bottom-0">{{ agency.agencyId }}</span>
+      {% endset %}
+
       {% set statusTag %}
         {% if agency.active %}
           {{ govukTag({ text: "On", classes: "govuk-tag--green" }) }}
         {% else %}
           {{ govukTag({ text: "Off", classes: "govuk-tag--grey" }) }}
         {% endif %}
-      {% endset %}
-
-      {% set toggle %}
-        <form method="post" action="/admin/prisons/{{ agency.agencyId }}" novalidate>
-          <input type="hidden" name="_csrf" value="{{ csrfToken }}"/>
-          <input type="hidden" name="active" value="{{ 'false' if agency.active else 'true' }}"/>
-          <input type="hidden" name="name" value="{{ agency.name }}"/>
-          <input type="hidden" name="q" value="{{ search }}"/>
-          {{ govukButton({
-            text: ("Turn off" if agency.active else "Turn on"),
-            classes: "govuk-button--secondary govuk-!-margin-bottom-0",
-            attributes: { "data-qa": "toggle-" + agency.agencyId }
-          }) }}
-        </form>
-      {% endset %}
-
-      {% set nomisTag %}
-        {% if not nomisScreenAvailable %}
-          {{ govukTag({ text: "Unknown", classes: "govuk-tag--grey" }) }}
-        {% elif agency.nomisState == "BLOCKED" %}
-          {{ govukTag({ text: "Blocked", classes: "govuk-tag--red" }) }}
-        {% elif agency.nomisState == "WARNING" %}
-          {{ govukTag({ text: "Warning", classes: "govuk-tag--yellow" }) }}
-        {% elif agency.nomisState == "MIXED" %}
-          {# The screens are always set together, so disagreeing means something changed them elsewhere. #}
-          {{ govukTag({ text: "Mixed", classes: "govuk-tag--orange" }) }}
-        {% else %}
-          {{ govukTag({ text: "Normal", classes: "govuk-tag--grey" }) }}
+        {% if nomisScreenAvailable and not agency.nomis.matchesDps %}
+          {# NOMIS is not where turning the prison on or off would have put it: changed elsewhere, or a
+             change part-applied. Turning it on or off again puts it right. #}
+          <div class="csra-admin-attention">
+            {{ govukTag({
+              text: "NOMIS needs attention",
+              classes: "govuk-tag--orange",
+              attributes: { "data-qa": "nomis-attention-" + agency.agencyId }
+            }) }}
+          </div>
         {% endif %}
       {% endset %}
 
-      {% set nomisActions %}
-        {% if nomisScreenAvailable %}
-          {% set nomisTargets = [
-            { state: "WARNING", text: "Show warning", qa: "nomis-warning-" },
-            { state: "BLOCKED", text: "Block", qa: "nomis-block-" },
-            { state: "NORMAL", text: "Clear", qa: "nomis-clear-" }
-          ] %}
-          {% for target in nomisTargets %}
-            {# Only offer the transitions the prison is not already in. #}
-            {% if agency.nomisState != target.state %}
-              <form method="post" action="/admin/prisons/{{ agency.agencyId }}/nomis-screen" novalidate
-                    class="csra-admin-inline-form">
-                <input type="hidden" name="_csrf" value="{{ csrfToken }}"/>
-                <input type="hidden" name="state" value="{{ target.state }}"/>
-                <input type="hidden" name="name" value="{{ agency.name }}"/>
-                <input type="hidden" name="q" value="{{ search }}"/>
-                {{ govukButton({
-                  text: target.text,
-                  classes: "govuk-button--secondary govuk-!-margin-bottom-0",
-                  attributes: { "data-qa": target.qa + agency.agencyId }
-                }) }}
-              </form>
-            {% endif %}
-          {% endfor %}
+      {% set toggle %}
+        {# A prison needing attention is offered both, so the admin can re-apply the state they want. #}
+        {% set turnOnTargets = [not agency.active] if (agency.nomis.matchesDps or not nomisScreenAvailable) else [true, false] %}
+        {% for turnOn in turnOnTargets %}
+          <form method="post" action="/admin/prisons/{{ agency.agencyId }}" novalidate class="csra-admin-inline-form">
+            <input type="hidden" name="_csrf" value="{{ csrfToken }}"/>
+            <input type="hidden" name="active" value="{{ 'true' if turnOn else 'false' }}"/>
+            <input type="hidden" name="name" value="{{ agency.name }}"/>
+            <input type="hidden" name="q" value="{{ search }}"/>
+            {{ govukButton({
+              text: ("Turn on" if turnOn else "Turn off"),
+              classes: "govuk-button--secondary govuk-!-margin-bottom-0",
+              attributes: { "data-qa": ("turn-on-" if turnOn else "turn-off-") + agency.agencyId }
+            }) }}
+          </form>
+        {% endfor %}
+      {% endset %}
+
+      {% set approvalTag %}
+        {% if not showApproval %}
+          {{ govukTag({ text: "Unknown", classes: "govuk-tag--grey" }) }}
+        {% elif agency.active %}
+          {# Every NOMIS CSRA screen is blocked, so the step does not apply. #}
+          <span class="govuk-hint govuk-!-margin-bottom-0">Not used</span>
+        {% elif agency.nomis.approval == "NOT_REQUIRED" %}
+          {{ govukTag({ text: "Not required", classes: "govuk-tag--blue" }) }}
+        {% else %}
+          {{ govukTag({ text: "Required", classes: "govuk-tag--grey" }) }}
+        {% endif %}
+      {% endset %}
+
+      {% set approvalAction %}
+        {% if showApproval and not approvalRemovedNationally and not agency.active %}
+          {% set notRequired = agency.nomis.approval == "NOT_REQUIRED" %}
+          <form method="post" action="/admin/prisons/{{ agency.agencyId }}/nomis-approval" novalidate>
+            <input type="hidden" name="_csrf" value="{{ csrfToken }}"/>
+            <input type="hidden" name="approval" value="{{ 'REQUIRED' if notRequired else 'NOT_REQUIRED' }}"/>
+            <input type="hidden" name="name" value="{{ agency.name }}"/>
+            <input type="hidden" name="q" value="{{ search }}"/>
+            {{ govukButton({
+              text: ("Restore approval" if notRequired else "Remove approval"),
+              classes: "govuk-button--secondary govuk-!-margin-bottom-0",
+              attributes: { "data-qa": ("nomis-approval-restore-" if notRequired else "nomis-approval-remove-") + agency.agencyId }
+            }) }}
+          </form>
         {% endif %}
       {% endset %}
 
       {% set rows = (rows.push([
-        { text: agency.name, attributes: { "data-qa": "name-" + agency.agencyId } },
-        { text: agency.agencyId },
+        { html: prison, attributes: { "data-qa": "name-" + agency.agencyId } },
         { html: statusTag, attributes: { "data-qa": "status-" + agency.agencyId } },
-        { html: toggle, classes: "govuk-!-text-align-right" },
-        { html: nomisTag, attributes: { "data-qa": "nomis-status-" + agency.agencyId } },
-        { html: nomisActions, classes: "govuk-!-text-align-right" }
+        { html: toggle, classes: "govuk-!-text-align-right csra-admin-action" },
+        { html: approvalTag, attributes: { "data-qa": "nomis-approval-" + agency.agencyId } },
+        { html: approvalAction, classes: "govuk-!-text-align-right csra-admin-action" }
       ]), rows) %}
     {% endfor %}
 
@@ -132,11 +151,10 @@
       attributes: { "data-qa": "prisons-table" },
       head: [
         { text: "Prison" },
-        { text: "ID" },
-        { text: "CSRA service (DPS)" },
-        { text: "DPS action", classes: "govuk-!-text-align-right" },
-        { text: "NOMIS CSRA screens" },
-        { text: "NOMIS action", classes: "govuk-!-text-align-right" }
+        { text: "CSRA in DPS" },
+        { text: "Action", classes: "govuk-!-text-align-right" },
+        { text: "NOMIS approval step" },
+        { text: "Action", classes: "govuk-!-text-align-right" }
       ],
       rows: rows
     }) }}

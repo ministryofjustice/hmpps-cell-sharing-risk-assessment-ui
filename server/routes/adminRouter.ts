@@ -13,7 +13,7 @@ export default function adminRouter(services: Services): Router {
   router.use(requireAdminRole)
   router.get('/prisons', controller.list)
   router.post('/prisons/:agencyId', controller.setActive)
-  router.post('/prisons/:agencyId/nomis-screen', controller.setNomisScreen)
+  router.post('/prisons/:agencyId/nomis-approval', controller.setApprovalStep)
 
   return router
 }

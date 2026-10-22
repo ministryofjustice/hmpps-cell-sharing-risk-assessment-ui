@@ -183,6 +183,19 @@ export default {
       .split(',')
       .map((moduleName: string) => moduleName.trim())
       .filter(Boolean),
+    /**
+     * The module above that is the approval step. A prison on the NOMIS process with no approval step
+     * keeps it blocked whatever stage its move to DPS has reached.
+     */
+    csraApprovalModule: get('NOMIS_CSRA_APPROVAL_MODULE', 'OIDCAPPR'),
+    /**
+     * NOMIS agency switches (EXTERNAL_SERVICES codes) from Syscon CR 502, set per prison:
+     *  - CSRA — the prison has moved to DPS; the NOMIS header shows "View in DPS" instead of the rating.
+     *  - CSRA_AUTO_APPROVAL — saving an assessment in NOMIS also approves it, with no approval step.
+     * Neither blocks a NOMIS screen by itself; that is still done with the splash screens above.
+     */
+    csraSwitch: get('NOMIS_CSRA_SWITCH', 'CSRA'),
+    csraAutoApprovalSwitch: get('NOMIS_CSRA_AUTO_APPROVAL_SWITCH', 'CSRA_AUTO_APPROVAL'),
   },
   serviceUrls: {
     digitalPrison: get('DPS_URL', 'https://dps-dev.prison.service.justice.gov.uk', requiredInProduction),

@@ -24,7 +24,7 @@ export enum Page {
 /** Auditable admin actions (as opposed to page views), recorded via logAuditEvent. */
 export enum AdminAction {
   SET_PRISON_ACTIVE = 'SET_PRISON_ACTIVE',
-  SET_NOMIS_CSRA_SCREEN = 'SET_NOMIS_CSRA_SCREEN',
+  SET_NOMIS_APPROVAL_STEP = 'SET_NOMIS_APPROVAL_STEP',
 }
 
 export interface PageViewEventDetails {

@@ -1,0 +1,73 @@
+{
+  "mappings": [
+    {
+      "request": {
+        "method": "GET",
+        "urlPath": "/api/agency-switches/CSRA"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": [
+          {
+            "agencyId": "MDI",
+            "name": "Moorland (HMP & YOI)"
+          }
+        ]
+      },
+      "metadata": {
+        "comment": [
+          "The NOMIS agency switches from Syscon CR 502. CSRA is on for MDI, which get-splash-screen.json",
+          "also has blocked, so it reads as a prison that has moved to DPS. No prison has the",
+          "CSRA_AUTO_APPROVAL switch, so every prison still on NOMIS has its approval step."
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "urlPath": "/api/agency-switches/CSRA_AUTO_APPROVAL"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": []
+      }
+    },
+    {
+      "request": {
+        "method": "POST",
+        "urlPathPattern": "/api/agency-switches/(CSRA|CSRA_AUTO_APPROVAL)/agency/[A-Z]+"
+      },
+      "response": {
+        "status": 201,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "agencyId": "MDI",
+          "name": "Moorland (HMP & YOI)"
+        }
+      },
+      "metadata": {
+        "comment": [
+          "Accept the rollout console's switch writes. As with splash-screen-conditions.json, the state",
+          "returned above does not move, so a re-read still shows the seeded state."
+        ]
+      }
+    },
+    {
+      "request": {
+        "method": "DELETE",
+        "urlPathPattern": "/api/agency-switches/(CSRA|CSRA_AUTO_APPROVAL)/agency/[A-Z]+"
+      },
+      "response": {
+        "status": 204
+      }
+    }
+  ]
+}

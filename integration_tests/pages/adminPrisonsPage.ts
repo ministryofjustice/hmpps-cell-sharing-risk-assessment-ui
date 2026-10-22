@@ -14,6 +14,8 @@ export default class AdminPrisonsPage extends AbstractPage {
 
   readonly nomisUnavailable: Locator
 
+  readonly nomisSwitchesUnavailable: Locator
+
   readonly search: Locator
 
   readonly searchButton: Locator
@@ -26,6 +28,7 @@ export default class AdminPrisonsPage extends AbstractPage {
     this.successBanner = page.getByTestId('success-banner')
     this.errorBanner = page.getByTestId('error-banner')
     this.nomisUnavailable = page.getByTestId('nomis-unavailable')
+    this.nomisSwitchesUnavailable = page.getByTestId('nomis-switches-unavailable')
     this.search = page.getByTestId('prison-search')
     this.searchButton = page.getByTestId('prison-search-button')
   }
@@ -38,13 +41,13 @@ export default class AdminPrisonsPage extends AbstractPage {
 
   dpsStatus = (agencyId: string): Locator => this.page.getByTestId(`status-${agencyId}`)
 
-  dpsToggle = (agencyId: string): Locator => this.page.getByTestId(`toggle-${agencyId}`)
+  turnOn = (agencyId: string): Locator => this.page.getByTestId(`turn-on-${agencyId}`)
 
-  nomisStatus = (agencyId: string): Locator => this.page.getByTestId(`nomis-status-${agencyId}`)
+  turnOff = (agencyId: string): Locator => this.page.getByTestId(`turn-off-${agencyId}`)
 
-  nomisBlock = (agencyId: string): Locator => this.page.getByTestId(`nomis-block-${agencyId}`)
+  nomisAttention = (agencyId: string): Locator => this.page.getByTestId(`nomis-attention-${agencyId}`)
 
-  nomisWarning = (agencyId: string): Locator => this.page.getByTestId(`nomis-warning-${agencyId}`)
+  approvalStatus = (agencyId: string): Locator => this.page.getByTestId(`nomis-approval-${agencyId}`)
 
-  nomisClear = (agencyId: string): Locator => this.page.getByTestId(`nomis-clear-${agencyId}`)
+  removeApproval = (agencyId: string): Locator => this.page.getByTestId(`nomis-approval-remove-${agencyId}`)
 }
