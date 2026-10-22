@@ -8,7 +8,8 @@ import csraCheckAnswersController from '../controllers/csraCheckAnswersControlle
 import csraCancelAssessmentController from '../controllers/csraCancelAssessmentController'
 import csraWarrantsController, { csraWarrantFileController } from '../controllers/csraWarrantsController'
 import permissionGuard from '../middleware/permissionGuard'
-import csraSelectRatingController from '../controllers/csraSelectRatingController'
+import CsraSelectRatingController from '../controllers/csraSelectRatingController'
+import CsraConfirmRatingController from '../controllers/csraConfirmRatingController'
 
 export default function csraRouter(
   services: Pick<Services, 'auditService' | 'csraService' | 'prisonApiService' | 'warrantsService'>,
@@ -28,9 +29,13 @@ export default function csraRouter(
 
   router.get('/:assessmentId/check-answers', csraCheckAnswersController(services))
 
-  const selectRatingController = csraSelectRatingController(services)
-  router.get('/:assessmentId/select-rating', selectRatingController)
-  router.post('/:assessmentId/select-rating', selectRatingController)
+  const selectRatingHandler = new CsraSelectRatingController(services).requestHandler()
+  router.get('/:assessmentId/select-rating', selectRatingHandler)
+  router.post('/:assessmentId/select-rating', selectRatingHandler)
+
+  const confirmRatingHandler = new CsraConfirmRatingController(services).requestHandler()
+  router.get('/:assessmentId/confirm-rating/:rating', confirmRatingHandler)
+  router.post('/:assessmentId/confirm-rating/:rating', confirmRatingHandler)
 
   const cancelAssessmentController = csraCancelAssessmentController(services)
   router.get('/:assessmentId/cancel', cancelAssessmentController.get)

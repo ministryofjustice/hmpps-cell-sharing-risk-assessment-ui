@@ -30,6 +30,13 @@ export default class PrisonerCsraController {
       ])
     }
 
-    return res.render('pages/prisonerCsra', { prisoner, csra, prisonerNumber })
+    const success = req.flash('success')
+    if (success?.length) {
+      res.locals.banner = {
+        success: success[0],
+      }
+    }
+
+    return res.render('pages/prisonerCsra', { prisoner, csra, prisonerNumber, banner: res.locals.banner })
   }
 }

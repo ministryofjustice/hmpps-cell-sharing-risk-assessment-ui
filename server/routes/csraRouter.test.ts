@@ -67,6 +67,8 @@ describe('csraRouter', () => {
     getCurrentRating: jest.fn(),
     startCsraAssessment: jest.fn(),
     cancelCsraAssessment: jest.fn(),
+    submitProvisionalRating: jest.fn().mockResolvedValue({}),
+    submitFinalRating: jest.fn().mockResolvedValue({}),
   }
   const prisonerSearchService = {
     getPrisoner: jest.fn(),
@@ -297,10 +299,10 @@ describe('csraRouter', () => {
       .type('form')
       .send({ selectedRating: 'HIGH_SPECIFIC' })
       .expect(302)
-      .expect('Location', `${assessmentUrl}/confirm-rating?selectedRating=HIGH_SPECIFIC`)
+      .expect('Location', `${assessmentUrl}/confirm-rating/HIGH_SPECIFIC`)
   })
 
-  it('accepts only provisional ratings while the assessment is incomplete', async () => {
+  it('accepts unsuffixed high-risk ratings but not standard while the assessment is incomplete', async () => {
     csraService.getCsraAssessment.mockResolvedValue(
       assessment({ stages: [completeStageAnswers({ seenByHealthcare: false })] }),
     )
@@ -308,14 +310,14 @@ describe('csraRouter', () => {
     await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
       .post(`${assessmentUrl}/select-rating`)
       .type('form')
-      .send({ selectedRating: 'HIGH_SPECIFIC_PROVISIONAL' })
+      .send({ selectedRating: 'HIGH_SPECIFIC' })
       .expect(302)
-      .expect('Location', `${assessmentUrl}/confirm-rating?selectedRating=HIGH_SPECIFIC_PROVISIONAL`)
+      .expect('Location', `${assessmentUrl}/confirm-rating/HIGH_SPECIFIC`)
 
     const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
       .post(`${assessmentUrl}/select-rating`)
       .type('form')
-      .send({ selectedRating: 'HIGH_SPECIFIC' })
+      .send({ selectedRating: 'STANDARD' })
       .expect(200)
 
     expect(response.text).toContain('Provisional CSRA rating')
@@ -337,14 +339,14 @@ describe('csraRouter', () => {
     await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
       .post(`${assessmentUrl}/select-rating`)
       .type('form')
-      .send({ selectedRating: 'HIGH_GENERAL_PROVISIONAL' })
+      .send({ selectedRating: 'HIGH_GENERAL' })
       .expect(302)
-      .expect('Location', `${assessmentUrl}/confirm-rating?selectedRating=HIGH_GENERAL_PROVISIONAL`)
+      .expect('Location', `${assessmentUrl}/confirm-rating/HIGH_GENERAL`)
 
     const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
       .post(`${assessmentUrl}/select-rating`)
       .type('form')
-      .send({ selectedRating: 'HIGH_SPECIFIC_PROVISIONAL' })
+      .send({ selectedRating: 'HIGH_SPECIFIC' })
       .expect(200)
 
     expect(response.text).toContain('Provisional CSRA rating')
@@ -375,6 +377,189 @@ describe('csraRouter', () => {
     await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
       [method](`${assessmentUrl}/confirm-rating`)
       .expect(404)
+  })
+
+  describe('rating confirmation', () => {
+    beforeEach(() => {
+      csraService.getCsraAssessment.mockResolvedValue(assessment({ stages: [completeStageAnswers()] }))
+    })
+
+    it.each([
+      ['HIGH_GENERAL', true],
+      ['HIGH_SPECIFIC', false],
+      ['STANDARD', false],
+    ])('renders final %s with the appropriate review-date field', async (rating, hasReviewDate) => {
+      const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .get(`${assessmentUrl}/confirm-rating/${rating}`)
+        .expect(200)
+
+      expect(response.text).toContain('Confirm CSRA rating')
+      expect(response.text).toContain(`${assessmentUrl}/select-rating?selectedRating=${rating}`)
+      expect(response.text.includes('name="nextReviewDate"')).toBe(hasReviewDate)
+      expect(response.text).toContain('Assessment comment')
+    })
+
+    it.each(['HIGH_GENERAL', 'HIGH_SPECIFIC'])(
+      'renders and submits provisional %s without a review date',
+      async rating => {
+        const answers = completeStageAnswers({ seenByHealthcare: false })
+        csraService.getCsraAssessment.mockResolvedValue(assessment({ stages: [answers] }))
+        const app = buildApp([Role.CSRA__ASSESSMENT_EDIT])
+
+        const response = await request(app).get(`${assessmentUrl}/confirm-rating/${rating}`).expect(200)
+
+        expect(response.text).toContain('Confirm provisional CSRA rating')
+        expect(response.text).toContain('(provisional)')
+        expect(response.text).not.toContain('name="nextReviewDate"')
+
+        await request(app)
+          .post(`${assessmentUrl}/confirm-rating/${rating}`)
+          .type('form')
+          .send({ assessmentComment: 'Awaiting healthcare', nextReviewDate: '17/5/2099' })
+          .expect(302)
+          .expect('Location', '/prisoner/A1234BC')
+
+        expect(csraService.submitProvisionalRating).toHaveBeenCalledWith('user1', 'A1234BC', 'assessment-123', {
+          ...answers,
+          rating,
+          assessmentComment: 'Awaiting healthcare',
+        })
+        expect(csraService.submitFinalRating).not.toHaveBeenCalled()
+        expect(flashProvider).toHaveBeenCalledWith(
+          'success',
+          expect.objectContaining({ title: 'CSRA rating confirmed' }),
+        )
+      },
+    )
+
+    it.each(['HIGH_GENERAL', 'HIGH_SPECIFIC', 'STANDARD'])('submits final %s using the path rating', async rating => {
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(`${assessmentUrl}/confirm-rating/${rating}`)
+        .type('form')
+        .send({
+          assessmentComment: 'Assessment complete',
+          ...(rating === 'HIGH_GENERAL' ? { nextReviewDate: '17/5/2099' } : {}),
+          rating: 'UNSUPPORTED',
+        })
+        .expect(302)
+        .expect('Location', '/prisoner/A1234BC')
+
+      expect(csraService.submitFinalRating).toHaveBeenCalledWith('user1', 'A1234BC', 'assessment-123', {
+        ...completeStageAnswers(),
+        rating,
+        assessmentComment: 'Assessment complete',
+        nextReviewDate: rating === 'HIGH_GENERAL' ? '2099-05-17' : undefined,
+      })
+      expect(csraService.submitProvisionalRating).not.toHaveBeenCalled()
+    })
+
+    it.each(['HIGH_SPECIFIC', 'STANDARD'])('submits final %s without requiring a review date', async rating => {
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(`${assessmentUrl}/confirm-rating/${rating}`)
+        .type('form')
+        .send({ assessmentComment: 'Assessment complete' })
+        .expect(302)
+
+      expect(csraService.submitFinalRating).toHaveBeenCalledWith(
+        'user1',
+        'A1234BC',
+        'assessment-123',
+        expect.objectContaining({ rating, nextReviewDate: undefined }),
+      )
+    })
+
+    it('renders required errors rather than submitting an empty high-general confirmation', async () => {
+      const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(`${assessmentUrl}/confirm-rating/HIGH_GENERAL`)
+        .type('form')
+        .send({ assessmentComment: '   ' })
+        .expect(200)
+
+      expect(response.text).toContain('Enter an assessment comment')
+      expect(response.text).toContain('Enter or select a date')
+      expect(response.text).toContain('href="#assessmentComment"')
+      expect(response.text).toContain('href="#nextReviewDate"')
+      expect(csraService.submitFinalRating).not.toHaveBeenCalled()
+      expect(flashProvider).not.toHaveBeenCalledWith('success', expect.anything())
+    })
+
+    it.each([
+      ['2026-05-17', 'Enter the date in the correct format'],
+      ['17/5', 'Enter a full date'],
+      ['31/2/2099', 'Enter a real date'],
+      ['1/1/2000', 'Select an available date from the calendar'],
+    ])('rejects review date %s and preserves the comment and date', async (nextReviewDate, error) => {
+      const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(`${assessmentUrl}/confirm-rating/HIGH_GENERAL`)
+        .type('form')
+        .send({ assessmentComment: 'Keep this assessment comment', nextReviewDate })
+        .expect(200)
+
+      expect(response.text).toContain(error)
+      expect(response.text).toContain('Keep this assessment comment')
+      expect(response.text).toContain(`value="${nextReviewDate}"`)
+      expect(csraService.submitFinalRating).not.toHaveBeenCalled()
+    })
+
+    describe.each(['get', 'post'] as const)('%s guards', method => {
+      it.each(['UNSUPPORTED', 'HIGH_GENERAL_PROVISIONAL'])('redirects unsupported rating %s', async rating => {
+        await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+          [method](`${assessmentUrl}/confirm-rating/${rating}`)
+          .expect(302)
+          .expect('Location', assessmentUrl)
+
+        expect(csraService.submitProvisionalRating).not.toHaveBeenCalled()
+        expect(csraService.submitFinalRating).not.toHaveBeenCalled()
+      })
+
+      it('rejects standard for a provisional assessment', async () => {
+        csraService.getCsraAssessment.mockResolvedValue(
+          assessment({ stages: [completeStageAnswers({ seenByHealthcare: false })] }),
+        )
+
+        await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+          [method](`${assessmentUrl}/confirm-rating/STANDARD`)
+          .expect(302)
+          .expect('Location', assessmentUrl)
+
+        expect(csraService.submitFinalRating).not.toHaveBeenCalled()
+        expect(csraService.submitProvisionalRating).not.toHaveBeenCalled()
+      })
+
+      it('rejects high-specific when an offence requires high-general', async () => {
+        csraService.getCsraAssessment.mockResolvedValue(
+          assessment({
+            stages: [
+              completeStageAnswers({
+                offenceMurderManslaughter: true,
+                offenceEvidence: [{ offence: 'MURDER_MANSLAUGHTER', sources: ['PNC'], details: 'Evidence' }],
+              }),
+            ],
+          }),
+        )
+
+        await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+          [method](`${assessmentUrl}/confirm-rating/HIGH_SPECIFIC`)
+          .expect(302)
+          .expect('Location', assessmentUrl)
+
+        expect(csraService.submitFinalRating).not.toHaveBeenCalled()
+      })
+
+      it.each(['incomplete prerequisites', 'final result'])('redirects when there are %s', async state => {
+        csraService.getCsraAssessment.mockResolvedValue(
+          state === 'final result' ? assessment({ finalResult: 'STANDARD' }) : assessment(),
+        )
+
+        await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+          [method](`${assessmentUrl}/confirm-rating/HIGH_GENERAL`)
+          .expect(302)
+          .expect('Location', assessmentUrl)
+
+        expect(csraService.submitFinalRating).not.toHaveBeenCalled()
+        expect(csraService.submitProvisionalRating).not.toHaveBeenCalled()
+      })
+    })
   })
 
   it('renders a back link to the task list and a paragraph-wrapped cancel link on the first question', async () => {

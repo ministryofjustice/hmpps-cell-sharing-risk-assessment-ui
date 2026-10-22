@@ -20,6 +20,7 @@ import type {
   CsraAssessment,
   CsraAssessmentStageAnswers,
   CsraAssessmentStageRequest,
+  CsraAssessmentFinalStageRequest,
 } from './csraApiTypes'
 
 export default class CsraApiClient extends BaseApiClient {
@@ -218,7 +219,7 @@ export default class CsraApiClient extends BaseApiClient {
   submitFinalRating = this.apiCall<
     object,
     { prisonerNumber: string; assessmentId: string },
-    CsraAssessmentStageRequest
+    CsraAssessmentFinalStageRequest
   >({
     path: '/csra-review/prisoner/:prisonerNumber/assessment/:assessmentId/final',
     requestType: 'put',

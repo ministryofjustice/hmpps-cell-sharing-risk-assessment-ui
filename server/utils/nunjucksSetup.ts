@@ -28,6 +28,8 @@ import {
   taskListStatus,
   capFirst,
   formatSources,
+  csraRiskRatingLabel,
+  formatUkDate,
 } from './utils'
 import { userDisplayName } from './populateUserDisplayNames'
 import { yesNoValue } from './yesNoValue'
@@ -85,6 +87,19 @@ export default function nunjucksSetup(app: express.Express): void {
   }
 
   njkEnv.addGlobal('callAsMacro', callAsMacro)
+  /** Returns a Date object representing tomorrow's date in the UK timezone, preserving the UK calendar date when the formatUkDate filter reads local date components. */
+  njkEnv.addGlobal('tomorrow', () => {
+    const ukToday = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/London',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(new Date())
+    const [day, month, year] = ukToday.split('/').map(Number)
+
+    // Preserve the UK calendar date when the formatUkDate filter reads local date components.
+    return new Date(year, month - 1, day + 1)
+  })
 
   njkEnv.addFilter('initialiseName', initialiseName)
   njkEnv.addFilter('assetMap', (url: string) => assetManifest[url] || url)
@@ -98,8 +113,10 @@ export default function nunjucksSetup(app: express.Express): void {
   njkEnv.addFilter('formatDayMonth', formatDayMonth)
   njkEnv.addFilter('formatDayMonthYear', formatDayMonthYear)
   njkEnv.addFilter('formatLocation', formatLocation)
+  njkEnv.addFilter('formatUkDate', formatUkDate)
   njkEnv.addFilter('daysOverdue', daysOverdue)
   njkEnv.addFilter('csraRatingLabel', csraRatingLabel)
+  njkEnv.addFilter('csraRiskRatingLabel', csraRiskRatingLabel)
   njkEnv.addFilter('csraLevelLabel', csraLevelLabel)
   njkEnv.addFilter('csraRatingTagClass', csraRatingTagClass)
   njkEnv.addFilter('csraRatingPanelClass', csraRatingPanelClass)

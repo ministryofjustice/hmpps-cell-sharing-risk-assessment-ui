@@ -4,6 +4,7 @@ import {
   convertToTitleCase,
   csraLevelLabel,
   csraRatingLabel,
+  csraRiskRatingLabel,
   csraRatingTagClass,
   csraStatusLabel,
   csraTypeLabel,
@@ -28,7 +29,33 @@ import {
   taskListStatus,
   capFirst,
   formatSources,
+  formatUkDate,
 } from './utils'
+
+describe('formatUkDate', () => {
+  it('formats calendar dates without padding day and month', () => {
+    expect(formatUkDate(new Date(2026, 4, 7))).toBe('7/5/2026')
+    expect(formatUkDate(new Date(2026, 11, 31))).toBe('31/12/2026')
+  })
+
+  it('returns undefined for an absent date', () => {
+    expect(formatUkDate()).toBeUndefined()
+  })
+})
+
+describe('csraRiskRatingLabel', () => {
+  it.each([
+    ['HIGH', 'High risk'],
+    ['HIGH_GENERAL', 'High risk – general'],
+    ['HIGH_SPECIFIC', 'High risk – specific'],
+    ['STANDARD', 'Standard risk'],
+    [undefined, ''],
+    [null, ''],
+    ['UNSUPPORTED', ''],
+  ])('labels %s as %s', (rating, label) => {
+    expect(csraRiskRatingLabel(rating)).toBe(label)
+  })
+})
 
 describe('capFirst', () => {
   it.each([

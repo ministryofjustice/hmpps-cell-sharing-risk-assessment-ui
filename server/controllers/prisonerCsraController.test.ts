@@ -13,6 +13,7 @@ describe('PrisonerCsraController', () => {
     ({
       params: { prisonerNumber },
       id: 'request-id-123',
+      flash: jest.fn().mockReturnValue([]),
     }) as unknown as Request<{ prisonerNumber: string }>
 
   const response = () =>
@@ -87,5 +88,27 @@ describe('PrisonerCsraController', () => {
         prisonerNumber: 'A1234BC',
       }),
     )
+  })
+
+  it('consumes a success flash and passes it to the notification banner', async () => {
+    csraService.getCurrentRating.mockResolvedValue({ status: 'NO_RATING', rating: null })
+    const success = { title: 'CSRA rating confirmed', content: 'Rating confirmed.' }
+    const req = request()
+    req.flash = jest.fn().mockReturnValue([success])
+    const res = response()
+
+    await controller().index(req, res, jest.fn())
+
+    expect(req.flash).toHaveBeenCalledWith('success')
+    expect(res.render).toHaveBeenCalledWith('pages/prisonerCsra', expect.objectContaining({ banner: { success } }))
+  })
+
+  it('does not display a success banner when there is no flash message', async () => {
+    csraService.getCurrentRating.mockResolvedValue({ status: 'NO_RATING', rating: null })
+    const res = response()
+
+    await controller().index(request(), res, jest.fn())
+
+    expect(res.locals.banner).toBeUndefined()
   })
 })

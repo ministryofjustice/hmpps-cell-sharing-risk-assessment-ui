@@ -10,6 +10,7 @@ import type {
   CsraRecentArrivals,
   CsraReviewHistory,
   CsraAssessmentStageAnswers,
+  CsraAssessmentFinalStageRequest,
 } from '../data/csraApiTypes'
 
 jest.mock('../data')
@@ -28,6 +29,7 @@ describe('CsraService', () => {
       startCsraAssessment: jest.fn(),
       cancelCsraAssessment: jest.fn(),
       submitProvisionalRating: jest.fn(),
+      submitFinalRating: jest.fn(),
       getRatingSummary: jest.fn(),
       getHighRiskDueForReview: jest.fn(),
       getPrisonPrisoners: jest.fn(),
@@ -282,6 +284,41 @@ describe('CsraService', () => {
           prisonId: 'MDI',
           pncChecked: true,
         }),
+      )
+    })
+  })
+
+  describe('submitFinalRating', () => {
+    const payload: CsraAssessmentFinalStageRequest = {
+      rating: 'HIGH_GENERAL',
+      assessmentComment: 'Assessment complete',
+      nextReviewDate: '2099-05-17',
+      prisonId: 'MDI',
+      offenceEvidence: [],
+      riskTo: [],
+      vulnerabilities: [],
+    }
+
+    it('passes the final rating and ISO review date to the client and returns its response', async () => {
+      const response = { assessmentId: 'assessment-1' }
+      csraApiClient.submitFinalRating.mockResolvedValue(response)
+
+      const result = await csraService.submitFinalRating('AUSER_GEN', 'A1234BC', 'assessment-1', payload)
+
+      expect(result).toEqual(response)
+      expect(csraApiClient.submitFinalRating).toHaveBeenCalledWith(
+        'AUSER_GEN',
+        { prisonerNumber: 'A1234BC', assessmentId: 'assessment-1' },
+        payload,
+      )
+    })
+
+    it('propagates submission errors', async () => {
+      const error = new Error('API unavailable')
+      csraApiClient.submitFinalRating.mockRejectedValue(error)
+
+      await expect(csraService.submitFinalRating('AUSER_GEN', 'A1234BC', 'assessment-1', payload)).rejects.toThrow(
+        error,
       )
     })
   })

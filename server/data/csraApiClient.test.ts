@@ -5,6 +5,7 @@ import config from '../config'
 import { RedisClient } from './redisClient'
 import type {
   AgencyStatus,
+  CsraAssessmentFinalStageRequest,
   CsraAssessmentsInProgress,
   CsraCurrentRating,
   CsraHighRiskDueForReview,
@@ -72,6 +73,37 @@ describe('CsraApiClient', () => {
       expect(response.status).toBe('NO_RATING')
       expect(response.rating).toBeNull()
     })
+  })
+
+  describe('submitFinalRating', () => {
+    it.each(['HIGH_GENERAL', 'STANDARD'] as const)(
+      'PUTs the %s confirmation payload using a system token stamped with the username',
+      async rating => {
+        const payload: CsraAssessmentFinalStageRequest = {
+          rating,
+          assessmentComment: 'Assessment complete',
+          nextReviewDate: rating === 'HIGH_GENERAL' ? '2099-05-17' : undefined,
+          prisonId: 'MDI',
+          offenceEvidence: [],
+          riskTo: [],
+          vulnerabilities: [],
+        }
+        const scope = nock(config.apis.csraApi.url)
+          .put('/csra-review/prisoner/A1234BC/assessment/assessment-1/final', JSON.parse(JSON.stringify(payload)))
+          .matchHeader('authorization', 'Bearer test-system-token')
+          .reply(200, {})
+
+        const result = await csraApiClient.submitFinalRating(
+          'AUSER_GEN',
+          { prisonerNumber: 'A1234BC', assessmentId: 'assessment-1' },
+          payload,
+        )
+
+        expect(result).toEqual({})
+        expect(scope.isDone()).toBe(true)
+        expect(mockAuthenticationClient.getToken).toHaveBeenCalledWith('AUSER_GEN')
+      },
+    )
   })
 
   describe('getAssessmentsInProgress', () => {
