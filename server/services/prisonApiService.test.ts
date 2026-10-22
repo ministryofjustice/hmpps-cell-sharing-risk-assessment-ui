@@ -1,7 +1,16 @@
 import PrisonApiService from './prisonApiService'
 import type PrisonApiClient from '../data/prisonApiClient'
 import type PrisonApiSplashClient from '../data/prisonApiSplashClient'
-import { CASELOAD_CONDITION, NOMIS_CSRA_MODULES, NomisScreenNotSetUpError } from '../utils/nomisSplash'
+import type PrisonApiAgencySwitchClient from '../data/prisonApiAgencySwitchClient'
+import {
+  CASELOAD_CONDITION,
+  NOMIS_AUTO_APPROVAL_SWITCH,
+  NOMIS_CSRA_MODULES,
+  NOMIS_CSRA_SWITCH,
+  NomisPrisonOnDpsError,
+  NomisScreenNotSetUpError,
+  NomisSwitchSetNationallyError,
+} from '../utils/nomisSplash'
 import type { SplashScreenCondition } from '../data/prisonApiTypes'
 
 const [QUESTIONNAIRE, APPROVAL] = NOMIS_CSRA_MODULES
@@ -11,6 +20,9 @@ describe('PrisonApiService NOMIS CSRA screens', () => {
   const addSplashCondition = jest.fn()
   const updateSplashCondition = jest.fn()
   const removeSplashCondition = jest.fn()
+  const getAgencySwitches = jest.fn()
+  const addAgencySwitch = jest.fn()
+  const removeAgencySwitch = jest.fn()
 
   const splashClient = {
     getSplashScreen,
@@ -19,7 +31,13 @@ describe('PrisonApiService NOMIS CSRA screens', () => {
     removeSplashCondition,
   } as unknown as PrisonApiSplashClient
 
-  const service = new PrisonApiService({} as PrisonApiClient, splashClient)
+  const switchClient = {
+    getAgencySwitches,
+    addAgencySwitch,
+    removeAgencySwitch,
+  } as unknown as PrisonApiAgencySwitchClient
+
+  const service = new PrisonApiService({} as PrisonApiClient, splashClient, switchClient)
 
   const caseload = (conditionValue: string, blockAccess: boolean): SplashScreenCondition => ({
     conditionType: CASELOAD_CONDITION,
@@ -27,60 +45,75 @@ describe('PrisonApiService NOMIS CSRA screens', () => {
     blockAccess,
   })
 
-  /** Both screens carry the same conditions — the normal case, since they are always set together. */
+  /** Both screens carry the same conditions. */
   const stubBothScreens = (conditions: SplashScreenCondition[]) =>
     getSplashScreen.mockImplementation((_username, { moduleName }) => Promise.resolve({ moduleName, conditions }))
 
-  /** The screens disagree, e.g. because one was changed outside this service. */
+  /** The screens differ, either by design (no approval step) or because one was changed elsewhere. */
   const stubScreensSeparately = (byModule: Record<string, SplashScreenCondition[]>) =>
     getSplashScreen.mockImplementation((_username, { moduleName }) =>
       Promise.resolve({ moduleName, conditions: byModule[moduleName] ?? [] }),
     )
 
+  /** The agencies each switch is on for. */
+  const stubSwitches = ({ csra = [], autoApproval = [] }: { csra?: string[]; autoApproval?: string[] } = {}) =>
+    getAgencySwitches.mockImplementation((_username, { serviceCode }) =>
+      Promise.resolve((serviceCode === NOMIS_CSRA_SWITCH ? csra : autoApproval).map(agencyId => ({ agencyId }))),
+    )
+
   const notFound = () => Object.assign(new Error('Not Found'), { responseStatus: 404 })
 
-  beforeEach(() => jest.clearAllMocks())
+  /** The switches are not in this NOMIS environment yet (Syscon CR 502 not applied). */
+  const stubSwitchesNotSetUp = () => getAgencySwitches.mockRejectedValue(notFound())
 
-  describe('getNomisScreenStates', () => {
-    it('reads every module', async () => {
-      stubBothScreens([])
+  const nothingChanged = () => {
+    expect(addSplashCondition).not.toHaveBeenCalled()
+    expect(updateSplashCondition).not.toHaveBeenCalled()
+    expect(removeSplashCondition).not.toHaveBeenCalled()
+    expect(addAgencySwitch).not.toHaveBeenCalled()
+    expect(removeAgencySwitch).not.toHaveBeenCalled()
+  }
 
-      await service.getNomisScreenStates('user1')
+  beforeEach(() => {
+    // Reset, not just clear, so a rejection stubbed by one test cannot leak into the next.
+    jest.resetAllMocks()
+    stubSwitches()
+  })
 
-      expect(getSplashScreen).toHaveBeenCalledWith('user1', { moduleName: QUESTIONNAIRE })
-      expect(getSplashScreen).toHaveBeenCalledWith('user1', { moduleName: APPROVAL })
-    })
-
-    it('combines matching per-screen states into one state per prison', async () => {
+  describe('getNomisReadings', () => {
+    it('reads every module and both switches, whatever the number of prisons', async () => {
       stubBothScreens([caseload('MDI', true), caseload('LEI', false)])
 
-      expect(await service.getNomisScreenStates('user1')).toEqual(
-        new Map([
-          ['MDI', 'BLOCKED'],
-          ['LEI', 'WARNING'],
-        ]),
-      )
+      await service.getNomisReadings('user1')
+
+      expect(getSplashScreen).toHaveBeenCalledTimes(2)
+      expect(getSplashScreen).toHaveBeenCalledWith('user1', { moduleName: QUESTIONNAIRE })
+      expect(getSplashScreen).toHaveBeenCalledWith('user1', { moduleName: APPROVAL })
+      expect(getAgencySwitches).toHaveBeenCalledTimes(2)
+      expect(getAgencySwitches).toHaveBeenCalledWith('user1', { serviceCode: NOMIS_CSRA_SWITCH })
+      expect(getAgencySwitches).toHaveBeenCalledWith('user1', { serviceCode: NOMIS_AUTO_APPROVAL_SWITCH })
     })
 
-    it('reports a prison whose screens disagree as MIXED', async () => {
-      stubScreensSeparately({
-        [QUESTIONNAIRE]: [caseload('MDI', true)],
-        [APPROVAL]: [],
+    it('returns the screens and the agencies on each switch', async () => {
+      stubBothScreens([caseload('MDI', true)])
+      stubSwitches({ csra: ['MDI'], autoApproval: ['LEI'] })
+
+      expect(await service.getNomisReadings('user1')).toEqual({
+        screens: [
+          { moduleName: QUESTIONNAIRE, conditions: [caseload('MDI', true)] },
+          { moduleName: APPROVAL, conditions: [caseload('MDI', true)] },
+        ],
+        switches: { csra: ['MDI'], autoApproval: ['LEI'] },
       })
-
-      expect(await service.getNomisScreenStates('user1')).toEqual(new Map([['MDI', 'MIXED']]))
-    })
-
-    it('ignores conditions that are not caseload-scoped', async () => {
-      stubBothScreens([{ conditionType: 'USER', conditionValue: 'someone', blockAccess: true }])
-
-      expect(await service.getNomisScreenStates('user1')).toEqual(new Map())
     })
 
     it('copes with a screen that has no conditions', async () => {
       getSplashScreen.mockImplementation((_username, { moduleName }) => Promise.resolve({ moduleName }))
 
-      expect(await service.getNomisScreenStates('user1')).toEqual(new Map())
+      expect((await service.getNomisReadings('user1')).screens).toEqual([
+        { moduleName: QUESTIONNAIRE, conditions: [] },
+        { moduleName: APPROVAL, conditions: [] },
+      ])
     })
 
     it('returns null when any screen cannot be read, rather than understating the state', async () => {
@@ -90,114 +123,330 @@ describe('PrisonApiService NOMIS CSRA screens', () => {
           : Promise.resolve({ moduleName, conditions: [] }),
       )
 
-      expect(await service.getNomisScreenStates('user1')).toBeNull()
+      expect(await service.getNomisReadings('user1')).toBeNull()
+    })
+
+    it('still returns the screens when the switches cannot be read', async () => {
+      stubBothScreens([])
+      stubSwitchesNotSetUp()
+
+      expect(await service.getNomisReadings('user1')).toEqual({
+        screens: expect.any(Array),
+        switches: null,
+      })
     })
   })
 
-  describe('setNomisScreenState', () => {
-    it('adds the condition to every screen when the prison is currently NORMAL', async () => {
-      stubBothScreens([])
+  describe('setPrisonOnDps', () => {
+    const changeDps = jest.fn()
 
-      await service.setNomisScreenState('user1', 'MDI', 'BLOCKED')
+    beforeEach(() => changeDps.mockResolvedValue(undefined))
 
-      expect(addSplashCondition).toHaveBeenCalledTimes(2)
-      NOMIS_CSRA_MODULES.forEach(moduleName => {
+    /** Every write, in the order it was made. */
+    const writeOrder = () =>
+      [
+        ...addSplashCondition.mock.invocationCallOrder.map(order => ({ order, call: 'block screen' })),
+        ...updateSplashCondition.mock.invocationCallOrder.map(order => ({ order, call: 'update screen' })),
+        ...removeSplashCondition.mock.invocationCallOrder.map(order => ({ order, call: 'open screen' })),
+        ...addAgencySwitch.mock.invocationCallOrder.map(order => ({ order, call: 'add switch' })),
+        ...removeAgencySwitch.mock.invocationCallOrder.map(order => ({ order, call: 'remove switch' })),
+        ...changeDps.mock.invocationCallOrder.map(order => ({ order, call: 'DPS' })),
+      ]
+        .sort((a, b) => a.order - b.order)
+        .map(({ call }) => call)
+
+    describe('turning on', () => {
+      it('blocks every screen, adds the CSRA switch, then turns DPS on', async () => {
+        stubBothScreens([])
+
+        const change = await service.setPrisonOnDps('user1', 'MDI', true, changeDps)
+
+        NOMIS_CSRA_MODULES.forEach(moduleName => {
+          expect(addSplashCondition).toHaveBeenCalledWith(
+            'user1',
+            { moduleName },
+            { conditionType: CASELOAD_CONDITION, conditionValue: 'MDI', blockAccess: true },
+          )
+        })
+        expect(addAgencySwitch).toHaveBeenCalledWith('user1', { serviceCode: NOMIS_CSRA_SWITCH, agencyId: 'MDI' })
+        expect(writeOrder()).toEqual(['block screen', 'block screen', 'add switch', 'DPS'])
+        expect(change).toEqual({
+          screens: { [QUESTIONNAIRE]: 'BLOCKED', [APPROVAL]: 'BLOCKED' },
+          switches: { [NOMIS_CSRA_SWITCH]: true },
+        })
+      })
+
+      it('only blocks the questionnaire for a prison whose approval screen is already blocked', async () => {
+        stubScreensSeparately({ [APPROVAL]: [caseload('MDI', true)] })
+        stubSwitches({ autoApproval: ['MDI'] })
+
+        await service.setPrisonOnDps('user1', 'MDI', true, changeDps)
+
+        expect(addSplashCondition).toHaveBeenCalledTimes(1)
         expect(addSplashCondition).toHaveBeenCalledWith(
           'user1',
-          { moduleName },
+          { moduleName: QUESTIONNAIRE },
           { conditionType: CASELOAD_CONDITION, conditionValue: 'MDI', blockAccess: true },
         )
       })
-      expect(updateSplashCondition).not.toHaveBeenCalled()
-      expect(removeSplashCondition).not.toHaveBeenCalled()
-    })
 
-    it('updates every existing condition when moving between WARNING and BLOCKED', async () => {
-      stubBothScreens([caseload('MDI', false)])
+      it('turns a warning left by the old page into a block', async () => {
+        stubBothScreens([caseload('MDI', false)])
 
-      await service.setNomisScreenState('user1', 'MDI', 'BLOCKED')
+        await service.setPrisonOnDps('user1', 'MDI', true, changeDps)
 
-      expect(updateSplashCondition).toHaveBeenCalledTimes(2)
-      NOMIS_CSRA_MODULES.forEach(moduleName => {
+        expect(updateSplashCondition).toHaveBeenCalledTimes(2)
         expect(updateSplashCondition).toHaveBeenCalledWith('user1', {
-          moduleName,
+          moduleName: QUESTIONNAIRE,
           conditionType: CASELOAD_CONDITION,
           conditionValue: 'MDI',
           blockAccess: 'true',
         })
       })
-      expect(addSplashCondition).not.toHaveBeenCalled()
+
+      it('only turns DPS on when NOMIS is already blocked, so pressing it again is safe', async () => {
+        stubBothScreens([caseload('MDI', true)])
+        stubSwitches({ csra: ['MDI'] })
+
+        await service.setPrisonOnDps('user1', 'MDI', true, changeDps)
+
+        expect(writeOrder()).toEqual(['DPS'])
+      })
+
+      it('does not add a per-prison CSRA switch when it is already on for every prison', async () => {
+        stubBothScreens([])
+        stubSwitches({ csra: ['*ALL*'] })
+
+        await service.setPrisonOnDps('user1', 'MDI', true, changeDps)
+
+        expect(addAgencySwitch).not.toHaveBeenCalled()
+        expect(changeDps).toHaveBeenCalled()
+      })
+
+      it('treats the CSRA switch already being on (409) as success', async () => {
+        stubBothScreens([])
+        addAgencySwitch.mockRejectedValue(Object.assign(new Error('Conflict'), { responseStatus: 409 }))
+
+        await service.setPrisonOnDps('user1', 'MDI', true, changeDps)
+
+        expect(changeDps).toHaveBeenCalled()
+      })
+
+      it('leaves DPS off when blocking NOMIS fails', async () => {
+        stubBothScreens([])
+        addSplashCondition.mockRejectedValue(new Error('prison-api down'))
+
+        await expect(service.setPrisonOnDps('user1', 'MDI', true, changeDps)).rejects.toThrow('prison-api down')
+        expect(changeDps).not.toHaveBeenCalled()
+      })
+
+      it('blocks only the screens when the switches are not set up in NOMIS yet', async () => {
+        stubBothScreens([])
+        stubSwitchesNotSetUp()
+
+        const change = await service.setPrisonOnDps('user1', 'MDI', true, changeDps)
+
+        expect(writeOrder()).toEqual(['block screen', 'block screen', 'DPS'])
+        expect(change.switches).toEqual({})
+      })
     })
 
-    it('removes the condition from every screen when returning to NORMAL', async () => {
-      stubBothScreens([caseload('MDI', true)])
+    describe('turning off', () => {
+      it('turns DPS off, removes the CSRA switch, then opens every screen', async () => {
+        stubBothScreens([caseload('MDI', true)])
+        stubSwitches({ csra: ['MDI'] })
 
-      await service.setNomisScreenState('user1', 'MDI', 'NORMAL')
+        const change = await service.setPrisonOnDps('user1', 'MDI', false, changeDps)
 
-      expect(removeSplashCondition).toHaveBeenCalledTimes(2)
-      NOMIS_CSRA_MODULES.forEach(moduleName => {
+        NOMIS_CSRA_MODULES.forEach(moduleName => {
+          expect(removeSplashCondition).toHaveBeenCalledWith('user1', {
+            moduleName,
+            conditionType: CASELOAD_CONDITION,
+            conditionValue: 'MDI',
+          })
+        })
+        expect(removeAgencySwitch).toHaveBeenCalledWith('user1', { serviceCode: NOMIS_CSRA_SWITCH, agencyId: 'MDI' })
+        expect(writeOrder()).toEqual(['DPS', 'remove switch', 'open screen', 'open screen'])
+        expect(change).toEqual({
+          screens: { [QUESTIONNAIRE]: 'NORMAL', [APPROVAL]: 'NORMAL' },
+          switches: { [NOMIS_CSRA_SWITCH]: false },
+        })
+      })
+
+      it('returns a prison with no approval step to that process, approval screen still blocked', async () => {
+        stubBothScreens([caseload('MDI', true)])
+        stubSwitches({ csra: ['MDI'], autoApproval: ['MDI'] })
+
+        const change = await service.setPrisonOnDps('user1', 'MDI', false, changeDps)
+
+        expect(removeSplashCondition).toHaveBeenCalledTimes(1)
         expect(removeSplashCondition).toHaveBeenCalledWith('user1', {
-          moduleName,
+          moduleName: QUESTIONNAIRE,
           conditionType: CASELOAD_CONDITION,
           conditionValue: 'MDI',
         })
+        expect(removeAgencySwitch).toHaveBeenCalledTimes(1)
+        expect(change.screens).toEqual({ [QUESTIONNAIRE]: 'NORMAL', [APPROVAL]: 'BLOCKED' })
+      })
+
+      it('is refused, changing nothing, when the CSRA switch is on for every prison', async () => {
+        stubBothScreens([caseload('MDI', true)])
+        stubSwitches({ csra: ['*ALL*'] })
+
+        await expect(service.setPrisonOnDps('user1', 'MDI', false, changeDps)).rejects.toMatchObject({
+          name: 'NomisSwitchSetNationallyError',
+          serviceCode: NOMIS_CSRA_SWITCH,
+        })
+        nothingChanged()
+        expect(changeDps).not.toHaveBeenCalled()
+      })
+
+      it('leaves NOMIS blocked when turning DPS off fails', async () => {
+        stubBothScreens([caseload('MDI', true)])
+        stubSwitches({ csra: ['MDI'] })
+        changeDps.mockRejectedValue(new Error('CSRA API down'))
+
+        await expect(service.setPrisonOnDps('user1', 'MDI', false, changeDps)).rejects.toThrow('CSRA API down')
+        expect(removeSplashCondition).not.toHaveBeenCalled()
+        expect(removeAgencySwitch).not.toHaveBeenCalled()
       })
     })
 
-    it('does nothing when every screen is already in the target state', async () => {
-      stubBothScreens([caseload('MDI', true)])
+    it('reports which screens are not set up in NOMIS, changing nothing, DPS included', async () => {
+      getSplashScreen.mockImplementation((_username, { moduleName }) =>
+        moduleName === APPROVAL ? Promise.reject(notFound()) : Promise.resolve({ moduleName, conditions: [] }),
+      )
 
-      await service.setNomisScreenState('user1', 'MDI', 'BLOCKED')
-
-      expect(addSplashCondition).not.toHaveBeenCalled()
-      expect(updateSplashCondition).not.toHaveBeenCalled()
-      expect(removeSplashCondition).not.toHaveBeenCalled()
+      await expect(service.setPrisonOnDps('user1', 'MDI', true, changeDps)).rejects.toMatchObject({
+        name: 'NomisScreenNotSetUpError',
+        missingModules: [APPROVAL],
+      })
+      nothingChanged()
+      expect(changeDps).not.toHaveBeenCalled()
     })
 
-    it('repairs a MIXED prison, touching only the screen that is out of step', async () => {
-      stubScreensSeparately({
-        [QUESTIONNAIRE]: [caseload('MDI', true)],
-        [APPROVAL]: [],
+    it('propagates any other failure reading the switches, changing nothing', async () => {
+      stubBothScreens([])
+      getAgencySwitches.mockRejectedValue(Object.assign(new Error('Forbidden'), { responseStatus: 403 }))
+
+      await expect(service.setPrisonOnDps('user1', 'MDI', true, changeDps)).rejects.toThrow('Forbidden')
+      nothingChanged()
+      expect(changeDps).not.toHaveBeenCalled()
+    })
+
+    it('propagates any other failure reading the screens', async () => {
+      getSplashScreen.mockRejectedValue(Object.assign(new Error('Forbidden'), { responseStatus: 403 }))
+
+      await expect(service.setPrisonOnDps('user1', 'MDI', true, changeDps)).rejects.toThrow('Forbidden')
+      expect(changeDps).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('setApprovalStep', () => {
+    it('adds the auto-approval switch, then blocks the approval screen, leaving the questionnaire alone', async () => {
+      stubBothScreens([])
+
+      const change = await service.setApprovalStep('user1', 'MDI', 'NOT_REQUIRED')
+
+      expect(addAgencySwitch).toHaveBeenCalledWith('user1', {
+        serviceCode: NOMIS_AUTO_APPROVAL_SWITCH,
+        agencyId: 'MDI',
       })
-
-      await service.setNomisScreenState('user1', 'MDI', 'BLOCKED')
-
-      // The questionnaire screen is already blocked, so only the approval screen is changed.
       expect(addSplashCondition).toHaveBeenCalledTimes(1)
       expect(addSplashCondition).toHaveBeenCalledWith(
         'user1',
         { moduleName: APPROVAL },
         { conditionType: CASELOAD_CONDITION, conditionValue: 'MDI', blockAccess: true },
       )
-    })
-
-    it('reports which screens are not set up in NOMIS', async () => {
-      getSplashScreen.mockImplementation((_username, { moduleName }) =>
-        moduleName === APPROVAL ? Promise.reject(notFound()) : Promise.resolve({ moduleName, conditions: [] }),
-      )
-
-      await expect(service.setNomisScreenState('user1', 'MDI', 'BLOCKED')).rejects.toMatchObject({
-        name: 'NomisScreenNotSetUpError',
-        missingModules: [APPROVAL],
+      expect(addAgencySwitch.mock.invocationCallOrder[0]).toBeLessThan(addSplashCondition.mock.invocationCallOrder[0])
+      expect(change).toEqual({
+        screens: { [APPROVAL]: 'BLOCKED' },
+        switches: { [NOMIS_AUTO_APPROVAL_SWITCH]: true },
       })
     })
 
-    it('changes nothing when a screen is missing, rather than part-applying', async () => {
-      getSplashScreen.mockImplementation((_username, { moduleName }) =>
-        moduleName === APPROVAL ? Promise.reject(notFound()) : Promise.resolve({ moduleName, conditions: [] }),
+    it('opens the approval screen, then removes the switch, when restoring the step', async () => {
+      stubScreensSeparately({ [APPROVAL]: [caseload('MDI', true)] })
+      stubSwitches({ autoApproval: ['MDI'] })
+
+      const change = await service.setApprovalStep('user1', 'MDI', 'REQUIRED')
+
+      expect(removeSplashCondition).toHaveBeenCalledTimes(1)
+      expect(removeSplashCondition).toHaveBeenCalledWith('user1', {
+        moduleName: APPROVAL,
+        conditionType: CASELOAD_CONDITION,
+        conditionValue: 'MDI',
+      })
+      expect(removeAgencySwitch).toHaveBeenCalledWith('user1', {
+        serviceCode: NOMIS_AUTO_APPROVAL_SWITCH,
+        agencyId: 'MDI',
+      })
+      expect(removeSplashCondition.mock.invocationCallOrder[0]).toBeLessThan(
+        removeAgencySwitch.mock.invocationCallOrder[0],
       )
-
-      await expect(service.setNomisScreenState('user1', 'MDI', 'BLOCKED')).rejects.toThrow(NomisScreenNotSetUpError)
-
-      expect(addSplashCondition).not.toHaveBeenCalled()
-      expect(updateSplashCondition).not.toHaveBeenCalled()
-      expect(removeSplashCondition).not.toHaveBeenCalled()
+      expect(change.screens).toEqual({ [APPROVAL]: 'NORMAL' })
     })
 
-    it('propagates any other failure', async () => {
-      getSplashScreen.mockRejectedValue(Object.assign(new Error('Forbidden'), { responseStatus: 403 }))
+    it('does nothing when the prison already has no approval step', async () => {
+      stubScreensSeparately({ [APPROVAL]: [caseload('MDI', true)] })
+      stubSwitches({ autoApproval: ['MDI'] })
 
-      await expect(service.setNomisScreenState('user1', 'MDI', 'BLOCKED')).rejects.toThrow('Forbidden')
+      await service.setApprovalStep('user1', 'MDI', 'NOT_REQUIRED')
+
+      nothingChanged()
+    })
+
+    it('is refused, changing nothing, for a prison blocked in NOMIS because it is on DPS', async () => {
+      stubBothScreens([caseload('MDI', true)])
+      stubSwitches({ csra: ['MDI'] })
+
+      await expect(service.setApprovalStep('user1', 'MDI', 'NOT_REQUIRED')).rejects.toThrow(NomisPrisonOnDpsError)
+      nothingChanged()
+    })
+
+    it('refuses to restore the step, changing nothing, when it has been removed for every prison', async () => {
+      stubScreensSeparately({ [APPROVAL]: [caseload('MDI', true)] })
+      stubSwitches({ autoApproval: ['*ALL*'] })
+
+      await expect(service.setApprovalStep('user1', 'MDI', 'REQUIRED')).rejects.toThrow(NomisSwitchSetNationallyError)
+      nothingChanged()
+    })
+
+    it('treats the switch already being on (409) as success', async () => {
+      stubBothScreens([])
+      addAgencySwitch.mockRejectedValue(Object.assign(new Error('Conflict'), { responseStatus: 409 }))
+
+      await service.setApprovalStep('user1', 'MDI', 'NOT_REQUIRED')
+
+      expect(addSplashCondition).toHaveBeenCalledTimes(1)
+    })
+
+    it('stops on any other failure adding the switch, before blocking the screen', async () => {
+      stubBothScreens([])
+      addAgencySwitch.mockRejectedValue(Object.assign(new Error('Server Error'), { responseStatus: 500 }))
+
+      await expect(service.setApprovalStep('user1', 'MDI', 'NOT_REQUIRED')).rejects.toThrow('Server Error')
+      expect(addSplashCondition).not.toHaveBeenCalled()
+    })
+
+    it('reports which switches are not set up in NOMIS, changing nothing', async () => {
+      stubBothScreens([])
+      getAgencySwitches.mockImplementation((_username, { serviceCode }) =>
+        serviceCode === NOMIS_AUTO_APPROVAL_SWITCH ? Promise.reject(notFound()) : Promise.resolve([]),
+      )
+
+      await expect(service.setApprovalStep('user1', 'MDI', 'NOT_REQUIRED')).rejects.toMatchObject({
+        name: 'NomisSwitchNotSetUpError',
+        missingSwitches: [NOMIS_AUTO_APPROVAL_SWITCH],
+      })
+      nothingChanged()
+    })
+
+    it('reports a missing screen as NomisScreenNotSetUpError, changing nothing', async () => {
+      getSplashScreen.mockRejectedValue(notFound())
+
+      await expect(service.setApprovalStep('user1', 'MDI', 'NOT_REQUIRED')).rejects.toThrow(NomisScreenNotSetUpError)
+      nothingChanged()
     })
   })
 })

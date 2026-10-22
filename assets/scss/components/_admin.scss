@@ -7,9 +7,19 @@
   align-items: flex-start;
 }
 
-// Each NOMIS state change is its own form, so they need to sit side by side within the table cell
-// rather than stacking as block-level forms would.
+// A prison needing attention is offered both Turn on and Turn off, each its own form, so they need to
+// sit side by side within the table cell rather than stacking as block-level forms would.
 .csra-admin-inline-form {
   display: inline-block;
   margin-left: govuk-spacing(1);
+}
+
+// Keeps two-word button labels such as "Remove approval" on one line in the narrow action columns.
+.csra-admin-action {
+  white-space: nowrap;
+}
+
+// The "NOMIS needs attention" flag sits on its own line under the On/Off tag.
+.csra-admin-attention {
+  margin-top: govuk-spacing(1);
 }

@@ -10,7 +10,14 @@ import ActiveAgenciesService from '../services/activeAgenciesService'
 import type { CsraCurrentRating, CsraReviewDetail, CsraReviewHistory, CsraReviewSummary } from '../data/csraApiTypes'
 import type { Prisoner } from '../data/prisonerSearchApiTypes'
 import { Role } from '../utils/roles'
-import { NomisScreenNotSetUpError } from '../utils/nomisSplash'
+import {
+  CASELOAD_CONDITION,
+  NomisPrisonOnDpsError,
+  NomisScreenNotSetUpError,
+  NomisSwitchNotSetUpError,
+  NomisSwitchSetNationallyError,
+} from '../utils/nomisSplash'
+import type { SplashScreenCondition } from '../data/prisonApiTypes'
 
 jest.mock('../services/auditService')
 jest.mock('../services/csraService')
@@ -23,7 +30,7 @@ const auditService = new AuditService(null) as jest.Mocked<AuditService>
 const csraService = new CsraService(null) as jest.Mocked<CsraService>
 const prisonerSearchService = new PrisonerSearchService(null) as jest.Mocked<PrisonerSearchService>
 const manageUsersService = new ManageUsersService(null) as jest.Mocked<ManageUsersService>
-const prisonApiService = new PrisonApiService(null, null) as jest.Mocked<PrisonApiService>
+const prisonApiService = new PrisonApiService(null, null, null) as jest.Mocked<PrisonApiService>
 const activeAgenciesService = new ActiveAgenciesService(null) as jest.Mocked<ActiveAgenciesService>
 
 const adminUser = { ...user, userRoles: [Role.CSRA__ADMIN] }
@@ -1082,10 +1089,38 @@ describe('Admin - manage enabled prisons', () => {
     { agencyId: 'MDI', name: 'Moorland (HMP)', active: true },
   ]
 
+  const caseload = (conditionValue: string, blockAccess: boolean): SplashScreenCondition => ({
+    conditionType: CASELOAD_CONDITION,
+    conditionValue,
+    blockAccess,
+  })
+
+  /** What prison-api returns: the conditions on each screen, and who each switch is on for. */
+  const readings = (
+    questionnaire: SplashScreenCondition[],
+    approval: SplashScreenCondition[],
+    switches: { csra: string[]; autoApproval: string[] } | null = { csra: [], autoApproval: [] },
+  ) => ({
+    screens: [
+      { moduleName: 'OCDNOQUE', conditions: questionnaire },
+      { moduleName: 'OIDCAPPR', conditions: approval },
+    ],
+    switches,
+  })
+
+  // Moorland is on DPS and blocked in NOMIS; Leeds is on NOMIS with nothing set.
+  const consistent = () =>
+    readings([caseload('MDI', true)], [caseload('MDI', true)], { csra: ['MDI'], autoApproval: [] })
+
+  const blockChange = {
+    screens: { OCDNOQUE: 'BLOCKED' as const, OIDCAPPR: 'BLOCKED' as const },
+    switches: { CSRA: true },
+  }
+
   beforeEach(() => {
     flashProvider.mockReturnValue([])
     csraService.getAllAgencies.mockResolvedValue(agencies)
-    prisonApiService.getNomisScreenStates.mockResolvedValue(new Map())
+    prisonApiService.getNomisReadings.mockResolvedValue(consistent())
     auditService.logPageView.mockResolvedValue(null)
     auditService.logAuditEvent.mockResolvedValue(null)
   })
@@ -1127,45 +1162,108 @@ describe('Admin - manage enabled prisons', () => {
         })
     })
 
-    it('shows the NOMIS state and only the transitions the prison is not already in', () => {
-      prisonApiService.getNomisScreenStates.mockResolvedValue(new Map([['MDI', 'BLOCKED']]))
+    it('offers one button per prison, the opposite of its state, when NOMIS matches', () => {
+      return request(adminApp())
+        .get('/admin/prisons')
+        .expect(200)
+        .expect(res => {
+          expect(res.text).toContain('data-qa="turn-on-LEI"')
+          expect(res.text).not.toContain('data-qa="turn-off-LEI"')
+          expect(res.text).toContain('data-qa="turn-off-MDI"')
+          expect(res.text).not.toContain('data-qa="turn-on-MDI"')
+          expect(res.text).not.toContain('NOMIS needs attention')
+        })
+    })
+
+    it('flags a prison whose NOMIS set-up does not match DPS, offering both buttons so it can be put right', () => {
+      // Moorland is on DPS but its approval screen is open.
+      prisonApiService.getNomisReadings.mockResolvedValue(
+        readings([caseload('MDI', true)], [], { csra: ['MDI'], autoApproval: [] }),
+      )
 
       return request(adminApp())
         .get('/admin/prisons')
         .expect(200)
         .expect(res => {
-          expect(res.text).toContain('Blocked')
-          expect(res.text).toContain('data-qa="nomis-warning-MDI"')
-          expect(res.text).toContain('data-qa="nomis-clear-MDI"')
-          expect(res.text).not.toContain('data-qa="nomis-block-MDI"')
+          expect(res.text).toContain('data-qa="nomis-attention-MDI"')
+          expect(res.text).toContain('data-qa="turn-on-MDI"')
+          expect(res.text).toContain('data-qa="turn-off-MDI"')
+          expect(res.text).not.toContain('data-qa="nomis-attention-LEI"')
         })
     })
 
-    it('flags a prison whose NOMIS screens disagree, offering every state so it can be repaired', () => {
-      prisonApiService.getNomisScreenStates.mockResolvedValue(new Map([['MDI', 'MIXED']]))
+    it('offers to remove the approval step only for a prison still on NOMIS', () => {
+      return request(adminApp())
+        .get('/admin/prisons')
+        .expect(200)
+        .expect(res => {
+          expect(res.text).toContain('NOMIS approval step')
+          expect(res.text).toContain('data-qa="nomis-approval-remove-LEI"')
+          expect(res.text).not.toContain('data-qa="nomis-approval-remove-MDI"')
+          expect(res.text).toContain('Not used')
+        })
+    })
+
+    it('shows a prison with no approval step as matching, though its approval screen is blocked', () => {
+      prisonApiService.getNomisReadings.mockResolvedValue(
+        readings([caseload('MDI', true)], [caseload('MDI', true), caseload('LEI', true)], {
+          csra: ['MDI'],
+          autoApproval: ['LEI'],
+        }),
+      )
 
       return request(adminApp())
         .get('/admin/prisons')
         .expect(200)
         .expect(res => {
-          expect(res.text).toContain('Mixed')
-          // None of the three states matches, so all are offered.
-          expect(res.text).toContain('data-qa="nomis-warning-MDI"')
-          expect(res.text).toContain('data-qa="nomis-block-MDI"')
-          expect(res.text).toContain('data-qa="nomis-clear-MDI"')
+          expect(res.text).toContain('Not required')
+          expect(res.text).not.toContain('NOMIS needs attention')
+          expect(res.text).toContain('data-qa="nomis-approval-restore-LEI"')
         })
     })
 
-    it('reports the NOMIS screen as unavailable and hides its controls when it cannot be read', () => {
-      prisonApiService.getNomisScreenStates.mockResolvedValue(null)
+    it('hides the approval controls and says why when the NOMIS switches cannot be read', () => {
+      prisonApiService.getNomisReadings.mockResolvedValue(
+        readings([caseload('MDI', true)], [caseload('MDI', true)], null),
+      )
+
+      return request(adminApp())
+        .get('/admin/prisons')
+        .expect(200)
+        .expect(res => {
+          expect(res.text).toContain('The NOMIS CSRA switches (CSRA, CSRA_AUTO_APPROVAL) are currently unavailable')
+          expect(res.text).not.toContain('data-qa="nomis-approval-remove-LEI"')
+          expect(res.text).toContain('data-qa="turn-on-LEI"')
+        })
+    })
+
+    it('hides the per-prison approval controls when the step has been removed for every prison', () => {
+      prisonApiService.getNomisReadings.mockResolvedValue(
+        readings([caseload('MDI', true)], [caseload('MDI', true), caseload('LEI', true)], {
+          csra: ['MDI'],
+          autoApproval: ['*ALL*'],
+        }),
+      )
+
+      return request(adminApp())
+        .get('/admin/prisons')
+        .expect(200)
+        .expect(res => {
+          expect(res.text).toContain('removed for every prison in NOMIS')
+          expect(res.text).not.toContain('data-qa="nomis-approval-restore-LEI"')
+        })
+    })
+
+    it('says NOMIS is unavailable and flags nothing when the screens cannot be read', () => {
+      prisonApiService.getNomisReadings.mockResolvedValue(null)
 
       return request(adminApp())
         .get('/admin/prisons')
         .expect(200)
         .expect(res => {
           expect(res.text).toContain('status is currently unavailable')
-          expect(res.text).toContain('Unknown')
-          expect(res.text).not.toContain('data-qa="nomis-block-MDI"')
+          expect(res.text).not.toContain('NOMIS needs attention')
+          expect(res.text).not.toContain('data-qa="nomis-approval-remove-LEI"')
         })
     })
 
@@ -1181,7 +1279,15 @@ describe('Admin - manage enabled prisons', () => {
   })
 
   describe('POST /admin/prisons/:agencyId', () => {
-    it('switches a prison on, drops the cached rollout state and redirects with a success flash', () => {
+    /** Runs the DPS change the controller hands over, as the real service does. */
+    const runDpsChange = (change: object) =>
+      prisonApiService.setPrisonOnDps.mockImplementation(async (_username, _agencyId, _active, changeDps) => {
+        await changeDps()
+        return change as never
+      })
+
+    it('turns a prison on in DPS and NOMIS, audits what was set and redirects with a success flash', () => {
+      runDpsChange(blockChange)
       csraService.setAgencyActive.mockResolvedValue({ agencyId: 'LEI', name: 'Leeds (HMP)', active: true })
 
       return request(adminApp())
@@ -1190,16 +1296,30 @@ describe('Admin - manage enabled prisons', () => {
         .expect(302)
         .expect('Location', '/admin/prisons')
         .expect(() => {
+          expect(prisonApiService.setPrisonOnDps).toHaveBeenCalledWith(
+            adminUser.username,
+            'LEI',
+            true,
+            expect.any(Function),
+          )
           expect(csraService.setAgencyActive).toHaveBeenCalledWith(adminUser.username, 'LEI', true)
           expect(activeAgenciesService.applyAgencyChange).toHaveBeenCalledWith('LEI', true)
-          expect(flashProvider).toHaveBeenCalledWith('success', 'CSRA is now switched on for Leeds (HMP).')
+          expect(flashProvider).toHaveBeenCalledWith(
+            'success',
+            'CSRA is now switched on for Leeds (HMP). The NOMIS CSRA screens are blocked.',
+          )
           expect(auditService.logAuditEvent).toHaveBeenCalledWith(
-            expect.objectContaining({ what: 'SET_PRISON_ACTIVE', subjectId: 'LEI', details: { active: true } }),
+            expect.objectContaining({
+              what: 'SET_PRISON_ACTIVE',
+              subjectId: 'LEI',
+              details: { active: true, ...blockChange },
+            }),
           )
         })
     })
 
-    it('switches a prison off and keeps the admin on the same filtered view', () => {
+    it('turns a prison off and keeps the admin on the same filtered view', () => {
+      runDpsChange({ screens: { OCDNOQUE: 'NORMAL', OIDCAPPR: 'NORMAL' }, switches: { CSRA: false } })
       csraService.setAgencyActive.mockResolvedValue({ agencyId: 'MDI', name: 'Moorland (HMP)', active: false })
 
       return request(adminApp())
@@ -1209,7 +1329,42 @@ describe('Admin - manage enabled prisons', () => {
         .expect('Location', '/admin/prisons?q=moor')
         .expect(() => {
           expect(csraService.setAgencyActive).toHaveBeenCalledWith(adminUser.username, 'MDI', false)
-          expect(flashProvider).toHaveBeenCalledWith('success', 'CSRA is now switched off for Moorland (HMP).')
+          expect(flashProvider).toHaveBeenCalledWith(
+            'success',
+            'CSRA is now switched off for Moorland (HMP). The NOMIS CSRA screens are open again.',
+          )
+        })
+    })
+
+    it('changes nothing and explains when the splash screen has not been set up in NOMIS', () => {
+      prisonApiService.setPrisonOnDps.mockRejectedValue(new NomisScreenNotSetUpError(['OIDCAPPR']))
+
+      return request(adminApp())
+        .post('/admin/prisons/LEI')
+        .send({ active: 'true', name: 'Leeds (HMP)' })
+        .expect(302)
+        .expect(() => {
+          expect(csraService.setAgencyActive).not.toHaveBeenCalled()
+          expect(flashProvider).toHaveBeenCalledWith('error', expect.stringContaining('OIDCAPPR'))
+          expect(flashProvider).toHaveBeenCalledWith('error', expect.stringContaining('Nothing has been changed.'))
+          expect(auditService.logAuditEvent).not.toHaveBeenCalled()
+        })
+    })
+
+    it('changes nothing and explains when the CSRA switch is on for every prison', () => {
+      prisonApiService.setPrisonOnDps.mockRejectedValue(new NomisSwitchSetNationallyError('CSRA'))
+
+      return request(adminApp())
+        .post('/admin/prisons/MDI')
+        .send({ active: 'false', name: 'Moorland (HMP)' })
+        .expect(302)
+        .expect(() => {
+          expect(flashProvider).toHaveBeenCalledWith(
+            'error',
+            'The NOMIS CSRA switch is on for every prison, so it cannot be turned off for Moorland (HMP) alone. ' +
+              'Nothing has been changed.',
+          )
+          expect(auditService.logAuditEvent).not.toHaveBeenCalled()
         })
     })
 
@@ -1220,59 +1375,88 @@ describe('Admin - manage enabled prisons', () => {
         .expect(403)
         .expect(() => {
           expect(csraService.setAgencyActive).not.toHaveBeenCalled()
+          expect(prisonApiService.setPrisonOnDps).not.toHaveBeenCalled()
         })
     })
   })
 
-  describe('POST /admin/prisons/:agencyId/nomis-screen', () => {
-    it('blocks the NOMIS screen and redirects with a success flash', () => {
-      prisonApiService.setNomisScreenState.mockResolvedValue(undefined)
+  describe('POST /admin/prisons/:agencyId/nomis-approval', () => {
+    const change = { screens: { OIDCAPPR: 'BLOCKED' as const }, switches: { CSRA_AUTO_APPROVAL: true } }
+
+    it('removes the approval step, audits what was set and redirects with a success flash', () => {
+      prisonApiService.setApprovalStep.mockResolvedValue(change)
 
       return request(adminApp())
-        .post('/admin/prisons/MDI/nomis-screen')
-        .send({ state: 'BLOCKED', name: 'Moorland (HMP)' })
+        .post('/admin/prisons/LEI/nomis-approval')
+        .send({ approval: 'NOT_REQUIRED', name: 'Leeds (HMP)', q: 'lee' })
         .expect(302)
-        .expect('Location', '/admin/prisons')
+        .expect('Location', '/admin/prisons?q=lee')
         .expect(() => {
-          expect(prisonApiService.setNomisScreenState).toHaveBeenCalledWith(adminUser.username, 'MDI', 'BLOCKED')
-          expect(flashProvider).toHaveBeenCalledWith('success', 'NOMIS CSRA access is now blocked for Moorland (HMP).')
+          expect(prisonApiService.setApprovalStep).toHaveBeenCalledWith(adminUser.username, 'LEI', 'NOT_REQUIRED')
+          expect(flashProvider).toHaveBeenCalledWith(
+            'success',
+            'NOMIS CSRAs at Leeds (HMP) are now approved when they are saved, with no approval step.',
+          )
           expect(auditService.logAuditEvent).toHaveBeenCalledWith(
-            expect.objectContaining({ what: 'SET_NOMIS_CSRA_SCREEN', subjectId: 'MDI', details: { state: 'BLOCKED' } }),
+            expect.objectContaining({
+              what: 'SET_NOMIS_APPROVAL_STEP',
+              subjectId: 'LEI',
+              subjectType: 'PRISON_ID',
+              details: { approval: 'NOT_REQUIRED', ...change },
+            }),
           )
         })
     })
 
-    it('rejects an unrecognised state without calling prison-api', () => {
+    it('restores the approval step', () => {
+      prisonApiService.setApprovalStep.mockResolvedValue(change)
+
       return request(adminApp())
-        .post('/admin/prisons/MDI/nomis-screen')
-        .send({ state: 'NONSENSE', name: 'Moorland (HMP)' })
+        .post('/admin/prisons/LEI/nomis-approval')
+        .send({ approval: 'REQUIRED', name: 'Leeds (HMP)' })
         .expect(302)
         .expect(() => {
-          expect(prisonApiService.setNomisScreenState).not.toHaveBeenCalled()
-          expect(flashProvider).toHaveBeenCalledWith('error', 'Select a valid NOMIS CSRA screen state.')
+          expect(prisonApiService.setApprovalStep).toHaveBeenCalledWith(adminUser.username, 'LEI', 'REQUIRED')
+          expect(flashProvider).toHaveBeenCalledWith('success', 'NOMIS CSRAs at Leeds (HMP) need approving again.')
         })
     })
 
-    it('explains that the splash screen has not been set up in NOMIS yet', () => {
-      prisonApiService.setNomisScreenState.mockRejectedValue(new NomisScreenNotSetUpError(['OIDCAPPR']))
-
+    it('rejects an unrecognised value without calling prison-api', () => {
       return request(adminApp())
-        .post('/admin/prisons/MDI/nomis-screen')
-        .send({ state: 'BLOCKED', name: 'Moorland (HMP)' })
+        .post('/admin/prisons/LEI/nomis-approval')
+        .send({ approval: 'MAYBE', name: 'Leeds (HMP)' })
         .expect(302)
         .expect(() => {
-          expect(flashProvider).toHaveBeenCalledWith('error', expect.stringContaining('OIDCAPPR'))
+          expect(prisonApiService.setApprovalStep).not.toHaveBeenCalled()
+          expect(flashProvider).toHaveBeenCalledWith('error', 'Select whether the NOMIS approval step is required.')
+        })
+    })
+
+    it.each([
+      [new NomisSwitchNotSetUpError(['CSRA_AUTO_APPROVAL']), 'CSRA_AUTO_APPROVAL are not available'],
+      [new NomisScreenNotSetUpError(['OIDCAPPR']), 'has not been set up yet for OIDCAPPR'],
+      [new NomisPrisonOnDpsError('LEI'), 'Leeds (HMP) is blocked in NOMIS because it uses CSRA in DPS'],
+      [new NomisSwitchSetNationallyError('CSRA_AUTO_APPROVAL'), 'cannot be turned off for Leeds (HMP) alone'],
+    ])('explains %p without auditing', (error, message) => {
+      prisonApiService.setApprovalStep.mockRejectedValue(error)
+
+      return request(adminApp())
+        .post('/admin/prisons/LEI/nomis-approval')
+        .send({ approval: 'NOT_REQUIRED', name: 'Leeds (HMP)' })
+        .expect(302)
+        .expect(() => {
+          expect(flashProvider).toHaveBeenCalledWith('error', expect.stringContaining(message))
           expect(auditService.logAuditEvent).not.toHaveBeenCalled()
         })
     })
 
     it('is forbidden for a user without the admin role', () => {
       return request(app)
-        .post('/admin/prisons/MDI/nomis-screen')
-        .send({ state: 'BLOCKED' })
+        .post('/admin/prisons/LEI/nomis-approval')
+        .send({ approval: 'NOT_REQUIRED' })
         .expect(403)
         .expect(() => {
-          expect(prisonApiService.setNomisScreenState).not.toHaveBeenCalled()
+          expect(prisonApiService.setApprovalStep).not.toHaveBeenCalled()
         })
     })
   })

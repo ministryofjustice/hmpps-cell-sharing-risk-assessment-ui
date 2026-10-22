@@ -25,3 +25,12 @@ export interface SplashScreen {
   blockAccessType?: string
   conditions: SplashScreenCondition[]
 }
+
+/**
+ * An agency switched on for a NOMIS service (prison-api agency switches). The special agencyId `*ALL*`
+ * switches the service on for every agency.
+ */
+export interface AgencyDetails {
+  agencyId: string
+  name: string
+}

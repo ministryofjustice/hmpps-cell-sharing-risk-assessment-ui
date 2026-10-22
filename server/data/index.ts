@@ -8,6 +8,7 @@ import CsraApiClient from './csraApiClient'
 import PrisonerSearchApiClient from './prisonerSearchApiClient'
 import PrisonApiClient from './prisonApiClient'
 import PrisonApiSplashClient from './prisonApiSplashClient'
+import PrisonApiAgencySwitchClient from './prisonApiAgencySwitchClient'
 import ManageUsersApiClient from './manageUsersApiClient'
 import CourtDataApiClient from './courtDataApiClient'
 import DocumentApiClient from './documentApiClient'
@@ -28,6 +29,7 @@ export const dataAccess = () => {
     prisonerSearchApiClient: new PrisonerSearchApiClient(redisClient, hmppsAuthClient),
     prisonApiClient: new PrisonApiClient(hmppsAuthClient),
     prisonApiSplashClient: new PrisonApiSplashClient(redisClient, hmppsAuthClient),
+    prisonApiAgencySwitchClient: new PrisonApiAgencySwitchClient(redisClient, hmppsAuthClient),
     manageUsersApiClient: new ManageUsersApiClient(redisClient, hmppsAuthClient),
     courtDataApiClient: new CourtDataApiClient(redisClient, hmppsAuthClient),
     documentApiClient: new DocumentApiClient(hmppsAuthClient),
@@ -44,6 +46,7 @@ export {
   PrisonerSearchApiClient,
   PrisonApiClient,
   PrisonApiSplashClient,
+  PrisonApiAgencySwitchClient,
   ManageUsersApiClient,
   CourtDataApiClient,
   DocumentApiClient,

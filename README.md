@@ -187,7 +187,7 @@ in `server/utils/roles.ts` and on `res.locals.user.userRoles`.
 | --- | --- |
 | `ROLE_CSRA__ASSESSMENT_EDIT` | Create and update CSRA **assessments** |
 | `ROLE_CSRA__REVIEW_EDIT` | Create and update CSRA **reviews** |
-| `ROLE_CSRA__ADMIN` | The rollout console — switch prisons on and off for CSRA in DPS, and control the legacy NOMIS CSRA screens. National, not caseload-scoped |
+| `ROLE_CSRA__ADMIN` | The rollout console — turn prisons on and off for CSRA (DPS and the legacy NOMIS CSRA screens together), and remove the NOMIS approval step for prisons still on NOMIS. National, not caseload-scoped |
 | `ROLE_GLOBAL_SEARCH` | View a prisoner regardless of caseload |
 | `ROLE_INACTIVE_BOOKINGS` | View prisoners no longer in an establishment (released or transferred out) |
 
@@ -208,6 +208,8 @@ for auditing but **the user's own roles and caseloads never do**.
 | `ROLE_CSRA_REVIEW__R` | All CSRA reads |
 | `ROLE_CSRA_REVIEW__RW` | The assessment and review write journeys |
 | `ROLE_PRISONER_CSRA__ADMIN` | The `/active-agencies` rollout endpoints behind the admin console |
+| `ROLE_PRISON_API__SPLASH_SCREEN__RW` | Blocking and opening the NOMIS CSRA screens (OCDNOQUE, OIDCAPPR) from the admin console |
+| `ROLE_PRISON_API__SERVICE_AGENCY_SWITCHES__RW` | Setting the NOMIS `CSRA` and `CSRA_AUTO_APPROVAL` agency switches from the admin console. Not limited to CSRA: it lets the client change any NOMIS service's switches |
 
 The consequence is worth stating plainly, because it is not obvious and it constrains what can be built:
 **the API cannot enforce a per-user rule.** It cannot check `ROLE_CSRA__ASSESSMENT_EDIT`, and it cannot
