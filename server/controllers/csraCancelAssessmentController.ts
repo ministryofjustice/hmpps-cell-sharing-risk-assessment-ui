@@ -4,7 +4,8 @@ import type { SanitisedError } from '@ministryofjustice/hmpps-rest-client'
 import { Conflict, NotFound } from 'http-errors'
 import type { Services } from '../services'
 import getAnswersFromAssessment from './getAnswersFromAssessment'
-import flowConfig from '../lib/transactionFlow/config'
+import { getFlowConfig } from '../lib/transactionFlow/config'
+import getAssessmentContext from '../lib/transactionFlow/assessmentContext'
 import { Page } from '../services/auditService'
 import getOffenceEvidenceMap from '../utils/getOffenceEvidenceMap'
 
@@ -48,7 +49,7 @@ export default function csraCancelAssessmentController({ auditService, csraServi
       assessment,
       assessmentAnswers,
       offenceEvidenceMap: getOffenceEvidenceMap(assessmentAnswers),
-      flowConfig,
+      flowConfig: getFlowConfig(getAssessmentContext(assessment)),
       backLink: assessmentUrl,
       cancelLink: assessmentUrl,
       ...(validationErrors ? { validationErrors } : {}),

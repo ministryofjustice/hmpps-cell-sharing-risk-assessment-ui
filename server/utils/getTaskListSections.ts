@@ -1,4 +1,5 @@
-import flowConfig from '../lib/transactionFlow/config'
+import { getFlowConfig } from '../lib/transactionFlow/config'
+import getAssessmentContext from '../lib/transactionFlow/assessmentContext'
 import { CsraAssessment, CsraAssessmentStageAnswers } from '../data/csraApiTypes'
 import { Prisoner } from '../data/prisonerSearchApiTypes'
 
@@ -73,6 +74,8 @@ export default function getTaskListSections(
   assessmentAnswers: CsraAssessmentStageAnswers,
   prisoner: Prisoner,
 ): TaskListSections {
+  const flowConfig = getFlowConfig(getAssessmentContext(assessment))
+
   function assessmentSectionToTaskListSection(sectionId: string, title: string) {
     return getSectionForTaskList(
       title,

@@ -294,6 +294,31 @@ describe('csraTaskListController', () => {
     )
   })
 
+  it.each([false, true])(
+    'counts all evidence sources for final-stage completion when remaining sources checked is %s',
+    async remainingChecked => {
+      const provisional = makeStageAnswers(answeredOffences)
+      const final = makeStageAnswers({
+        ...answeredOffences,
+        stage: 'FINAL',
+        dpsChecked: remainingChecked,
+        perChecked: remainingChecked,
+        warrantChecked: remainingChecked,
+      })
+      csraService.getCsraAssessment.mockResolvedValue(
+        makeAssessment({ interimResult: 'HIGH_GENERAL', stages: [provisional, final] }),
+      )
+      const res = response()
+
+      await controller()(request(), res, jest.fn())
+
+      const operationalTasks = res.render.mock.calls[0][1].taskLists.find(
+        (taskList: { title: string }) => taskList.title === 'Operational assessment',
+      )
+      expect(operationalTasks.sections[0].status).toBe(remainingChecked ? 'COMPLETE' : 'PROVISIONAL_COMPLETE')
+    },
+  )
+
   it('enables check answers when every assessment section is fully complete', async () => {
     csraService.getCsraAssessment.mockResolvedValue(
       makeAssessment({

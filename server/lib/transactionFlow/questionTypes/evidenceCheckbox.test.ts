@@ -114,4 +114,99 @@ describe('EvidenceCheckboxQuestion', () => {
     expect(validate([])).toBe('Select at least one evidence source you have checked')
     expect(validate(['PNC'])).toBeNull()
   })
+
+  describe('after provisional submission', () => {
+    const provisional = makeAssessment({ pncChecked: true })
+
+    it('provides fixed sources with hints alongside editable checkbox attributes', () => {
+      const question = new EvidenceCheckboxQuestion(provisional)
+      const final = { ...provisional, stage: 'FINAL' as const, dpsChecked: true }
+      const validationErrors = { evidenceSources: { text: 'Example validation error' } }
+      const values = question.getFormValues(final)
+
+      expect(question.component).toBe('appEvidenceSources')
+      expect(question.componentAttributes(validationErrors, values, final)).toEqual({
+        checkedSources: [{ text: 'PNC', hint: { text: 'Current and previous convictions' }, value: 'pncChecked' }],
+        checkboxes: expect.objectContaining({
+          values: ['dpsChecked'],
+          errorMessage: validationErrors.evidenceSources,
+          items: expect.arrayContaining([
+            expect.objectContaining({
+              text: 'DPS',
+              hint: { text: 'Current and historical adjudications' },
+            }),
+          ]),
+        }),
+      })
+    })
+
+    it('retains the question and its fixed answers without rendering empty checkboxes', () => {
+      const final = makeAssessment({
+        stage: 'FINAL',
+        pncChecked: true,
+        warrantChecked: true,
+        dpsChecked: true,
+        perChecked: true,
+      })
+      const question = new EvidenceCheckboxQuestion(final)
+
+      expect(question.componentAttributes(undefined, {}, final)).toEqual({
+        checkedSources: expect.arrayContaining([
+          expect.objectContaining({ text: 'DPS', hint: { text: 'Current and historical adjudications' } }),
+        ]),
+        checkboxes: undefined,
+      })
+      expect(question.mutateAssessmentAnswers(final, {})).toEqual(final)
+      expect(question.isComplete(final)).toBe(true)
+    })
+
+    it('only offers sources not checked in the provisional assessment', () => {
+      const question = new EvidenceCheckboxQuestion(provisional)
+      const final = makeAssessment({ stage: 'FINAL', pncChecked: true, dpsChecked: true })
+
+      expect(question.question).toBe('Which remaining evidence sources have you checked?')
+      expect(question.checkedSources.map(source => source.text)).toEqual(['PNC'])
+      expect(question.items.map(source => source.value)).toEqual(['warrantChecked', 'dpsChecked', 'perChecked'])
+      expect(question.getFormValues(final)).toEqual({ evidenceSources: ['dpsChecked'] })
+    })
+
+    it('preserves baseline checks while allowing later selections to be corrected', () => {
+      const question = new EvidenceCheckboxQuestion(provisional)
+      const final = makeAssessment({ stage: 'FINAL', pncChecked: true, dpsChecked: true })
+      const original = structuredClone(final)
+
+      expect(question.mutateAssessmentAnswers(final, { evidenceSources: ['perChecked'] })).toEqual({
+        ...final,
+        pncChecked: true,
+        dpsChecked: false,
+        warrantChecked: false,
+        perChecked: true,
+      })
+      expect(final).toEqual(original)
+      expect(provisional.pncChecked).toBe(true)
+    })
+
+    it('allows continuing without another selection but still requires all sources for completion', () => {
+      const question = new EvidenceCheckboxQuestion(provisional)
+      const final = makeAssessment({ stage: 'FINAL', pncChecked: true })
+
+      expect(question.validations()).toEqual([])
+      expect(question.isAnswered(final)).toBe(true)
+      expect(question.isComplete(final)).toBe(false)
+      expect(question.mutateAssessmentAnswers(final, {}).pncChecked).toBe(true)
+      expect(question.isComplete({ ...final, warrantChecked: true, dpsChecked: true, perChecked: true })).toBe(true)
+    })
+
+    it('does not erase baseline checks', () => {
+      const question = new EvidenceCheckboxQuestion(provisional)
+      const final = makeAssessment({ stage: 'FINAL', pncChecked: true, dpsChecked: true })
+
+      expect(question.eraseAnswers(final)).toEqual({
+        ...final,
+        dpsChecked: null,
+        warrantChecked: null,
+        perChecked: null,
+      })
+    })
+  })
 })

@@ -19,6 +19,25 @@ Our security policy is located [here](https://github.com/ministryofjustice/hmpps
 More information about the template project including features can be
 found [here](https://dsdmoj.atlassian.net/wiki/spaces/NDSS/pages/3488677932/Typescript+template+project).
 
+## Assessment flow
+
+[getAssessmentContext](server/lib/transactionFlow/assessmentContext.ts) resolves the initial or
+post-provisional phase, the editable answers, and the submitted provisional snapshot. Before the
+first final-stage save, it seeds final answers from that snapshot using the API's initial version (1).
+Subsequent saves use the stored final-stage version and target the final-stage endpoint.
+
+[getFlowConfig](server/lib/transactionFlow/config.ts) selects phase-specific steps while reusing
+unchanged sections. Question pages, task-list completion and answer summaries use this same resolver.
+When adapting another section, select its variant here rather than adding phase checks in templates
+or controllers. Preserve section IDs and step positions because existing links use them, and do not
+mutate shared steps or questions with request-specific state.
+
+After provisional submission, evidence sources checked in the submitted snapshot are read-only.
+Other sources remain editable, including checks saved during the final stage. Completion still
+requires every source, and saving preserves the submitted baseline.
+The evidence-sources question owns both its fixed and editable answers; its macro renders fixed
+sources with their hints and any remaining checkboxes, including when every source is fixed.
+
 ## Creating a Cloud Platform namespace
 
 When deploying to a new namespace, you may wish to use the

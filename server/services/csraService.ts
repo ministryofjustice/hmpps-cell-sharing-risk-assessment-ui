@@ -122,11 +122,11 @@ export default class CsraService {
     username: string,
     prisonerNumber: string,
     assessmentId: string,
-    answers: Partial<CsraAssessmentStageAnswers>,
+    answers: Partial<CsraAssessmentStageAnswers> & Pick<CsraAssessmentStageAnswers, 'stage'>,
   ) {
     return this.csraApiClient.updateCsraAssessment(
       username,
-      { prisonerNumber, assessmentId, stage: 'PROVISIONAL' },
+      { prisonerNumber, assessmentId, stage: answers.stage },
       answers,
     )
   }

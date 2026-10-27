@@ -64,6 +64,7 @@ describe('csraRouter', () => {
   const auditService = { logPageView: jest.fn().mockResolvedValue(null) }
   const csraService = {
     getCsraAssessment: jest.fn(),
+    updateCsraAssessment: jest.fn(),
     getCurrentRating: jest.fn(),
     startCsraAssessment: jest.fn(),
     cancelCsraAssessment: jest.fn(),
@@ -117,6 +118,149 @@ describe('csraRouter', () => {
     await request(buildApp([])).get('/prisoner/A1234BC/csra/start').expect(302).expect('Location', '/sign-out')
 
     expect(csraService.startCsraAssessment).not.toHaveBeenCalled()
+  })
+
+  describe('evidence sources', () => {
+    const evidenceUrl = `${assessmentUrl}/section/evidenceAndOffences/0`
+
+    it('shows guidance and all sources during the initial assessment', async () => {
+      const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .get(evidenceUrl)
+        .expect(200)
+
+      expect(response.text).toContain('You must review all evidence sources')
+      expect(response.text).toContain('If you are unable to check all sources')
+      expect(response.text).toContain('Which evidence sources have you checked?')
+      expect(response.text).not.toContain('Evidence sources already checked')
+      for (const source of ['pncChecked', 'warrantChecked', 'dpsChecked', 'perChecked']) {
+        expect(response.text).toContain(`value="${source}"`)
+      }
+    })
+
+    it('shows the provisional baseline as a list and later checks as editable checkboxes on revisit', async () => {
+      const provisional = stageAnswers({ pncChecked: true, warrantChecked: true })
+      const final = stageAnswers({
+        stage: 'FINAL',
+        pncChecked: true,
+        warrantChecked: true,
+        dpsChecked: true,
+        version: 4,
+      })
+      csraService.getCsraAssessment.mockResolvedValue(
+        assessment({ interimResult: 'HIGH_GENERAL', stages: [provisional, final] }),
+      )
+
+      const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .get(evidenceUrl)
+        .expect(200)
+
+      expect(response.text).not.toContain('You must review all')
+      expect(response.text).not.toContain('If you are unable to check')
+      expect(response.text).toContain('Evidence sources already checked')
+      expect(response.text).toMatch(
+        /<li>\s*PNC\s*<div class="govuk-hint">\s*Current and previous convictions\s*<\/div>\s*<\/li>/,
+      )
+      expect(response.text).toMatch(
+        /<li>\s*Warrant\s*<div class="govuk-hint">\s*Current charge or offence\s*<\/div>\s*<\/li>/,
+      )
+      expect(response.text).toContain('Which remaining evidence sources have you checked?')
+      expect(response.text).not.toContain('value="pncChecked"')
+      expect(response.text).not.toContain('value="warrantChecked"')
+      expect(response.text).toMatch(/value="dpsChecked" checked/)
+      expect(response.text).toContain('value="perChecked"')
+    })
+
+    it('saves a new final stage without requiring an additional selection or changing the baseline', async () => {
+      const provisional = stageAnswers({ pncChecked: true, version: 7 })
+      const original = structuredClone(provisional)
+      csraService.getCsraAssessment.mockResolvedValue(
+        assessment({ interimResult: 'HIGH_GENERAL', stages: [provisional] }),
+      )
+      csraService.updateCsraAssessment.mockResolvedValue(
+        assessment({ interimResult: 'HIGH_GENERAL', stages: [provisional, { ...provisional, stage: 'FINAL' }] }),
+      )
+
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(evidenceUrl)
+        .send({})
+        .expect(302)
+        .expect('Location', `${assessmentUrl}/section/evidenceAndOffences/1`)
+
+      expect(csraService.updateCsraAssessment).toHaveBeenCalledWith(
+        'user1',
+        prisoner.prisonerNumber,
+        'assessment-123',
+        expect.objectContaining({
+          stage: 'FINAL',
+          pncChecked: true,
+          warrantChecked: false,
+          dpsChecked: false,
+          perChecked: false,
+          version: 1,
+        }),
+      )
+      expect(provisional).toEqual(original)
+    })
+
+    it('shows only the checked list when every source was checked provisionally', async () => {
+      csraService.getCsraAssessment.mockResolvedValue(
+        assessment({ interimResult: 'HIGH_GENERAL', stages: [completeStageAnswers()] }),
+      )
+
+      const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .get(evidenceUrl)
+        .expect(200)
+
+      expect(response.text).toContain('Evidence sources already checked')
+      expect(response.text).not.toContain('Which remaining evidence sources')
+      expect(response.text).not.toContain('type="checkbox"')
+      expect(response.text).toContain('Save and continue')
+      expect(response.text).toMatch(
+        /<li>\s*DPS\s*<div class="govuk-hint">\s*Current and historical adjudications\s*<\/div>\s*<\/li>/,
+      )
+      expect(response.text).toMatch(
+        /<li>\s*PER\s*<div class="govuk-hint">\s*Violent behaviours in prison, court or PECS custody\s*<\/div>\s*<\/li>/,
+      )
+    })
+
+    it('saves corrected final selections using the final version and keeps unrelated answers', async () => {
+      const provisional = stageAnswers({ pncChecked: true, version: 7 })
+      const final = stageAnswers({
+        stage: 'FINAL',
+        pncChecked: true,
+        dpsChecked: true,
+        officerSpokeToPrisoner: true,
+        likelyToHarmCellmate: false,
+        version: 4,
+      })
+      const saved = { ...final, dpsChecked: false, warrantChecked: false, perChecked: true, version: 5 }
+      const original = structuredClone(provisional)
+      const existingAssessment = assessment({ interimResult: 'HIGH_GENERAL', stages: [provisional, final] })
+      csraService.getCsraAssessment.mockResolvedValue(existingAssessment)
+      csraService.updateCsraAssessment.mockResolvedValue({ ...existingAssessment, stages: [provisional, saved] })
+
+      const app = buildApp([Role.CSRA__ASSESSMENT_EDIT])
+      await request(app)
+        .post(evidenceUrl)
+        .send({ evidenceSources: ['perChecked'], pncChecked: false })
+        .expect(302)
+        .expect('Location', `${assessmentUrl}/section/evidenceAndOffences/1`)
+
+      expect(csraService.updateCsraAssessment).toHaveBeenCalledWith(
+        'user1',
+        prisoner.prisonerNumber,
+        'assessment-123',
+        { ...saved, version: 4 },
+      )
+      expect(provisional).toEqual(original)
+
+      csraService.getCsraAssessment.mockResolvedValue({ ...existingAssessment, stages: [provisional, saved] })
+      const response = await request(app).get(evidenceUrl).expect(200)
+      expect(response.text).toMatch(/value="perChecked" checked/)
+      expect(response.text).not.toMatch(/value="dpsChecked" checked/)
+      expect(response.text).not.toContain('value="pncChecked"')
+      expect(response.text).not.toMatch(/<li>\s*PER\s/)
+    })
   })
 
   it('blocks CSRA routes when the prison is inactive, even if the user has the assessment edit role', async () => {

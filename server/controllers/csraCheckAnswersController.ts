@@ -3,7 +3,8 @@ import { type RequestHandler } from 'express'
 import { NotFound } from 'http-errors'
 import type { Services } from '../services'
 import getAnswersFromAssessment from './getAnswersFromAssessment'
-import flowConfig from '../lib/transactionFlow/config'
+import { getFlowConfig } from '../lib/transactionFlow/config'
+import getAssessmentContext from '../lib/transactionFlow/assessmentContext'
 import { Page } from '../services/auditService'
 import { AssessmentSubmitType, getAssessmentSubmitStatus } from '../utils/getAssessmentSubmitStatus'
 import getOffenceEvidenceMap from '../utils/getOffenceEvidenceMap'
@@ -49,7 +50,7 @@ export default function csraCheckAnswersController({
       offenceEvidenceMap: getOffenceEvidenceMap(assessmentAnswers),
       submitType: submitStatus.submitType,
       remainingTasks: submitStatus.remainingTasks,
-      flowConfig,
+      flowConfig: getFlowConfig(getAssessmentContext(assessment)),
       backLink: assessmentUrl,
       cancelLink: assessmentUrl,
     })
