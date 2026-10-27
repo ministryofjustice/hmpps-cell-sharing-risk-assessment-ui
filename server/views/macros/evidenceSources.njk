@@ -1,0 +1,23 @@
+{% macro appEvidenceSources(params) %}
+  {% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+
+  {% if params.checkedSources.length %}
+    <h2 class="govuk-heading-m">Evidence sources already checked</h2>
+    <ul class="govuk-list govuk-list--bullet">
+      {% for source in params.checkedSources %}
+        <li>
+          {{ source.text }}
+          {% if source.hint %}
+            <div class="govuk-hint">
+              {{ source.hint.html | safe if source.hint.html else source.hint.text }}
+            </div>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  {% if params.checkboxes %}
+    {{ govukCheckboxes(params.checkboxes) }}
+  {% endif %}
+{% endmacro %}

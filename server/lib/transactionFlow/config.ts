@@ -4,6 +4,7 @@ import YesNoQuestion from './questionTypes/yesNo'
 import YesNoOffenceSteps from './yesNoOffenceSteps'
 import YesNoWithDetailQuestion from './questionTypes/yesNoWithDetail'
 import TextAreaQuestion from './questionTypes/textArea'
+import { AssessmentContext } from './assessmentContext'
 
 const questions = {
   evidenceSources: new EvidenceCheckboxQuestion(),
@@ -209,10 +210,32 @@ const healthcare: Section = {
   ],
 }
 
-export default {
+const config: Record<string, Section> = {
   evidenceAndOffences,
   conversationAndVulnerability,
   observation,
   otherRisks,
   healthcare,
-} as Record<string, Section>
+}
+
+export function getFlowConfig(context: AssessmentContext): Record<string, Section> {
+  if (context.phase === 'INITIAL') {
+    return config
+  }
+
+  const evidenceQuestion = new EvidenceCheckboxQuestion(context.provisionalAnswers)
+  const evidenceStep = new Step({
+    title: 'Evidence sources',
+    questions: [evidenceQuestion],
+  })
+
+  return {
+    ...config,
+    evidenceAndOffences: {
+      ...evidenceAndOffences,
+      steps: [evidenceStep, ...evidenceAndOffences.steps.slice(1)],
+    },
+  }
+}
+
+export default config

@@ -2,24 +2,53 @@ import CheckboxQuestion from './checkbox'
 import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 import required from '../validations/required'
 
-export default class EvidenceCheckboxQuestion extends CheckboxQuestion {
-  override items: (Omit<CheckboxItem, 'value'> & { value: keyof PickByType<CsraAssessmentStageAnswers, boolean> })[] = [
-    { text: 'PNC', hint: { text: 'Current and previous convictions' }, value: 'pncChecked' },
-    { text: 'Warrant', hint: { text: 'Current charge or offence' }, value: 'warrantChecked' },
-    { text: 'DPS', hint: { text: 'Current and historical adjudications' }, value: 'dpsChecked' },
-    { text: 'PER', hint: { text: 'Violent behaviours in prison, court or PECS custody' }, value: 'perChecked' },
-  ]
+const evidenceSources: (Omit<CheckboxItem, 'value'> & {
+  value: keyof PickByType<CsraAssessmentStageAnswers, boolean>
+})[] = [
+  { text: 'PNC', hint: { text: 'Current and previous convictions' }, value: 'pncChecked' },
+  { text: 'Warrant', hint: { text: 'Current charge or offence' }, value: 'warrantChecked' },
+  { text: 'DPS', hint: { text: 'Current and historical adjudications' }, value: 'dpsChecked' },
+  { text: 'PER', hint: { text: 'Violent behaviours in prison, court or PECS custody' }, value: 'perChecked' },
+]
 
-  constructor() {
-    super('Which evidence sources have you checked?', 'evidenceSources', [])
+export default class EvidenceCheckboxQuestion extends CheckboxQuestion {
+  override readonly component = 'appEvidenceSources'
+
+  override items: typeof evidenceSources = []
+
+  readonly checkedSources: typeof evidenceSources
+
+  constructor(provisionalAnswers?: CsraAssessmentStageAnswers) {
+    super(
+      provisionalAnswers
+        ? 'Which remaining evidence sources have you checked?'
+        : 'Which evidence sources have you checked?',
+      'evidenceSources',
+      [],
+    )
+    this.checkedSources = evidenceSources.filter(item => provisionalAnswers?.[item.value])
+    this.items = evidenceSources.filter(item => !provisionalAnswers?.[item.value]).map(item => ({ ...item }))
+  }
+
+  override componentAttributes(
+    validationErrors: Record<string, { text: string }> | undefined,
+    values: FormValues | undefined,
+    assessmentAnswers: CsraAssessmentStageAnswers,
+  ) {
+    return {
+      checkedSources: this.checkedSources,
+      checkboxes: this.items.length
+        ? super.componentAttributes(validationErrors, values, assessmentAnswers)
+        : undefined,
+    }
   }
 
   override isComplete(assessmentAnswers: CsraAssessmentStageAnswers): boolean {
-    return this.items.every(item => assessmentAnswers[item.value])
+    return evidenceSources.every(item => assessmentAnswers[item.value])
   }
 
   override isAnswered(assessmentAnswers: CsraAssessmentStageAnswers): boolean {
-    return this.items.some(item => assessmentAnswers[item.value])
+    return evidenceSources.some(item => assessmentAnswers[item.value])
   }
 
   override mutateAssessmentAnswers(
@@ -27,6 +56,10 @@ export default class EvidenceCheckboxQuestion extends CheckboxQuestion {
     formValues: FormValues,
   ): CsraAssessmentStageAnswers {
     let mutatedAssessmentAnswers = { ...assessmentAnswers }
+
+    this.checkedSources.forEach(item => {
+      mutatedAssessmentAnswers[item.value] = true
+    })
 
     this.items.forEach(item => {
       const checked = !!(formValues[this.id] as string[])?.includes(item.value)
@@ -63,6 +96,6 @@ export default class EvidenceCheckboxQuestion extends CheckboxQuestion {
   }
 
   override validations(): ValidationFunction[] {
-    return [required('Select at least one evidence source you have checked')]
+    return this.checkedSources.length ? [] : [required('Select at least one evidence source you have checked')]
   }
 }

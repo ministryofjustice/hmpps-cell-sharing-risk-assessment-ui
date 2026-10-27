@@ -2,7 +2,8 @@ import { type RequestHandler } from 'express'
 
 import { NotFound } from 'http-errors'
 import type { Services } from '../services'
-import flowConfig from '../lib/transactionFlow/config'
+import { getFlowConfig } from '../lib/transactionFlow/config'
+import getAssessmentContext from '../lib/transactionFlow/assessmentContext'
 import { CsraAssessmentStageAnswers } from '../data/csraApiTypes'
 import CheckboxQuestion from '../lib/transactionFlow/questionTypes/checkbox'
 import getAnswersFromAssessment from './getAnswersFromAssessment'
@@ -66,9 +67,7 @@ function findLastAnsweredStep(
     : null
 }
 
-function getCurrentStep(assessmentAnswers: CsraAssessmentStageAnswers, sectionId: string, stepId: number) {
-  const section = flowConfig[sectionId]
-
+function getCurrentStep(assessmentAnswers: CsraAssessmentStageAnswers, section: Section, stepId: number) {
   const firstUnansweredStep = findNextUnansweredStep(assessmentAnswers, section)
   let currentStepId = stepId
   if (currentStepId === undefined || Number.isNaN(currentStepId)) {
@@ -101,19 +100,19 @@ export default function csraQuestionController({ auditService, csraService }: De
       user: { username },
     } = res.locals
 
-    const section = flowConfig[sectionId]
-    if (!section) {
-      throw NotFound(`Invalid CSRA section: ${sectionId}`)
-    }
-
     const assessment = await csraService.getCsraAssessment(username, res.locals.prisoner.prisonerNumber, assessmentId)
     if (!assessment) {
       throw NotFound(`No CSRA assessment found for ID: ${assessmentId}`)
     }
 
-    const assessmentAnswers = getAnswersFromAssessment(assessment)
+    const context = getAssessmentContext(assessment)
+    const section = getFlowConfig(context)[sectionId]
+    if (!section) {
+      throw NotFound(`Invalid CSRA section: ${sectionId}`)
+    }
+    const assessmentAnswers = context.answers
 
-    const { currentStep, currentStepId } = getCurrentStep(assessmentAnswers, sectionId, Number(req.params.stepId))
+    const { currentStep, currentStepId } = getCurrentStep(assessmentAnswers, section, Number(req.params.stepId))
 
     if (!currentStep) {
       throw NotFound('Assessment step not found')
