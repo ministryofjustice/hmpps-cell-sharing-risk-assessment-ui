@@ -112,6 +112,13 @@ export default function csraQuestionController({ auditService, csraService }: De
     }
 
     const assessmentAnswers = getAnswersFromAssessment(assessment)
+    const questionContext = {
+      provisionalRatingEntered: !!assessment.interimResult,
+      assessmentAnswers,
+      ...(assessment.interimResult
+        ? { provisionalAnswers: assessment.stages.find(stage => stage.stage === 'PROVISIONAL') }
+        : {}),
+    }
 
     const { currentStep, currentStepId } = getCurrentStep(assessmentAnswers, sectionId, Number(req.params.stepId))
 
@@ -154,7 +161,7 @@ export default function csraQuestionController({ auditService, csraService }: De
         const value = newValues[id]
         values[id] = value
 
-        question.validations()?.some(validation => {
+        question.validations(questionContext)?.some(validation => {
           const errorMessage = validation(value)
 
           if (errorMessage) {
@@ -188,7 +195,7 @@ export default function csraQuestionController({ auditService, csraService }: De
 
       if (Object.keys(validationErrors).length === 0) {
         let mutatedAssessmentAnswers = {
-          ...currentStep.mutateAssessmentAnswers(assessmentAnswers, newValues),
+          ...currentStep.mutateAssessmentAnswers(assessmentAnswers, newValues, questionContext),
           version: assessmentAnswers.version || 0,
         }
 
@@ -205,6 +212,7 @@ export default function csraQuestionController({ auditService, csraService }: De
           res.locals.prisoner.prisonerNumber,
           assessmentId,
           mutatedAssessmentAnswers,
+          assessment.interimResult ? 'FINAL' : 'PROVISIONAL',
         )
 
         const nextStep = findNextAvailableStep(getAnswersFromAssessment(newAssessment), section, currentStepId)
@@ -234,6 +242,8 @@ export default function csraQuestionController({ auditService, csraService }: De
       ...(Object.keys(validationErrors).length > 0 ? { validationErrors } : {}),
       values,
       assessmentAnswers,
+      provisionalRatingEntered: questionContext.provisionalRatingEntered,
+      questionContext,
       cancelLink: assessmentUrl,
       backLink,
     })

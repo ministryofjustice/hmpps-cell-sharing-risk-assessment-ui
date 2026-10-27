@@ -1,4 +1,4 @@
-import Question from './base'
+import Question, { QuestionContext } from './base'
 import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 import FeComponentsService from '../../../services/feComponentsService'
 
@@ -7,14 +7,16 @@ export default abstract class CheckboxQuestion extends Question {
     question: string,
     id: string,
     public items: CheckboxItem[],
+    component = 'govukCheckboxes',
   ) {
-    super(question, id, 'govukCheckboxes')
+    super(question, id, component)
   }
 
   override componentAttributes(
     validationErrors: Record<string, { text: string }> | undefined,
     values: FormValues | undefined,
     assessmentAnswers: CsraAssessmentStageAnswers,
+    context?: QuestionContext,
   ): object {
     return {
       multiple: true,
@@ -38,7 +40,7 @@ export default abstract class CheckboxQuestion extends Question {
               ? {
                   html: FeComponentsService.getComponent(
                     item.conditional.component,
-                    item.conditional.componentAttributes(validationErrors, values, assessmentAnswers),
+                    item.conditional.componentAttributes(validationErrors, values, assessmentAnswers, context),
                   ),
                 }
               : undefined,

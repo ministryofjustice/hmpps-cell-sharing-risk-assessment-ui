@@ -1,5 +1,5 @@
 import { CsraAssessmentStageAnswers } from '../../data/csraApiTypes'
-import Question from './questionTypes/base'
+import Question, { QuestionContext } from './questionTypes/base'
 
 export default class Step {
   title?: string
@@ -59,11 +59,12 @@ export default class Step {
   mutateAssessmentAnswers(
     assessmentAnswers: CsraAssessmentStageAnswers,
     formValues: Record<string, string | string[] | number | boolean>,
+    context?: QuestionContext,
   ) {
     let mutatedAssessmentAnswers = assessmentAnswers
 
     this.questions.forEach(question => {
-      mutatedAssessmentAnswers = question.mutateAssessmentAnswers(mutatedAssessmentAnswers, formValues)
+      mutatedAssessmentAnswers = question.mutateAssessmentAnswers(mutatedAssessmentAnswers, formValues, context)
     })
 
     return mutatedAssessmentAnswers

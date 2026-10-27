@@ -54,6 +54,27 @@ describe('CsraService', () => {
     })
   })
 
+  describe('updateCsraAssessment', () => {
+    it.each(['PROVISIONAL', 'FINAL'] as const)('passes the %s stage to the API client', async stage => {
+      const answers: Partial<CsraAssessmentStageAnswers> = {
+        stage,
+        prisonId: 'MDI',
+        offenceEvidence: [],
+        riskTo: [],
+        vulnerabilities: [],
+        version: 1,
+      }
+
+      await csraService.updateCsraAssessment('AUSER_GEN', 'A1234BC', 'assessment-1', answers, stage)
+
+      expect(csraApiClient.updateCsraAssessment).toHaveBeenCalledWith(
+        'AUSER_GEN',
+        { prisonerNumber: 'A1234BC', assessmentId: 'assessment-1', stage },
+        answers,
+      )
+    })
+  })
+
   describe('getAssessmentsInProgress', () => {
     it('delegates to the client, passing the username and prison id', async () => {
       const assessmentsInProgress: CsraAssessmentsInProgress = {

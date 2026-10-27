@@ -79,6 +79,61 @@ describe('EvidenceCheckboxQuestion', () => {
     })
   })
 
+  it('shows checked sources separately and only offers unchecked sources after a provisional rating', () => {
+    const question = new EvidenceCheckboxQuestion()
+    const assessmentAnswers = makeAssessment()
+
+    const attributes = question.componentAttributes(undefined, {}, assessmentAnswers, {
+      provisionalRatingEntered: true,
+      provisionalAnswers: makeAssessment({ pncChecked: true, dpsChecked: true }),
+    }) as {
+      fieldset: { legend: { text: string } }
+      items: CheckboxItem[]
+      checkedSources: Array<Pick<CheckboxItem, 'text' | 'hint'>>
+    }
+
+    expect(attributes.checkedSources).toEqual([
+      { text: 'PNC', hint: { text: 'Current and previous convictions' } },
+      { text: 'DPS', hint: { text: 'Current and historical adjudications' } },
+    ])
+    expect(attributes.fieldset.legend.text).toBe('Which remaining evidence sources have you checked?')
+    expect(attributes.items.map(item => item.text)).toEqual(['Warrant', 'PER'])
+  })
+
+  it('preserves previously checked sources when saving remaining sources', () => {
+    const question = new EvidenceCheckboxQuestion()
+    const assessmentAnswers = makeAssessment()
+
+    const mutated = question.mutateAssessmentAnswers(
+      assessmentAnswers,
+      { evidenceSources: ['perChecked'] },
+      {
+        provisionalRatingEntered: true,
+        provisionalAnswers: makeAssessment({ pncChecked: true, dpsChecked: true }),
+      },
+    )
+
+    expect(mutated.pncChecked).toBe(true)
+    expect(mutated.dpsChecked).toBe(true)
+    expect(mutated.warrantChecked).toBe(false)
+    expect(mutated.perChecked).toBe(true)
+  })
+
+  it('does not require another selection when all sources were already checked', () => {
+    const question = new EvidenceCheckboxQuestion()
+    const context = {
+      provisionalRatingEntered: true,
+      assessmentAnswers: makeAssessment({
+        pncChecked: true,
+        warrantChecked: true,
+        dpsChecked: true,
+        perChecked: true,
+      }),
+    }
+
+    expect(question.validations(context)).toEqual([])
+  })
+
   it('clears all source flags and conditional answers without changing unrelated answers or the original', () => {
     const question = new EvidenceCheckboxQuestion()
     question.items[0] = {

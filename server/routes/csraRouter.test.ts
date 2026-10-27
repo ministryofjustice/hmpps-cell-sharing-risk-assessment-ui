@@ -646,6 +646,33 @@ describe('csraRouter', () => {
     )
   })
 
+  it('shows checked and remaining evidence sources separately after a provisional rating', async () => {
+    csraService.getCsraAssessment.mockResolvedValue(
+      assessment({
+        interimResult: 'HIGH_GENERAL',
+        stages: [stageAnswers({ pncChecked: true, dpsChecked: true }), stageAnswers({ stage: 'FINAL' })],
+      }),
+    )
+
+    const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      .get(`${assessmentUrl}/section/evidenceAndOffences/0`)
+      .expect(200)
+
+    expect(response.text).toContain('Evidence sources already checked')
+    expect(response.text).toContain('Which remaining evidence sources have you checked?')
+    expect(response.text).toMatch(
+      /<li>\s*PNC\s*<div class="govuk-hint">\s*Current and previous convictions\s*<\/div>\s*<\/li>/,
+    )
+    expect(response.text).toMatch(
+      /<li>\s*DPS\s*<div class="govuk-hint">\s*Current and historical adjudications\s*<\/div>\s*<\/li>/,
+    )
+    expect(response.text).not.toContain('You must review all evidence sources')
+    expect(response.text).not.toContain('value="pncChecked"')
+    expect(response.text).not.toContain('value="dpsChecked"')
+    expect(response.text).toContain('value="warrantChecked"')
+    expect(response.text).toContain('value="perChecked"')
+  })
+
   it('uses zero-based step ids for check answers change links and displays unanswered values explicitly', async () => {
     csraService.getCsraAssessment.mockResolvedValue(
       assessment({
