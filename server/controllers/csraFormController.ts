@@ -67,6 +67,7 @@ export default abstract class CsraFormController<
     }
     locals.allowedRatings = allowedRatings
     locals.submitType = submitType
+    locals.fieldOrder = this.getFieldsToValidate(req, res)
 
     return true
   }

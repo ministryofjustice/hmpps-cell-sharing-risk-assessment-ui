@@ -5,6 +5,7 @@ import { AssessmentSubmitType, getAssessmentSubmitStatus } from '../utils/getAss
 import type { CsraAssessment } from '../data/csraApiTypes'
 import CsraSelectRatingController from './csraSelectRatingController'
 import CsraConfirmRatingController from './csraConfirmRatingController'
+import FeComponentsService from '../services/feComponentsService'
 
 jest.mock('../services/csraService')
 jest.mock('../services/auditService')
@@ -57,6 +58,7 @@ describe('CSRA rating controllers', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    jest.spyOn(FeComponentsService, 'getComponent').mockImplementation((_component, params) => JSON.stringify(params))
     csraService.getCsraAssessment.mockResolvedValue(assessment)
     csraService.getCurrentRating.mockResolvedValue({
       prisonerNumber: 'A1234BC',
@@ -188,7 +190,17 @@ describe('CSRA rating controllers', () => {
         'POST',
         {
           assessmentComment: 'Recorded evidence',
-          ...(rating === 'HIGH_GENERAL' ? { nextReviewDate: '17/5/2099' } : {}),
+          ...(submitType === AssessmentSubmitType.FINAL && rating.includes('HIGH')
+            ? { nextReviewDate: '17/5/2099' }
+            : {}),
+          ...(rating === 'HIGH_SPECIFIC'
+            ? {
+                riskTo: ['OTHER'],
+                RISK_TO_OTHER_DETAILS: 'Specific risk details',
+                vulnerabilities: ['MENTAL_HEALTH'],
+                VULNERABILITIES_MENTAL_HEALTH_DETAILS: 'Vulnerability details',
+              }
+            : {}),
         },
         rating,
       )
@@ -197,10 +209,16 @@ describe('CSRA rating controllers', () => {
       await controller.requestHandler()(req, res, jest.fn())
 
       const payload = { ...assessment.stages[0], rating, assessmentComment: 'Recorded evidence' }
+      if (rating === 'HIGH_SPECIFIC') {
+        Object.assign(payload, {
+          riskTo: [{ category: 'OTHER', details: 'Specific risk details' }],
+          vulnerabilities: [{ category: 'MENTAL_HEALTH', details: 'Vulnerability details' }],
+        })
+      }
       if (submitType === AssessmentSubmitType.FINAL) {
         expect(csraService.submitFinalRating).toHaveBeenCalledWith('user1', 'A1234BC', 'assessment-123', {
           ...payload,
-          nextReviewDate: rating === 'HIGH_GENERAL' ? '2099-05-17' : undefined,
+          nextReviewDate: rating.includes('HIGH') ? '2099-05-17' : undefined,
         })
         expect(csraService.submitProvisionalRating).not.toHaveBeenCalled()
       } else {
@@ -229,6 +247,146 @@ describe('CSRA rating controllers', () => {
       )
     })
 
+    it('renders risk and vulnerability options for a high-specific rating', async () => {
+      const res = response()
+
+      await controller.requestHandler()(request('GET', {}, 'HIGH_SPECIFIC'), res, jest.fn())
+
+      expect(res.locals.riskToItems.map(({ value }: { value?: string }) => value).filter(Boolean)).toEqual([
+        'DIFFERENT_ETHNICITY',
+        'DIFFERENT_RELIGION',
+        'DISABLED',
+        'GANG_MEMBERS',
+        'SEXUAL_MINORITY',
+        'OLD_PEOPLE',
+        'SPECIFIC_PERSONS',
+        'TRANSGENDER',
+        'OTHER',
+        'NONE',
+      ])
+      expect(res.locals.vulnerabilitiesItems.map(({ value }: { value?: string }) => value).filter(Boolean)).toEqual([
+        'DISABLED',
+        'SEXUAL_MINORITY',
+        'MENTAL_HEALTH',
+        'NEURODIVERSITY',
+        'OFFENCE_TYPE',
+        'OLD_PEOPLE',
+        'TRANSGENDER',
+        'OTHER',
+        'NONE',
+      ])
+      expect(
+        res.locals.riskToItems.find(({ value }: { value?: string }) => value === 'OTHER').conditional.html,
+      ).toContain('RISK_TO_OTHER_DETAILS')
+      expect(
+        res.locals.vulnerabilitiesItems.find(({ value }: { value?: string }) => value === 'OTHER').conditional.html,
+      ).toContain('VULNERABILITIES_OTHER_DETAILS')
+    })
+
+    it('requires details for selected high-specific risk and vulnerability categories', async () => {
+      const req = request(
+        'POST',
+        {
+          assessmentComment: 'Recorded evidence',
+          nextReviewDate: '17/5/2099',
+          riskTo: 'OTHER',
+          vulnerabilities: ['MENTAL_HEALTH'],
+        },
+        'HIGH_SPECIFIC',
+      )
+      const res = response()
+
+      await controller.requestHandler()(req, res, jest.fn())
+
+      expect(res.locals.validationErrors).toEqual({
+        RISK_TO_OTHER_DETAILS: {
+          text: 'Enter details of who this person is a risk to',
+          summaryPrefix: 'Other',
+        },
+        VULNERABILITIES_MENTAL_HEALTH_DETAILS: {
+          text: 'Enter details of why this person is vulnerable or at risk',
+          summaryPrefix: 'Mental health',
+        },
+      })
+      expect(res.locals.fieldOrder).toEqual([
+        'riskTo',
+        'RISK_TO_OTHER_DETAILS',
+        'vulnerabilities',
+        'VULNERABILITIES_MENTAL_HEALTH_DETAILS',
+        'assessmentComment',
+        'nextReviewDate',
+      ])
+      expect(res.render).toHaveBeenCalled()
+      expect(csraService.submitFinalRating).not.toHaveBeenCalled()
+    })
+
+    it.each([
+      [
+        { riskTo: ['OTHER', 'UNSUPPORTED'], vulnerabilities: ['NONE'] },
+        { riskTo: 'Select valid groups this person is a risk to' },
+      ],
+      [
+        { riskTo: ['NONE', 'OTHER'], vulnerabilities: ['NONE'] },
+        { riskTo: 'Select valid groups this person is a risk to' },
+      ],
+      [
+        { riskTo: 'NONE', vulnerabilities: ['NONE', 'MENTAL_HEALTH'] },
+        { vulnerabilities: 'Select valid vulnerable or at risk groups' },
+      ],
+      [{ riskTo: { category: 'OTHER' }, vulnerabilities: ['NONE'] }, { riskTo: 'Select who this person is a risk to' }],
+    ])('rejects invalid or non-exclusive categories: %j', async (categories, expectedErrors) => {
+      const req = request(
+        'POST',
+        {
+          assessmentComment: 'Recorded evidence',
+          ...categories,
+        },
+        'HIGH_SPECIFIC',
+      )
+      const res = response()
+
+      await controller.requestHandler()(req, res, jest.fn())
+
+      for (const [field, text] of Object.entries(expectedErrors)) {
+        expect(res.locals.validationErrors[field]).toEqual({ text })
+      }
+      expect(res.render).toHaveBeenCalled()
+      expect(csraService.submitFinalRating).not.toHaveBeenCalled()
+    })
+
+    it('submits selected risk and vulnerability details for a high-specific final rating', async () => {
+      submitStatus.mockReturnValue({
+        submitType: AssessmentSubmitType.FINAL,
+        remainingTasks: [],
+        allowedRatings: ['HIGH_SPECIFIC'],
+      })
+      const req = request(
+        'POST',
+        {
+          assessmentComment: 'Recorded evidence',
+          nextReviewDate: '17/5/2099',
+          riskTo: 'OTHER',
+          RISK_TO_OTHER_DETAILS: 'Specific risk details',
+          vulnerabilities: ['MENTAL_HEALTH'],
+          VULNERABILITIES_MENTAL_HEALTH_DETAILS: 'Vulnerability details',
+        },
+        'HIGH_SPECIFIC',
+      )
+      const res = response()
+
+      await controller.requestHandler()(req, res, jest.fn())
+
+      expect(csraService.submitFinalRating).toHaveBeenCalledWith('user1', 'A1234BC', 'assessment-123', {
+        ...assessment.stages[0],
+        rating: 'HIGH_SPECIFIC',
+        assessmentComment: 'Recorded evidence',
+        riskTo: [{ category: 'OTHER', details: 'Specific risk details' }],
+        vulnerabilities: [{ category: 'MENTAL_HEALTH', details: 'Vulnerability details' }],
+        nextReviewDate: '2099-05-17',
+      })
+      expect(res.redirect).toHaveBeenCalledWith('/prisoner/A1234BC')
+    })
+
     it.each([
       [AssessmentSubmitType.FINAL, 'STANDARD'],
       [AssessmentSubmitType.PROVISIONAL, 'HIGH_SPECIFIC'],
@@ -238,7 +396,24 @@ describe('CSRA rating controllers', () => {
       const submit =
         submitType === AssessmentSubmitType.FINAL ? csraService.submitFinalRating : csraService.submitProvisionalRating
       submit.mockRejectedValueOnce(error)
-      const req = request('POST', { assessmentComment: 'Recorded evidence' }, rating)
+      const req = request(
+        'POST',
+        {
+          assessmentComment: 'Recorded evidence',
+          ...(rating === 'HIGH_SPECIFIC'
+            ? {
+                riskTo: ['OTHER'],
+                RISK_TO_OTHER_DETAILS: 'Specific risk details',
+                vulnerabilities: ['MENTAL_HEALTH'],
+                VULNERABILITIES_MENTAL_HEALTH_DETAILS: 'Vulnerability details',
+              }
+            : {}),
+          ...(submitType === AssessmentSubmitType.FINAL && rating.includes('HIGH')
+            ? { nextReviewDate: '17/5/2099' }
+            : {}),
+        },
+        rating,
+      )
       const res = response()
 
       await expect(controller.requestHandler()(req, res, jest.fn())).rejects.toThrow(error)

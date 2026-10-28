@@ -495,6 +495,14 @@ test.describe('Prisoner CSRA', () => {
     await expect(page.getByLabel('Review date')).toHaveCount(0)
 
     await csraApi.stubSubmitProvisionalRating(prisoner.prisonerNumber, 'assessment-123')
+    await page
+      .getByRole('group', { name: 'Who is this person a risk to?' })
+      .getByRole('checkbox', { name: 'No identified risk to any of these groups' })
+      .check()
+    await page
+      .getByRole('group', { name: 'Is this person part of a vulnerable or at risk group?' })
+      .getByRole('checkbox', { name: 'No identified vulnerabilities' })
+      .check()
     await page.getByLabel('Assessment comment').fill('All available sources checked. Manager approved sharing.')
     await page.getByRole('button', { name: 'Confirm rating' }).click()
     await expect(page).toHaveURL('/prisoner/A1234BC')
@@ -606,6 +614,70 @@ test.describe('Prisoner CSRA', () => {
     expect(JSON.parse(submissions.body.requests[0].body)).toMatchObject({
       rating: 'HIGH_GENERAL',
       assessmentComment: 'Clear evidence requires the prisoner not to share a cell.',
+      nextReviewDate: '2099-05-17',
+    })
+  })
+
+  test('confirms a high-specific rating with risk and vulnerability details', async ({ page }) => {
+    await stubRatingSelectionAssessment(page, completeAssessmentAnswers())
+    await csraApi.stubSubmitFinalRating(prisoner.prisonerNumber, 'assessment-123')
+    await page.goto('/prisoner/A1234BC/csra/assessment-123/select-rating')
+    await page.getByRole('radio', { name: /High risk – specific/ }).check()
+    await page.getByRole('button', { name: 'Continue', exact: true }).click()
+    await expect(page).toHaveURL(/\/confirm-rating\/HIGH_SPECIFIC$/)
+
+    await expect(page.getByRole('checkbox', { name: 'Different ethnicity' })).toBeVisible()
+    await expect(page.getByRole('checkbox', { name: 'No identified risk to any of these groups' })).toBeVisible()
+    await expect(page.getByRole('checkbox', { name: 'Mental health' })).toBeVisible()
+    await expect(page.getByRole('checkbox', { name: 'No identified vulnerabilities' })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Confirm rating' }).click()
+    const initialErrorSummary = page.getByRole('alert')
+    await expect(initialErrorSummary).toContainText('Select who this person is a risk to')
+    await expect(initialErrorSummary).toContainText(
+      'Select whether this person is part of a vulnerable or at risk group',
+    )
+    await expect(initialErrorSummary).toContainText('Enter an assessment comment')
+    await expect(initialErrorSummary).toContainText('Enter or select a date')
+
+    await page
+      .getByRole('group', { name: 'Who is this person a risk to?' })
+      .getByRole('checkbox', { name: 'Other', exact: true })
+      .check()
+    await page
+      .getByRole('group', { name: 'Is this person part of a vulnerable or at risk group?' })
+      .getByRole('checkbox', { name: 'Mental health', exact: true })
+      .check()
+    await page.getByRole('button', { name: 'Confirm rating' }).click()
+
+    const detailErrorLinks = await page.getByRole('alert').getByRole('link').allTextContents()
+    expect(detailErrorLinks).toEqual([
+      'Other: Enter details of who this person is a risk to',
+      'Mental health: Enter details of why this person is vulnerable or at risk',
+      'Enter an assessment comment',
+      'Enter or select a date',
+    ])
+
+    await page.locator('#RISK_TO_OTHER_DETAILS').fill('Threats made against named prisoners.')
+    await page.locator('#VULNERABILITIES_MENTAL_HEALTH_DETAILS').fill('Known mental health needs.')
+    await page.getByLabel('Assessment comment').fill('Specific risks and vulnerabilities considered.')
+    await page.getByLabel('Review date').fill('17/5/2099')
+    await page.getByRole('button', { name: 'Confirm rating' }).click()
+
+    await expect(page).toHaveURL('/prisoner/A1234BC')
+    await expect(page.getByRole('alert')).toContainText(
+      'John’s CSRA rating has been confirmed as high risk – specific.',
+    )
+    const submissions = await getMatchingRequests({
+      method: 'PUT',
+      urlPath: '/csra-api/csra-review/prisoner/A1234BC/assessment/assessment-123/final',
+    })
+    expect(submissions.body.requests).toHaveLength(1)
+    expect(JSON.parse(submissions.body.requests[0].body)).toMatchObject({
+      rating: 'HIGH_SPECIFIC',
+      assessmentComment: 'Specific risks and vulnerabilities considered.',
+      riskTo: [{ category: 'OTHER', details: 'Threats made against named prisoners.' }],
+      vulnerabilities: [{ category: 'MENTAL_HEALTH', details: 'Known mental health needs.' }],
       nextReviewDate: '2099-05-17',
     })
   })

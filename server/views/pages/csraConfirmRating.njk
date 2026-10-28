@@ -1,6 +1,7 @@
 {% extends "../partials/layout.njk" %}
 
 {% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
 {% from "govuk/components/textarea/macro.njk" import govukTextarea %}
 {% from "moj/components/date-picker/macro.njk" import mojDatePicker -%}
 {% from "moj/components/ticket-panel/macro.njk" import mojTicketPanel %}
@@ -42,6 +43,40 @@
             }]
           }) }}
 
+          {% if rating === 'HIGH_SPECIFIC' %}
+            {{ govukCheckboxes({
+              id: "riskTo",
+              name: "riskTo",
+              fieldset: {
+                legend: {
+                  text: "Who is this person a risk to?",
+                  classes: 'govuk-fieldset__legend--m'
+                }
+              },
+              hint: {
+                text: 'Select all that apply.'
+              },
+              errorMessage: validationErrors.riskTo,
+              items: riskToItems
+            }) }}
+
+            {{ govukCheckboxes({
+              id: "vulnerabilities",
+              name: "vulnerabilities",
+              fieldset: {
+                legend: {
+                  text: "Is this person part of a vulnerable or at risk group?",
+                  classes: 'govuk-fieldset__legend--m'
+                }
+              },
+              hint: {
+                text: 'Select all that apply.'
+              },
+              errorMessage: validationErrors.vulnerabilities,
+              items: vulnerabilitiesItems
+            }) }}
+          {% endif %}
+
           {{ govukTextarea({
             name: "assessmentComment",
             label: {
@@ -58,7 +93,7 @@
             }
           }) }}
 
-          {% if rating === 'HIGH_GENERAL' and submitType === 'FINAL' %}
+          {% if rating.includes('HIGH') and submitType === 'FINAL' %}
             {{ mojDatePicker({
               id: "nextReviewDate",
               name: "nextReviewDate",
