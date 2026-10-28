@@ -444,7 +444,7 @@ describe('csraRouter', () => {
         expect(csraService.submitFinalRating).not.toHaveBeenCalled()
         expect(flashProvider).toHaveBeenCalledWith(
           'success',
-          expect.objectContaining({ title: 'CSRA rating confirmed' }),
+          expect.objectContaining({ title: 'Provisional CSRA rating confirmed' }),
         )
       },
     )

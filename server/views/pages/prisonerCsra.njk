@@ -38,9 +38,9 @@
             {{ csra.rating | csraRatingLabel(csra.ratingStage) or (csra.status | csraStatusLabel) }}
           </h2>
 
-          {% if csra.provisional %}
+          {% if csra.provisional and csra.inheritedAfterTransfer %}
             <p class="govuk-body csra-not-complete-text">
-              {% if csra.inheritedAfterTransfer %}
+              {% if csra.assessmentType == "REVIEW" %}
                 Review
               {% else %}
                 Full assessment

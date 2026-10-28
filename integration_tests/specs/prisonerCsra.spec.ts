@@ -220,6 +220,7 @@ test.describe('Prisoner CSRA', () => {
       provisional: true,
       ratingStage: 'PROVISIONAL',
       inheritedAfterTransfer: true,
+      assessmentType: 'REVIEW',
       nextReviewDate: '2027-05-06',
     })
 

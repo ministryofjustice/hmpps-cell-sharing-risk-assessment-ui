@@ -322,6 +322,7 @@ export interface CsraCurrentRating {
   rating?: CsraResult | null
   provisional: boolean
   type?: CsraReviewType | null
+  assessmentType?: CsraAssessmentTypeBucket | null
   /** Which stage the rating came from; distinguishes a review's interim from an assessment's provisional. */
   ratingStage?: CsraRatingStage | null
   reviewId?: string | null

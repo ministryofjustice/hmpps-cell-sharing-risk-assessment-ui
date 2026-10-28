@@ -266,22 +266,20 @@ export default class CsraConfirmRatingController extends CsraFormController<Csra
       }))
     }
 
-    if (submitType === AssessmentSubmitType.FINAL) {
+    const isProvisional = submitType === AssessmentSubmitType.PROVISIONAL
+    if (isProvisional) {
+      await this.csraService.submitProvisionalRating(username, prisonerNumber, assessmentId, ratingData)
+    } else {
       await this.csraService.submitFinalRating(username, prisonerNumber, assessmentId, {
         ...ratingData,
         nextReviewDate: parseUkDate(nextReviewDate),
       })
-    } else {
-      await this.csraService.submitProvisionalRating(username, prisonerNumber, assessmentId, ratingData)
     }
 
     const formattedName = capFirst(prisoner.firstName.trim().toLowerCase())
-    const formattedRating = csraRatingLabel(
-      rating,
-      submitType === AssessmentSubmitType.PROVISIONAL ? 'PROVISIONAL' : null,
-    ).toLowerCase()
+    const formattedRating = csraRatingLabel(rating, isProvisional ? 'PROVISIONAL' : null).toLowerCase()
     req.flash('success', {
-      title: 'CSRA rating confirmed',
+      title: `${isProvisional ? 'Provisional ' : ''}CSRA rating confirmed`,
       content: `${formattedName}’s CSRA rating has been confirmed as ${formattedRating}.`,
     })
   }
@@ -291,7 +289,7 @@ export default class CsraConfirmRatingController extends CsraFormController<Csra
     const { submitType } = res.locals
     const fields = ['assessmentComment']
 
-    if (rating.includes('HIGH') && submitType === 'FINAL') {
+    if (rating.includes('HIGH') && submitType === AssessmentSubmitType.FINAL) {
       fields.push('nextReviewDate')
     }
 

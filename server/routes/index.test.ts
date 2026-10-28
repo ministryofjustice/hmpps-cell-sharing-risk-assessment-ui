@@ -154,6 +154,54 @@ describe('GET /prisoner/:prisonerNumber', () => {
       })
   })
 
+  it.each([
+    ['ASSESSMENT', 'Full assessment not completed due to prisoner transfer.'],
+    ['REVIEW', 'Review not completed due to prisoner transfer.'],
+  ] as const)(
+    'explains an inherited %s provisional rating was not completed after transfer',
+    (assessmentType, message) => {
+      csraService.getCurrentRating.mockResolvedValue({
+        prisonerNumber: 'A1234BC',
+        status: 'COMPLETE',
+        rating: 'HIGH_GENERAL',
+        provisional: true,
+        ratingStage: 'PROVISIONAL',
+        inheritedAfterTransfer: true,
+        assessmentType,
+        riskTo: [],
+        vulnerabilities: [],
+      })
+
+      return request(app)
+        .get('/prisoner/A1234BC')
+        .expect(200)
+        .expect(res => {
+          expect(res.text.replace(/\s+/g, ' ')).toContain(message)
+        })
+    },
+  )
+
+  it('does not explain a provisional rating as not completed when it was not inherited after transfer', () => {
+    csraService.getCurrentRating.mockResolvedValue({
+      prisonerNumber: 'A1234BC',
+      status: 'COMPLETE',
+      rating: 'HIGH_GENERAL',
+      provisional: true,
+      ratingStage: 'PROVISIONAL',
+      inheritedAfterTransfer: false,
+      assessmentType: 'ASSESSMENT',
+      riskTo: [],
+      vulnerabilities: [],
+    })
+
+    return request(app)
+      .get('/prisoner/A1234BC')
+      .expect(200)
+      .expect(res => {
+        expect(res.text).not.toContain('not completed due to prisoner transfer')
+      })
+  })
+
   it('shows a no-CSRA message when the prisoner has no current rating', () => {
     csraService.getCurrentRating.mockResolvedValue({
       prisonerNumber: 'A1234BC',
