@@ -43,6 +43,7 @@ export default class CsraSelectRatingController extends CsraFormController<CsraF
       assessmentAnswers.offenceSexualAssault,
     )
     locals.selectedRating = req.body?.selectedRating || req.query?.selectedRating || null
+    locals.backLink = `${locals.cancelLink}/check-answers`
     return true
   }
 
