@@ -12,6 +12,7 @@ import type {
   CsraPrisonRatingSummary,
   CsraRecentArrivals,
   CsraRecentArrivalsQuery,
+  CsraAssessmentStage,
   CsraReviewDetail,
   CsraReviewHistory,
   CsraReviewsInProgress,
@@ -123,12 +124,9 @@ export default class CsraService {
     prisonerNumber: string,
     assessmentId: string,
     answers: Partial<CsraAssessmentStageAnswers>,
+    stage: CsraAssessmentStage,
   ) {
-    return this.csraApiClient.updateCsraAssessment(
-      username,
-      { prisonerNumber, assessmentId, stage: 'PROVISIONAL' },
-      answers,
-    )
+    return this.csraApiClient.updateCsraAssessment(username, { prisonerNumber, assessmentId, stage }, answers)
   }
 
   startCsraAssessment(username: string, prisonerNumber: string, prisonId: string) {

@@ -8,6 +8,7 @@
 {% from "govuk/components/textarea/macro.njk" import govukTextarea %}
 {% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
 {% from "moj/components/date-picker/macro.njk" import mojDatePicker %}
+{% from "../macros/evidenceSources.njk" import appEvidenceSources %}
 
 {% set pageTitle = applicationName + " - CSRA Question" %}
 
@@ -20,7 +21,7 @@
 {% block content %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
-      {% if currentStep.bodyHtml %}
+      {% if currentStep.bodyHtml and not provisionalRatingEntered %}
         {{ currentStep.bodyHtml | safe }}
       {% endif %}
 
@@ -28,7 +29,7 @@
         <input type="hidden" name="_csrf" value="{{ csrfToken }}" />
 
         {% for question in currentStep.questions %}
-          {{ callAsMacro(question.component)(question.componentAttributes(validationErrors, values, assessmentAnswers)) }}
+          {{ callAsMacro(question.component)(question.componentAttributes(validationErrors, values, assessmentAnswers, questionContext)) }}
         {% endfor %}
 
         {% if currentStep.warningText %}

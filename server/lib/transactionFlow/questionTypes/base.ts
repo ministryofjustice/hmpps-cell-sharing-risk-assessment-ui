@@ -1,5 +1,11 @@
 import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 
+export interface QuestionContext {
+  provisionalRatingEntered?: boolean
+  assessmentAnswers?: CsraAssessmentStageAnswers
+  provisionalAnswers?: CsraAssessmentStageAnswers
+}
+
 export default abstract class Question {
   constructor(
     public readonly question: string | null,
@@ -11,9 +17,10 @@ export default abstract class Question {
     validationErrors: Record<string, { text: string }> | undefined,
     values: FormValues | undefined,
     assessmentAnswers: CsraAssessmentStageAnswers,
+    context?: QuestionContext,
   ): object
 
-  abstract validations(): ValidationFunction[]
+  abstract validations(context?: QuestionContext): ValidationFunction[]
 
   /** Converts the passed in API values to values that the component will use */
   abstract getFormValues(assessmentAnswers: CsraAssessmentStageAnswers): FormValues
@@ -27,6 +34,7 @@ export default abstract class Question {
   abstract mutateAssessmentAnswers(
     assessmentAnswers: CsraAssessmentStageAnswers,
     formValues: FormValues,
+    context?: QuestionContext,
   ): CsraAssessmentStageAnswers
 
   abstract eraseAnswers(assessmentAnswers: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers
