@@ -55,6 +55,32 @@ export type CsraRiskToCategory =
   | 'OTHER'
   | 'NONE'
 
+const csraRiskToCategoryOrder: CsraRiskToCategory[] = [
+  'DIFFERENT_ETHNICITY',
+  'DIFFERENT_RELIGION',
+  'DISABLED',
+  'GANG_MEMBERS',
+  'SEXUAL_MINORITY',
+  'OLD_PEOPLE',
+  'SPECIFIC_PERSONS',
+  'TRANSGENDER',
+  'OTHER',
+  'NONE',
+]
+
+const csraRiskToCategoryLabelMap: Record<CsraRiskToCategory, string> = {
+  DIFFERENT_ETHNICITY: 'Different ethnicity',
+  DIFFERENT_RELIGION: 'Different religion',
+  DISABLED: 'Disabled people',
+  GANG_MEMBERS: 'Gang members',
+  SEXUAL_MINORITY: 'Gay, lesbian, bisexual or other sexual minority',
+  OLD_PEOPLE: 'Old people (65+)',
+  SPECIFIC_PERSONS: 'Specific person(s)',
+  TRANSGENDER: 'Transgender people',
+  OTHER: 'Other',
+  NONE: 'No identified risk to any of these groups',
+}
+
 /** A vulnerable or at-risk group a prisoner may belong to (mirrors jpa.CsraVulnerabilityCategory). */
 export type CsraVulnerabilityCategory =
   | 'DISABLED'
@@ -66,6 +92,30 @@ export type CsraVulnerabilityCategory =
   | 'TRANSGENDER'
   | 'OTHER'
   | 'NONE'
+
+const csraVulnerabilityCategoryOrder: CsraVulnerabilityCategory[] = [
+  'DISABLED',
+  'SEXUAL_MINORITY',
+  'MENTAL_HEALTH',
+  'NEURODIVERSITY',
+  'OFFENCE_TYPE',
+  'OLD_PEOPLE',
+  'TRANSGENDER',
+  'OTHER',
+  'NONE',
+]
+
+const csraVulnerabilityCategoryLabelMap: Record<CsraVulnerabilityCategory, string> = {
+  DISABLED: 'Disabled people',
+  SEXUAL_MINORITY: 'Gay, lesbian, bisexual or other sexual minority',
+  MENTAL_HEALTH: 'Mental health',
+  NEURODIVERSITY: 'Neurodiversity',
+  OFFENCE_TYPE: 'Offence type',
+  OLD_PEOPLE: 'Old people (65+)',
+  TRANSGENDER: 'Transgender people',
+  OTHER: 'Other',
+  NONE: 'No identified vulnerabilities',
+}
 
 export interface CsraRiskToDetail {
   category: CsraRiskToCategory
@@ -566,4 +616,11 @@ export type CsraRecentArrivalsQuery = {
   /** Number of days back to include (inclusive of today). Defaults to 3 on the API side. */
   days?: number
   arrivalTypes?: CsraArrivalType[]
+}
+
+export {
+  csraRiskToCategoryOrder,
+  csraRiskToCategoryLabelMap,
+  csraVulnerabilityCategoryOrder,
+  csraVulnerabilityCategoryLabelMap,
 }

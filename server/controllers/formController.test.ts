@@ -7,10 +7,12 @@ class TestFormController extends FormController<Record<string, string>> {
 
   override sendPost = jest.fn().mockResolvedValue(undefined)
 
-  constructor(validations: FormControllerOptions['validations'] = { comment: [required('Enter a comment')] }) {
+  constructor(
+    validators: FormControllerOptions['validators'] = { comment: { validators: [required('Enter a comment')] } },
+  ) {
     super({
       viewPath: 'pages/testForm',
-      validations,
+      validators,
     })
   }
 
@@ -27,9 +29,9 @@ describe('FormController', () => {
   const setup = (
     method = 'POST',
     body: Record<string, unknown> = {},
-    validations?: FormControllerOptions['validations'],
+    validators?: FormControllerOptions['validators'],
   ) => {
-    const controller = new TestFormController(validations)
+    const controller = new TestFormController(validators)
     const req = {
       method,
       params: { assessmentId: 'assessment-123' },
@@ -116,8 +118,8 @@ describe('FormController', () => {
       'POST',
       {},
       {
-        comment: [required('Enter a comment'), laterValidator],
-        date: [required('Enter a date')],
+        comment: { validators: [required('Enter a comment'), laterValidator] },
+        date: { validators: [required('Enter a date')] },
       },
     )
 
@@ -128,6 +130,25 @@ describe('FormController', () => {
       date: { text: 'Enter a date' },
     })
     expect(laterValidator).not.toHaveBeenCalled()
+  })
+
+  it('includes a summary prefix on a field validation error', async () => {
+    const { res, handle } = setup(
+      'POST',
+      {},
+      {
+        details: {
+          summaryPrefix: 'Other',
+          validators: [required('Enter details')],
+        },
+      },
+    )
+
+    await handle()
+
+    expect(res.locals.validationErrors).toEqual({
+      details: { text: 'Enter details', summaryPrefix: 'Other' },
+    })
   })
 
   it('propagates submission failures without redirecting', async () => {

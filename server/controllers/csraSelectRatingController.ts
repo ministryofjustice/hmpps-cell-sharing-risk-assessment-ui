@@ -13,8 +13,8 @@ export default class CsraSelectRatingController extends CsraFormController<CsraF
     super(
       {
         auditPage: Page.PRISONER_CSRA_SELECT_RATING,
-        validations: {
-          selectedRating: [required('Select a CSRA rating')],
+        validators: {
+          selectedRating: { validators: [required('Select a CSRA rating')] },
         },
         viewPath: 'pages/csraSelectRating',
       },

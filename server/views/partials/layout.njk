@@ -61,9 +61,18 @@
           {% block outerHeading %}
             {% if validationErrors %}
               {% set errorList = [] %}
-              {% for field, error in validationErrors %}
-                {% set _ = errorList.push({ text: error.text, href: '#' + field }) %}
-              {% endfor %}
+              {% if fieldOrder %}
+                {% for field in fieldOrder %}
+                  {% set error = validationErrors[field] %}
+                  {% if error %}
+                    {% set _ = errorList.push({ text: (error.summaryPrefix + ": " if error.summaryPrefix else "") + error.text, href: '#' + field }) %}
+                  {% endif %}
+                {% endfor %}
+              {% else %}
+                {% for field, error in validationErrors %}
+                  {% set _ = errorList.push({ text: (error.summaryPrefix + ": " if error.summaryPrefix else "") + error.text, href: '#' + field }) %}
+                {% endfor %}
+              {% endif %}
               {{ govukErrorSummary({
                 titleText: "There is a problem",
                 errorList: errorList

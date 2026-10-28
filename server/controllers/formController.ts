@@ -2,17 +2,17 @@ import type { Request, Response, NextFunction, RequestHandler } from 'express'
 import ValidationFunction from '../lib/transactionFlow/validations/validationFunction'
 
 export interface FormControllerOptions {
-  validations?: Record<string, ValidationFunction[]>
+  validators?: Record<string, { summaryPrefix?: string; validators: ValidationFunction[] }>
   viewPath?: string
 }
 
 export default abstract class FormController<ParamType extends object> {
-  protected validations: Record<string, ValidationFunction[]>
+  protected validators: Record<string, { summaryPrefix?: string; validators: ValidationFunction[] }>
 
   protected viewPath?: string
 
   constructor(options: FormControllerOptions) {
-    this.validations = options.validations || {}
+    this.validators = options.validators || {}
     this.viewPath = options.viewPath
   }
 
@@ -45,14 +45,22 @@ export default abstract class FormController<ParamType extends object> {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  protected getValidations(req: Request<ParamType>, res: Response) {
-    return this.validations
+  protected getValidators(req: Request<ParamType>, res: Response) {
+    return this.validators
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  protected getFieldsToValidate(req: Request<ParamType>, res: Response) {
+    return Object.keys(this.validators)
   }
 
   protected abstract getNextLink(req: Request<ParamType>, res: Response): string
 
   protected validate(req: Request<ParamType>, res: Response) {
-    const validationErrors: Record<string, { text: string } | { html: string }> = {}
+    const validationErrors: Record<
+      string,
+      { text: string; summaryPrefix?: string } | { html: string; summaryPrefix?: string }
+    > = {}
     const values: Record<string, string | string[] | number | undefined> = {}
     const strippedValueEntries = Object.entries(req.body)
       .filter(([key]) => !key.startsWith('_'))
@@ -71,13 +79,17 @@ export default abstract class FormController<ParamType extends object> {
       }
     }
 
-    for (const [key, validators] of Object.entries(this.getValidations(req, res))) {
+    const fieldsToValidate = this.getFieldsToValidate(req, res)
+    const validationEntries = Object.entries(this.getValidators(req, res)).filter(([key]) =>
+      fieldsToValidate.includes(key),
+    )
+    for (const [key, { validators, summaryPrefix }] of validationEntries) {
       const value = values[key]
       for (const validator of validators) {
         const error = validator(value)
 
         if (error) {
-          validationErrors[key] = { text: error }
+          validationErrors[key] = { text: error, summaryPrefix }
           break
         }
       }
