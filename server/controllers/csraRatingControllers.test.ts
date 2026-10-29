@@ -226,7 +226,10 @@ describe('CSRA rating controllers', () => {
         expect(csraService.submitFinalRating).not.toHaveBeenCalled()
       }
       expect(req.flash).toHaveBeenCalledWith('success', {
-        title: 'CSRA rating confirmed',
+        title:
+          submitType === AssessmentSubmitType.PROVISIONAL
+            ? 'Provisional CSRA rating confirmed'
+            : 'CSRA rating confirmed',
         content: `John’s CSRA rating has been confirmed as ${label}.`,
       })
       expect(res.redirect).toHaveBeenCalledWith('/prisoner/A1234BC')
