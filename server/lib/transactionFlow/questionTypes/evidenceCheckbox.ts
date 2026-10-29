@@ -31,7 +31,7 @@ export default class EvidenceCheckboxQuestion extends CheckboxQuestion {
     }
 
     const checkedSources = this.items
-      .filter(item => assessmentAnswers[item.value] || context.provisionalAnswers?.[item.value])
+      .filter(item => context.provisionalAnswers?.[item.value])
       .map(({ text, hint }) => ({ text, hint }))
 
     return {
@@ -44,9 +44,7 @@ export default class EvidenceCheckboxQuestion extends CheckboxQuestion {
         },
       },
       items: attributes.items.filter(
-        item =>
-          !assessmentAnswers[item.value as keyof CsraAssessmentStageAnswers] &&
-          !context.provisionalAnswers?.[item.value as keyof CsraAssessmentStageAnswers],
+        item => !context.provisionalAnswers?.[item.value as keyof CsraAssessmentStageAnswers],
       ),
       checkedSources,
     }
