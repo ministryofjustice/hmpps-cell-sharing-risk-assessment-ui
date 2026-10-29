@@ -41,6 +41,15 @@ describe('getAnswersFromAssessment', () => {
     expect(getAnswersFromAssessment(assessment)).toBe(provisional)
   })
 
+  it('returns a FINAL copy of the provisional answers at version 1 when a provisional rating exists but no final stage', () => {
+    const provisional = makeStageAnswers({ prisonId: 'MDI', likelyToHarmCellmate: true, version: 4 })
+    const assessment = makeAssessment({ interimResult: 'HIGH_GENERAL', stages: [provisional] })
+
+    expect(getAnswersFromAssessment(assessment)).toEqual({ ...provisional, stage: 'FINAL', version: 1 })
+    expect(provisional.stage).toBe('PROVISIONAL')
+    expect(provisional.version).toBe(4)
+  })
+
   it('falls back to an empty provisional stage when there are no stored answers', () => {
     const assessment = makeAssessment({ stages: [] })
 
