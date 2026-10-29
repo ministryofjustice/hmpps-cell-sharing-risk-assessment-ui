@@ -505,11 +505,17 @@ test.describe('Prisoner CSRA', () => {
       .getByRole('checkbox', { name: 'No identified vulnerabilities' })
       .check()
     await page.getByLabel('Assessment comment').fill('All available sources checked. Manager approved sharing.')
+    await csraApi.stubGetCurrentRating('A1234BC', {
+      status: 'PROVISIONAL',
+      rating: 'HIGH_SPECIFIC',
+      provisional: true,
+      ratingStage: 'PROVISIONAL',
+    })
     await page.getByRole('button', { name: 'Confirm rating' }).click()
-    await expect(page).toHaveURL('/prisoner/A1234BC')
-    await expect(page.getByRole('alert')).toContainText(
-      'John’s CSRA rating has been confirmed as high risk – specific (provisional).',
-    )
+    await expect(page).toHaveURL('/prisoner/A1234BC/rating-confirmed')
+    await expect(page.getByText('Provisional CSRA rating confirmed')).toBeVisible()
+    await expect(page.locator('.govuk-panel')).toContainText(/John is rated High risk – specific \(provisional\)/)
+    await expect(page.getByRole('alert')).toHaveCount(0)
     const submissions = await getMatchingRequests({
       method: 'PUT',
       urlPath: '/csra-api/csra-review/prisoner/A1234BC/assessment/assessment-123/provisional',
@@ -519,8 +525,6 @@ test.describe('Prisoner CSRA', () => {
       rating: 'HIGH_SPECIFIC',
       assessmentComment: 'All available sources checked. Manager approved sharing.',
     })
-    await page.reload()
-    await expect(page.getByRole('alert')).toHaveCount(0)
   })
 
   test('does not offer the local or remand exception when a clear high-risk offence requires high-general provisional', async ({

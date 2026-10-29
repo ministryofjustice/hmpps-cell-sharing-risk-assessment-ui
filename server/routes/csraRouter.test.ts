@@ -433,7 +433,7 @@ describe('csraRouter', () => {
             ...(isSpecific ? specificRiskFields : {}),
           })
           .expect(302)
-          .expect('Location', '/prisoner/A1234BC')
+          .expect('Location', isSpecific ? '/prisoner/A1234BC/rating-confirmed' : '/prisoner/A1234BC')
 
         expect(csraService.submitProvisionalRating).toHaveBeenCalledWith('user1', 'A1234BC', 'assessment-123', {
           ...answers,
@@ -442,10 +442,14 @@ describe('csraRouter', () => {
           ...(isSpecific ? specificRiskPayload : {}),
         })
         expect(csraService.submitFinalRating).not.toHaveBeenCalled()
-        expect(flashProvider).toHaveBeenCalledWith(
-          'success',
-          expect.objectContaining({ title: 'Provisional CSRA rating confirmed' }),
-        )
+        if (isSpecific) {
+          expect(flashProvider).not.toHaveBeenCalled()
+        } else {
+          expect(flashProvider).toHaveBeenCalledWith(
+            'success',
+            expect.objectContaining({ title: 'Provisional CSRA rating confirmed' }),
+          )
+        }
       },
     )
 
