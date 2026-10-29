@@ -100,6 +100,24 @@ describe('EvidenceCheckboxQuestion', () => {
     expect(attributes.items.map(item => item.text)).toEqual(['Warrant', 'PER'])
   })
 
+  it('keeps final-stage sources as checkboxes when revisiting the question', () => {
+    const question = new EvidenceCheckboxQuestion()
+    const assessmentAnswers = makeAssessment({ perChecked: true })
+
+    const attributes = question.componentAttributes(undefined, { evidenceSources: ['perChecked'] }, assessmentAnswers, {
+      provisionalRatingEntered: true,
+      provisionalAnswers: makeAssessment({ pncChecked: true }),
+    }) as {
+      items: CheckboxItem[]
+      values: string[]
+      checkedSources: Array<Pick<CheckboxItem, 'text' | 'hint'>>
+    }
+
+    expect(attributes.checkedSources.map(source => source.text)).toEqual(['PNC'])
+    expect(attributes.items.map(item => item.text)).toEqual(['Warrant', 'DPS', 'PER'])
+    expect(attributes.values).toEqual(['perChecked'])
+  })
+
   it('preserves previously checked sources when saving remaining sources', () => {
     const question = new EvidenceCheckboxQuestion()
     const assessmentAnswers = makeAssessment()
