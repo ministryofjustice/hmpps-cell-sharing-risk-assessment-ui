@@ -202,6 +202,30 @@ describe('GET /prisoner/:prisonerNumber', () => {
       })
   })
 
+  it('renders the provisional high-specific confirmation with the next steps', () => {
+    csraService.getCurrentRating.mockResolvedValue({
+      prisonerNumber: 'A1234BC',
+      status: 'PROVISIONAL',
+      rating: 'HIGH_SPECIFIC',
+      provisional: true,
+      ratingStage: 'PROVISIONAL',
+      riskTo: [],
+      vulnerabilities: [],
+    })
+
+    return request(app)
+      .get('/prisoner/A1234BC/rating-confirmed')
+      .expect(200)
+      .expect(res => {
+        const text = res.text.replace(/\s+/g, ' ')
+        expect(text).toContain('Provisional CSRA rating confirmed')
+        expect(text).toContain('John is rated High risk – specific (provisional)')
+        expect(text).toContain('What must happen next')
+        expect(csraService.getCurrentRating).toHaveBeenCalledWith(user.username, 'A1234BC')
+        expect(auditService.logPageView).toHaveBeenCalledWith(Page.RATING_CONFIRMED, expect.anything())
+      })
+  })
+
   it('shows a no-CSRA message when the prisoner has no current rating', () => {
     csraService.getCurrentRating.mockResolvedValue({
       prisonerNumber: 'A1234BC',

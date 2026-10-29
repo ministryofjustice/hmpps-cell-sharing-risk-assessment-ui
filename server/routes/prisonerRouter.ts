@@ -9,6 +9,7 @@ import csraBreadcrumbs from '../middleware/csraBreadcrumbs'
 import requireAdminRole from '../middleware/requireAdminRole'
 import type { Services } from '../services'
 import csraRouter from './csraRouter'
+import ratingConfirmedController from '../controllers/ratingConfirmedController'
 
 export default function prisonerRouter(
   services: Pick<
@@ -41,6 +42,7 @@ export default function prisonerRouter(
   router.get('/warrants/:documentId/file', requireAdminRole, csraWarrantFileController(services))
 
   router.use('/csra', csraRouter(services))
+  router.get('/rating-confirmed', ratingConfirmedController(services))
 
   return router
 }

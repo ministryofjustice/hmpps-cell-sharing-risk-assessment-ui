@@ -225,14 +225,19 @@ describe('CSRA rating controllers', () => {
         expect(csraService.submitProvisionalRating).toHaveBeenCalledWith('user1', 'A1234BC', 'assessment-123', payload)
         expect(csraService.submitFinalRating).not.toHaveBeenCalled()
       }
-      expect(req.flash).toHaveBeenCalledWith('success', {
-        title:
-          submitType === AssessmentSubmitType.PROVISIONAL
-            ? 'Provisional CSRA rating confirmed'
-            : 'CSRA rating confirmed',
-        content: `John’s CSRA rating has been confirmed as ${label}.`,
-      })
-      expect(res.redirect).toHaveBeenCalledWith('/prisoner/A1234BC')
+      if (submitType === AssessmentSubmitType.PROVISIONAL && rating === 'HIGH_SPECIFIC') {
+        expect(req.flash).not.toHaveBeenCalled()
+        expect(res.redirect).toHaveBeenCalledWith('/prisoner/A1234BC/rating-confirmed')
+      } else {
+        expect(req.flash).toHaveBeenCalledWith('success', {
+          title:
+            submitType === AssessmentSubmitType.PROVISIONAL
+              ? 'Provisional CSRA rating confirmed'
+              : 'CSRA rating confirmed',
+          content: `John’s CSRA rating has been confirmed as ${label}.`,
+        })
+        expect(res.redirect).toHaveBeenCalledWith('/prisoner/A1234BC')
+      }
     })
 
     it('audits confirmation and provides a back link retaining the selected rating', async () => {

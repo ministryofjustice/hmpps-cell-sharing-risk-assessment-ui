@@ -276,12 +276,16 @@ export default class CsraConfirmRatingController extends CsraFormController<Csra
       })
     }
 
-    const formattedName = capFirst(prisoner.firstName.trim().toLowerCase())
-    const formattedRating = csraRatingLabel(rating, isProvisional ? 'PROVISIONAL' : null).toLowerCase()
-    req.flash('success', {
-      title: `${isProvisional ? 'Provisional ' : ''}CSRA rating confirmed`,
-      content: `${formattedName}’s CSRA rating has been confirmed as ${formattedRating}.`,
-    })
+    // Don't add a flash message for HIGH_SPECIFIC provisional ratings, as the user will be redirected to a confirmation
+    //   page instead
+    if (!(isProvisional && rating === 'HIGH_SPECIFIC')) {
+      const formattedName = capFirst(prisoner.firstName.trim().toLowerCase())
+      const formattedRating = csraRatingLabel(rating, isProvisional ? 'PROVISIONAL' : null).toLowerCase()
+      req.flash('success', {
+        title: `${isProvisional ? 'Provisional ' : ''}CSRA rating confirmed`,
+        content: `${formattedName}’s CSRA rating has been confirmed as ${formattedRating}.`,
+      })
+    }
   }
 
   protected override getFieldsToValidate(req: Request<CsraConfirmRatingParamType>, res: Response): string[] {
@@ -310,6 +314,10 @@ export default class CsraConfirmRatingController extends CsraFormController<Csra
   }
 
   protected override getNextLink(req: Request<CsraConfirmRatingParamType>, res: Response): string {
+    if (res.locals.submitType === AssessmentSubmitType.PROVISIONAL && req.params.rating === 'HIGH_SPECIFIC') {
+      return `${res.locals.prisonerLink}/rating-confirmed`
+    }
+
     return res.locals.prisonerLink
   }
 }
