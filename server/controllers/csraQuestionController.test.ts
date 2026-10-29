@@ -368,6 +368,26 @@ describe('csraQuestionController', () => {
     )
   })
 
+  it('creates the final stage at version 1 from the provisional answers when no final stage exists yet', async () => {
+    csraService.getCsraAssessment.mockResolvedValue(
+      makeAssessment({
+        interimResult: 'HIGH_GENERAL',
+        stages: [makeStageAnswers({ seenByHealthcare: true, version: 3 })],
+      }),
+    )
+    const res = response()
+
+    await controller()(request('POST', { officerSpokeToPrisoner: 'YES' }), res, jest.fn())
+
+    expect(csraService.updateCsraAssessment).toHaveBeenCalledWith(
+      'user1',
+      'A1234BC',
+      ASSESSMENT_ID,
+      expect.objectContaining({ stage: 'FINAL', version: 1, seenByHealthcare: true, officerSpokeToPrisoner: true }),
+      'FINAL',
+    )
+  })
+
   it.each([
     {
       sectionId: 'conversationAndVulnerability',
