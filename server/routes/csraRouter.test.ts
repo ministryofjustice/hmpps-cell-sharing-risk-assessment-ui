@@ -156,6 +156,31 @@ describe('csraRouter', () => {
     )
   })
 
+  it('shows the configured offence review step with the requested navigation', async () => {
+    csraService.getCsraAssessment.mockResolvedValue(
+      assessment({
+        interimResult: 'HIGH_GENERAL',
+        stages: [stageAnswers({ stage: 'FINAL', pncChecked: true })],
+      }),
+    )
+
+    const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      .get(`${assessmentUrl}/section/evidenceAndOffences/1`)
+      .expect(200)
+
+    expect(response.text).toContain(
+      '<h1 class="govuk-heading-l">Review offences after checking new evidence source</h1>',
+    )
+    expect(response.text).toContain('Check the answers given based on the sources reviewed previously.')
+    expect(response.text).toContain('You should update an answer if there is evidence of an offence in the new source.')
+    expect(response.text).toContain(`href="${assessmentUrl}/section/evidenceAndOffences/2"`)
+    expect(response.text).toContain('Continue')
+    expect(response.text).toContain(`href="${assessmentUrl}/section/evidenceAndOffences/0"`)
+    expect(response.text).toContain('>Back</a>')
+    expect(response.text).toContain(`href="${assessmentUrl}" class="govuk-link">Cancel</a>`)
+    expect(csraService.getCsraAssessment).toHaveBeenCalledWith(user.username, prisoner.prisonerNumber, 'assessment-123')
+  })
+
   it('hides the assessment cancel link when a provisional rating has already been entered', async () => {
     csraService.getCsraAssessment.mockResolvedValue(assessment({ interimResult: 'HIGH_GENERAL' }))
 
@@ -705,9 +730,9 @@ describe('csraRouter', () => {
     const rows = response.text.match(/<div class="govuk-summary-list__row">[\s\S]*?<\/div>/g) ?? []
 
     for (const [sectionId, stepId, questionId, answer] of [
-      ['evidenceAndOffences', 1, 'offenceMurderManslaughter', 'No'],
-      ['evidenceAndOffences', 1, 'offenceAssistingSuicide', 'No'],
-      ['evidenceAndOffences', 4, 'offenceSexualAssault', 'No'],
+      ['evidenceAndOffences', 2, 'offenceMurderManslaughter', 'No'],
+      ['evidenceAndOffences', 2, 'offenceAssistingSuicide', 'No'],
+      ['evidenceAndOffences', 5, 'offenceSexualAssault', 'No'],
       ['conversationAndVulnerability', 0, 'officerSpokeToPrisoner', 'Yes'],
       ['conversationAndVulnerability', 1, 'likelyToHarmCellmate', 'No'],
       ['conversationAndVulnerability', 2, 'significantlyVulnerable', 'Not answered'],

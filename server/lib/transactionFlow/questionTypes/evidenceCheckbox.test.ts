@@ -118,9 +118,9 @@ describe('EvidenceCheckboxQuestion', () => {
     expect(attributes.values).toEqual(['perChecked'])
   })
 
-  it('preserves previously checked sources when saving remaining sources', () => {
+  it('preserves provisional sources and updates final sources from the submitted selection', () => {
     const question = new EvidenceCheckboxQuestion()
-    const assessmentAnswers = makeAssessment()
+    const assessmentAnswers = makeAssessment({ perChecked: true })
 
     const mutated = question.mutateAssessmentAnswers(
       assessmentAnswers,
@@ -135,6 +135,23 @@ describe('EvidenceCheckboxQuestion', () => {
     expect(mutated.dpsChecked).toBe(true)
     expect(mutated.warrantChecked).toBe(false)
     expect(mutated.perChecked).toBe(true)
+  })
+
+  it('clears a final-stage source when it is unchecked on revisit', () => {
+    const question = new EvidenceCheckboxQuestion()
+    const assessmentAnswers = makeAssessment({ pncChecked: true, warrantChecked: true })
+
+    const mutated = question.mutateAssessmentAnswers(
+      assessmentAnswers,
+      { evidenceSources: [] },
+      {
+        provisionalRatingEntered: true,
+        provisionalAnswers: makeAssessment({ pncChecked: true }),
+      },
+    )
+
+    expect(mutated.pncChecked).toBe(true)
+    expect(mutated.warrantChecked).toBe(false)
   })
 
   it('does not require another selection when all sources were already checked', () => {
@@ -186,5 +203,17 @@ describe('EvidenceCheckboxQuestion', () => {
 
     expect(validate([])).toBe('Select at least one evidence source you have checked')
     expect(validate(['PNC'])).toBeNull()
+  })
+
+  it('uses remaining evidence source wording for a final assessment', () => {
+    const question = new EvidenceCheckboxQuestion()
+
+    const [validate] = question.validations({
+      provisionalRatingEntered: true,
+      assessmentAnswers: makeAssessment(),
+      provisionalAnswers: makeAssessment({ pncChecked: true }),
+    })
+
+    expect(validate([])).toBe('Select at least one remaining evidence source you have checked')
   })
 })

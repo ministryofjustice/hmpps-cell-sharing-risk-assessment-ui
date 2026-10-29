@@ -215,12 +215,12 @@ describe('csraQuestionController', () => {
     )
     const res = response()
 
-    await controller()(request('GET', {}, '4', 'evidenceAndOffences'), res, jest.fn())
+    await controller()(request('GET', {}, '5', 'evidenceAndOffences'), res, jest.fn())
 
     expect(res.render).toHaveBeenCalledWith(
       'pages/csraQuestion',
       expect.objectContaining({
-        backLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/1`,
+        backLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/2`,
         currentStep: expect.objectContaining({
           questions: [expect.objectContaining({ id: 'offenceSexualAssault' })],
         }),
@@ -368,6 +368,75 @@ describe('csraQuestionController', () => {
     )
   })
 
+  it('routes to the configured review step after saving new evidence sources in a final assessment', async () => {
+    csraService.getCsraAssessment.mockResolvedValue(
+      makeAssessment({
+        interimResult: 'HIGH_GENERAL',
+        stages: [makeStageAnswers({ stage: 'PROVISIONAL', pncChecked: true })],
+      }),
+    )
+    csraService.updateCsraAssessment.mockResolvedValue(
+      makeAssessment({
+        interimResult: 'HIGH_GENERAL',
+        stages: [makeStageAnswers({ stage: 'FINAL', pncChecked: true, warrantChecked: true })],
+      }),
+    )
+    const res = response()
+
+    await controller()(
+      request('POST', { evidenceSources: ['warrantChecked'] }, '0', 'evidenceAndOffences'),
+      res,
+      jest.fn(),
+    )
+
+    expect(csraService.updateCsraAssessment).toHaveBeenCalledWith(
+      'user1',
+      'A1234BC',
+      ASSESSMENT_ID,
+      expect.objectContaining({ stage: 'FINAL', pncChecked: true, warrantChecked: true }),
+      'FINAL',
+    )
+    expect(res.redirect).toHaveBeenCalledWith(`/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/1`)
+  })
+
+  it('renders the configured information step with back, continue and cancel links without saving', async () => {
+    csraService.getCsraAssessment.mockResolvedValue(
+      makeAssessment({
+        interimResult: 'HIGH_GENERAL',
+        stages: [makeStageAnswers({ stage: 'FINAL', pncChecked: true })],
+      }),
+    )
+    const res = response()
+
+    await controller()(request('GET', {}, '1', 'evidenceAndOffences'), res, jest.fn())
+
+    expect(csraService.updateCsraAssessment).not.toHaveBeenCalled()
+    expect(res.render).toHaveBeenCalledWith(
+      'pages/csraInformationStep',
+      expect.objectContaining({
+        title: 'Review offences after checking new evidence source',
+        backLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/0`,
+        continueLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/2`,
+        cancelLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}`,
+      }),
+    )
+  })
+
+  it('does not save when the configured information step is submitted', async () => {
+    csraService.getCsraAssessment.mockResolvedValue(
+      makeAssessment({
+        interimResult: 'HIGH_GENERAL',
+        stages: [makeStageAnswers({ stage: 'FINAL', pncChecked: true })],
+      }),
+    )
+    const res = response()
+
+    await controller()(request('POST', {}, '1', 'evidenceAndOffences'), res, jest.fn())
+
+    expect(csraService.updateCsraAssessment).not.toHaveBeenCalled()
+    expect(res.redirect).toHaveBeenCalledWith(`/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/2`)
+  })
+
   it('creates the final stage at version 1 from the provisional answers when no final stage exists yet', async () => {
     csraService.getCsraAssessment.mockResolvedValue(
       makeAssessment({
@@ -482,7 +551,7 @@ describe('csraQuestionController', () => {
       const res = response()
 
       await controller()(
-        request('POST', { offenceMurderManslaughter: 'NO', offenceAssistingSuicide: 'NO' }, '1', 'evidenceAndOffences'),
+        request('POST', { offenceMurderManslaughter: 'NO', offenceAssistingSuicide: 'NO' }, '2', 'evidenceAndOffences'),
         res,
         jest.fn(),
       )
@@ -494,7 +563,7 @@ describe('csraQuestionController', () => {
         expect.objectContaining({ offenceMurderManslaughter: false, offenceAssistingSuicide: false, offenceEvidence }),
         'PROVISIONAL',
       )
-      expect(res.redirect).toHaveBeenCalledWith(`/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/4`)
+      expect(res.redirect).toHaveBeenCalledWith(`/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/5`)
     },
   )
 
@@ -525,7 +594,7 @@ describe('csraQuestionController', () => {
     const res = response()
 
     await controller()(
-      request('POST', { offenceMurderManslaughter: 'NO', offenceAssistingSuicide: 'YES' }, '1', 'evidenceAndOffences'),
+      request('POST', { offenceMurderManslaughter: 'NO', offenceAssistingSuicide: 'YES' }, '2', 'evidenceAndOffences'),
       res,
       jest.fn(),
     )
@@ -538,7 +607,7 @@ describe('csraQuestionController', () => {
       'PROVISIONAL',
     )
     expect(assessment).toEqual(original)
-    expect(res.redirect).toHaveBeenCalledWith(`/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/3`)
+    expect(res.redirect).toHaveBeenCalledWith(`/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/4`)
   })
 
   it('throws when the section is unknown', async () => {

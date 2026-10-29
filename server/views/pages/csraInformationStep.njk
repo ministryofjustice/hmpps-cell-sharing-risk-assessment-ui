@@ -1,0 +1,30 @@
+{% extends "../partials/layout.njk" %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
+{% set pageTitle = applicationName + " - " + title %}
+
+{% block outerHeading %}
+  {% include "../partials/compactPrisonerBanner.njk" %}
+
+  {{ super() }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      {{ currentStep.bodyHtml | safe }}
+
+      {{ govukButton({
+        text: 'Continue',
+        href: continueLink,
+        attributes: { 'data-qa': 'continue-button' },
+        classes: 'govuk-!-margin-top-2'
+      }) }}
+
+      <p class="govuk-body">
+        <a href="{{ cancelLink }}" class="govuk-link">Cancel</a>
+      </p>
+    </div>
+  </div>
+{% endblock %}

@@ -8,6 +8,7 @@ import CheckboxQuestion from '../lib/transactionFlow/questionTypes/checkbox'
 import getAnswersFromAssessment from './getAnswersFromAssessment'
 import YesNoQuestion from '../lib/transactionFlow/questionTypes/yesNo'
 import { Page } from '../services/auditService'
+import InformationStep from '../lib/transactionFlow/informationStep'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
 
@@ -134,6 +135,15 @@ export default function csraQuestionController({ auditService, csraService }: De
       ? `${assessmentUrl}/section/${sectionId}/${lastAnsweredStep.stepId}`
       : assessmentUrl
 
+    const continueStep =
+      currentStep instanceof InformationStep ? findNextAvailableStep(assessmentAnswers, section, currentStepId) : null
+    const continueLink = continueStep ? `${assessmentUrl}/section/${sectionId}/${continueStep.stepId}` : assessmentUrl
+
+    if (req.method === 'POST' && currentStep instanceof InformationStep) {
+      res.redirect(continueLink)
+      return
+    }
+
     const validationErrors: Record<string, { text: string }> = {}
     if (req.method === 'POST') {
       // get values from step questions
@@ -233,7 +243,7 @@ export default function csraQuestionController({ auditService, csraService }: De
       correlationId: req.id,
     })
 
-    res.render('pages/csraQuestion', {
+    res.render(currentStep instanceof InformationStep ? 'pages/csraInformationStep' : 'pages/csraQuestion', {
       title: currentStep.title ?? section.title,
       saveButtonText: currentStepId < section.steps.length - 1 ? 'Save and continue' : 'Save and return',
       prisoner,
@@ -246,6 +256,7 @@ export default function csraQuestionController({ auditService, csraService }: De
       questionContext,
       cancelLink: assessmentUrl,
       backLink,
+      continueLink,
     })
   }
 }

@@ -71,10 +71,6 @@ export default class EvidenceCheckboxQuestion extends CheckboxQuestion {
         return
       }
 
-      if (context?.provisionalRatingEntered && assessmentAnswers[item.value]) {
-        return
-      }
-
       const checked = !!(formValues[this.id] as string[])?.includes(item.value)
       mutatedAssessmentAnswers[item.value] = checked
 
@@ -117,6 +113,12 @@ export default class EvidenceCheckboxQuestion extends CheckboxQuestion {
       return []
     }
 
-    return [required('Select at least one evidence source you have checked')]
+    return [
+      required(
+        context?.provisionalRatingEntered
+          ? 'Select at least one remaining evidence source you have checked'
+          : 'Select at least one evidence source you have checked',
+      ),
+    ]
   }
 }
