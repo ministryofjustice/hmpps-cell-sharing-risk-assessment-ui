@@ -17,6 +17,8 @@ export default class Step {
 
   protected incompleteUnlessConditions: { attribute: keyof CsraAssessmentStageAnswers; answer: string | boolean }[]
 
+  protected conditions: ((assessmentAnswers: CsraAssessmentStageAnswers) => boolean)[]
+
   constructor({
     questions,
     title,
@@ -29,6 +31,12 @@ export default class Step {
     this.warningText = warningText
     this.dependencies = []
     this.incompleteUnlessConditions = []
+    this.conditions = []
+  }
+
+  onlyWhen(condition: (assessmentAnswers: CsraAssessmentStageAnswers) => boolean) {
+    this.conditions.push(condition)
+    return this
   }
 
   incompleteUnless(attribute: keyof CsraAssessmentStageAnswers, answer: string | boolean) {
@@ -42,7 +50,10 @@ export default class Step {
   }
 
   removeIf(assessmentAnswers: CsraAssessmentStageAnswers) {
-    return this.dependencies.some(({ attribute, answer }) => assessmentAnswers[attribute] !== answer)
+    return (
+      this.dependencies.some(({ attribute, answer }) => assessmentAnswers[attribute] !== answer) ||
+      this.conditions.some(condition => !condition(assessmentAnswers))
+    )
   }
 
   isComplete(assessmentAnswers: CsraAssessmentStageAnswers) {

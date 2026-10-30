@@ -4,6 +4,7 @@ import YesNoQuestion from './questionTypes/yesNo'
 import YesNoOffenceSteps from './yesNoOffenceSteps'
 import YesNoWithDetailQuestion from './questionTypes/yesNoWithDetail'
 import TextAreaQuestion from './questionTypes/textArea'
+import InformationStep from './informationStep'
 
 const questions = {
   evidenceSources: new EvidenceCheckboxQuestion(),
@@ -152,6 +153,11 @@ const evidenceAndOffences: Section = {
         '<p>You must review all evidence sources for any information which may indicate the person is high risk.<br><br>If you are unable to check all sources, you can still submit a provisional CSRA rating.</p>',
       questions: [questions.evidenceSources],
     }),
+    new InformationStep({
+      title: 'Review offences after checking new evidence source',
+      bodyHtml:
+        '<p class="govuk-body">Check the answers given based on the sources reviewed previously.</p><p class="govuk-body">You should update an answer if there is evidence of an offence in the new source.</p>',
+    }).onlyWhen(assessmentAnswers => assessmentAnswers.stage === 'FINAL'),
     ...new YesNoOffenceSteps([
       { question: questions.offenceMurderManslaughter, offenceType: 'MURDER_MANSLAUGHTER' },
       {
