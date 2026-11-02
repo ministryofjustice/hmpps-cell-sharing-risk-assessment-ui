@@ -69,6 +69,7 @@ describe('csraRouter', () => {
     cancelCsraAssessment: jest.fn(),
     submitProvisionalRating: jest.fn().mockResolvedValue({}),
     submitFinalRating: jest.fn().mockResolvedValue({}),
+    updateCsraAssessment: jest.fn(),
   }
   const prisonerSearchService = {
     getPrisoner: jest.fn(),
@@ -629,16 +630,32 @@ describe('csraRouter', () => {
         expect(csraService.submitFinalRating).not.toHaveBeenCalled()
       })
 
-      it.each(['incomplete prerequisites', 'final result'])('redirects when there are %s', async state => {
-        csraService.getCsraAssessment.mockResolvedValue(
-          state === 'final result' ? assessment({ finalResult: 'STANDARD' }) : assessment(),
-        )
+      it('redirects when there are incomplete prerequisites', async () => {
+        csraService.getCsraAssessment.mockResolvedValue(assessment())
 
         await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
           [method](`${assessmentUrl}/confirm-rating/HIGH_GENERAL`)
           .expect(302)
           .expect('Location', assessmentUrl)
 
+        expect(csraService.submitFinalRating).not.toHaveBeenCalled()
+        expect(csraService.submitProvisionalRating).not.toHaveBeenCalled()
+      })
+
+      it('shows the submitted-assessment page when a final result exists', async () => {
+        csraService.getCsraAssessment.mockResolvedValue(assessment({ finalResult: 'STANDARD' }))
+
+        const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+          [method](`${assessmentUrl}/confirm-rating/HIGH_GENERAL`)
+          .expect(403)
+
+        expect(response.text).toContain('<h1 class="govuk-heading-l">You cannot access this page</h1>')
+        expect(response.text).toContain(
+          'The assessment has already been submitted. You cannot go back to change your answers.',
+        )
+        expect(response.text).toContain(
+          '<a class="govuk-link" href="/prisoner/A1234BC">Return to cell sharing risk assessments (CSRA)</a>',
+        )
         expect(csraService.submitFinalRating).not.toHaveBeenCalled()
         expect(csraService.submitProvisionalRating).not.toHaveBeenCalled()
       })
@@ -659,6 +676,31 @@ describe('csraRouter', () => {
     expect(response.text).toMatch(
       new RegExp(`<p class="govuk-body">\\s*<a class="govuk-link" href="${assessmentUrl}">Cancel</a>\\s*</p>`),
     )
+  })
+
+  it('blocks direct access to a submitted assessment question and prevents answer changes', async () => {
+    csraService.getCsraAssessment.mockResolvedValue(assessment({ finalResult: 'STANDARD' }))
+
+    const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      .post(`${assessmentUrl}/section/conversationAndVulnerability/0`)
+      .type('form')
+      .send({ officerSpokeToPrisoner: 'true' })
+      .expect(403)
+
+    expect(response.headers['cache-control']).toBe('private, no-store')
+    expect(response.text).toContain('<h1 class="govuk-heading-l">You cannot access this page</h1>')
+    expect(response.text).toContain(
+      '<a class="govuk-link" href="/prisoner/A1234BC">Return to cell sharing risk assessments (CSRA)</a>',
+    )
+    expect(csraService.updateCsraAssessment).not.toHaveBeenCalled()
+  })
+
+  it('does not cache assessment pages so returning to them requests the submitted-state guard', async () => {
+    const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      .get(`${assessmentUrl}/section/conversationAndVulnerability/0`)
+      .expect(200)
+
+    expect(response.headers['cache-control']).toBe('private, no-store')
   })
 
   it('renders a back link to the preceding answered question', async () => {

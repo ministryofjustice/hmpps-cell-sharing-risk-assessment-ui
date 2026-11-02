@@ -7,6 +7,7 @@ import flowConfig from '../lib/transactionFlow/config'
 import { Page } from '../services/auditService'
 import { AssessmentSubmitType, getAssessmentSubmitStatus } from '../utils/getAssessmentSubmitStatus'
 import getOffenceEvidenceMap from '../utils/getOffenceEvidenceMap'
+import renderCsraAssessmentSubmitted from '../utils/renderCsraAssessmentSubmitted'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
 
@@ -24,6 +25,11 @@ export default function csraCheckAnswersController({
     const assessment = await csraService.getCsraAssessment(username, prisonerNumber, assessmentId)
     if (!assessment) {
       throw NotFound(`No CSRA assessment found for ID: ${assessmentId}`)
+    }
+
+    if (assessment.finalResult) {
+      renderCsraAssessmentSubmitted(res, prisoner.prisonerNumber)
+      return
     }
 
     const assessmentUrl = `/prisoner/${prisoner.prisonerNumber}/csra/${assessmentId}`

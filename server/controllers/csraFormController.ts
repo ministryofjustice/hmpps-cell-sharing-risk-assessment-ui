@@ -6,6 +6,7 @@ import getAnswersFromAssessment from './getAnswersFromAssessment'
 import { Page } from '../services/auditService'
 import { AssessmentSubmitType, getAssessmentSubmitStatus } from '../utils/getAssessmentSubmitStatus'
 import FormController, { FormControllerOptions } from './formController'
+import renderCsraAssessmentSubmitted from '../utils/renderCsraAssessmentSubmitted'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
 
@@ -49,6 +50,11 @@ export default abstract class CsraFormController<
     locals.assessment = await this.csraService.getCsraAssessment(username, prisonerNumber, assessmentId)
     if (!locals.assessment) {
       throw NotFound(`No CSRA assessment found for ID: ${assessmentId}`)
+    }
+
+    if (locals.assessment.finalResult) {
+      renderCsraAssessmentSubmitted(res, prisoner.prisonerNumber)
+      return false
     }
 
     locals.prisonerLink = `/prisoner/${prisoner.prisonerNumber}`

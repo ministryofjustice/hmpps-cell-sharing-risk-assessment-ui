@@ -61,6 +61,7 @@ describe('csraQuestionController', () => {
       },
       render: jest.fn(),
       redirect: jest.fn(),
+      status: jest.fn().mockReturnThis(),
     }) as any
 
   beforeEach(() => {
@@ -121,6 +122,20 @@ describe('csraQuestionController', () => {
         }),
       }),
     )
+  })
+
+  it.each(['GET', 'POST'] as const)('blocks a submitted assessment question on %s', async method => {
+    csraService.getCsraAssessment.mockResolvedValue(makeAssessment({ finalResult: 'STANDARD' }))
+    const res = response()
+
+    await controller()(request(method, { officerSpokeToPrisoner: 'true' }), res, jest.fn())
+
+    expect(res.status).toHaveBeenCalledWith(403)
+    expect(res.render).toHaveBeenCalledWith('pages/csraAssessmentSubmitted', {
+      returnLink: '/prisoner/A1234BC',
+    })
+    expect(csraService.updateCsraAssessment).not.toHaveBeenCalled()
+    expect(auditService.logPageView).not.toHaveBeenCalled()
   })
 
   it.each([

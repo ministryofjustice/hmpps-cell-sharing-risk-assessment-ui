@@ -74,6 +74,7 @@ describe('csraCheckAnswersController', () => {
       },
       render: jest.fn(),
       redirect: jest.fn(),
+      status: jest.fn().mockReturnThis(),
     }) as any
 
   beforeEach(() => {
@@ -157,6 +158,20 @@ describe('csraCheckAnswersController', () => {
 
     expect(res.redirect).toHaveBeenCalledWith(`/prisoner/A1234BC/csra/${ASSESSMENT_ID}`)
     expect(res.render).not.toHaveBeenCalled()
+    expect(auditService.logPageView).not.toHaveBeenCalled()
+  })
+
+  it('shows the submitted-assessment page when a final result exists', async () => {
+    csraService.getCsraAssessment.mockResolvedValue(makeAssessment({ finalResult: 'STANDARD' }))
+    const res = response()
+
+    await controller()(request(), res, jest.fn())
+
+    expect(res.status).toHaveBeenCalledWith(403)
+    expect(res.render).toHaveBeenCalledWith('pages/csraAssessmentSubmitted', {
+      returnLink: '/prisoner/A1234BC',
+    })
+    expect(res.redirect).not.toHaveBeenCalled()
     expect(auditService.logPageView).not.toHaveBeenCalled()
   })
 
