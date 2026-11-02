@@ -9,6 +9,7 @@ import getAnswersFromAssessment from './getAnswersFromAssessment'
 import YesNoQuestion from '../lib/transactionFlow/questionTypes/yesNo'
 import { Page } from '../services/auditService'
 import InformationStep from '../lib/transactionFlow/informationStep'
+import renderCsraAssessmentSubmitted from '../utils/renderCsraAssessmentSubmitted'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
 
@@ -110,6 +111,11 @@ export default function csraQuestionController({ auditService, csraService }: De
     const assessment = await csraService.getCsraAssessment(username, res.locals.prisoner.prisonerNumber, assessmentId)
     if (!assessment) {
       throw NotFound(`No CSRA assessment found for ID: ${assessmentId}`)
+    }
+
+    if (assessment.finalResult) {
+      renderCsraAssessmentSubmitted(res, prisoner.prisonerNumber)
+      return
     }
 
     const assessmentAnswers = getAnswersFromAssessment(assessment)
