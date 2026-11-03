@@ -1,5 +1,5 @@
 // The NOMIS errors below are small and only make sense together, so they share this file.
-/* eslint-disable max-classes-per-file */
+/* eslint max-classes-per-file: "off" */
 import config from '../config'
 import type { SplashScreenCondition } from '../data/prisonApiTypes'
 
