@@ -1,4 +1,4 @@
-// eslint-disable-next-line max-classes-per-file
+/* eslint max-classes-per-file: "off" */
 import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 import FeComponentsService from '../../../services/feComponentsService'
 import Question from './base'
