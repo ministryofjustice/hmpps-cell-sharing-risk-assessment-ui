@@ -654,7 +654,7 @@ describe('csraRouter', () => {
           'The assessment has already been submitted. You cannot go back to change your answers.',
         )
         expect(response.text).toContain(
-          '<a class="govuk-link" href="/prisoner/A1234BC">Return to cell sharing risk assessments (CSRA)</a>',
+          '<a class="govuk-link" href="/prisoner/A1234BC">Return to Cell sharing risk assessments (CSRA)</a>',
         )
         expect(csraService.submitFinalRating).not.toHaveBeenCalled()
         expect(csraService.submitProvisionalRating).not.toHaveBeenCalled()
@@ -690,18 +690,24 @@ describe('csraRouter', () => {
     expect(response.headers['cache-control']).toBe('private, no-store')
     expect(response.text).toContain('<h1 class="govuk-heading-l">You cannot access this page</h1>')
     expect(response.text).toContain(
-      '<a class="govuk-link" href="/prisoner/A1234BC">Return to cell sharing risk assessments (CSRA)</a>',
+      '<a class="govuk-link" href="/prisoner/A1234BC">Return to Cell sharing risk assessments (CSRA)</a>',
     )
     expect(csraService.updateCsraAssessment).not.toHaveBeenCalled()
   })
 
-  it('does not cache assessment pages so returning to them requests the submitted-state guard', async () => {
-    const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
-      .get(`${assessmentUrl}/section/conversationAndVulnerability/0`)
-      .expect(200)
+  it.each(['/section/conversationAndVulnerability/0', '/check-answers', '/select-rating', '/confirm-rating/STANDARD'])(
+    'disables HTTP caching and enables history revalidation on %s',
+    async path => {
+      csraService.getCsraAssessment.mockResolvedValue(assessment({ stages: [completeStageAnswers()] }))
 
-    expect(response.headers['cache-control']).toBe('private, no-store')
-  })
+      const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .get(`${assessmentUrl}${path}`)
+        .expect(200)
+
+      expect(response.headers['cache-control']).toBe('private, no-store')
+      expect(response.text).toContain('data-revalidate-on-history-restore')
+    },
+  )
 
   it('renders a back link to the preceding answered question', async () => {
     csraService.getCsraAssessment.mockResolvedValue(

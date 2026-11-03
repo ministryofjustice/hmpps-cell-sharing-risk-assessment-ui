@@ -19,6 +19,7 @@ export default function csraRouter(
   router.use(permissionGuard('edit_assessment'))
   router.use((_req, res, next) => {
     res.set('Cache-Control', 'private, no-store')
+    res.locals.revalidateOnHistoryRestore = true
     next()
   })
 
