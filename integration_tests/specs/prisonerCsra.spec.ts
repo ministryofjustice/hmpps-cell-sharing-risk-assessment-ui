@@ -712,4 +712,44 @@ test.describe('Prisoner CSRA', () => {
     expect(JSON.parse(submissions.body.requests[0].body)).toMatchObject({ rating: 'STANDARD' })
     expect(JSON.parse(submissions.body.requests[0].body)).not.toHaveProperty('nextReviewDate')
   })
+
+  for (const restoreMode of ['browser Back', 'persisted pageshow'] as const) {
+    test(`rechecks confirm-rating after submission on ${restoreMode} without submitting again`, async ({ page }) => {
+      await stubRatingSelectionAssessment(page, completeAssessmentAnswers())
+      await csraApi.stubSubmitFinalRating(prisoner.prisonerNumber, 'assessment-123')
+      const confirmUrl = '/prisoner/A1234BC/csra/assessment-123/confirm-rating/STANDARD'
+      await page.goto(confirmUrl)
+      await page.getByLabel('Assessment comment').fill('No increased risks identified.')
+      await page.getByRole('button', { name: 'Confirm rating' }).click()
+      await expect(page).toHaveURL('/prisoner/A1234BC')
+
+      if (restoreMode === 'persisted pageshow') {
+        // Keep the old form visible to deterministically exercise a bfcache restore.
+        await page.goBack()
+        await expect(page.getByRole('button', { name: 'Confirm rating' })).toBeVisible()
+      }
+      await csraApi.stubGetAssessment(prisoner.prisonerNumber, 'assessment-123', {
+        status: 'COMPLETE',
+        finalResult: 'STANDARD',
+        stages: [completeAssessmentAnswers()],
+      })
+      const revalidation = page.waitForResponse(
+        response => response.url().endsWith(confirmUrl) && response.request().isNavigationRequest(),
+      )
+      if (restoreMode === 'persisted pageshow') {
+        await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })))
+      } else {
+        await page.goBack()
+      }
+      expect((await revalidation).status()).toBe(403)
+      await expect(page.getByRole('heading', { name: 'You cannot access this page' })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Confirm rating' })).toHaveCount(0)
+
+      const submissions = await getMatchingRequests({
+        method: 'PUT',
+        urlPath: '/csra-api/csra-review/prisoner/A1234BC/assessment/assessment-123/final',
+      })
+      expect(submissions.body.requests).toHaveLength(1)
+    })
+  }
 })

@@ -33,7 +33,7 @@
 {% endblock %}
 
 {% block container %}
-  <div class="app-container">
+  <div class="app-container"{% if revalidateOnHistoryRestore %} data-revalidate-on-history-restore{% endif %}>
     {% block containerStart %}
       {% block beforeContent %}
         <div class="govuk-width-container">

@@ -98,6 +98,11 @@ The easiest way to run the app is to use docker compose to create the service an
 
 ### Running the app for development
 
+Assessment pages use `Cache-Control: private, no-store`. Browsers can still restore these
+pages from their back/forward cache, so a persisted `pageshow` event triggers a reload
+to recheck the assessment state on the server. This prevents a cached confirmation form
+remaining usable after final submission; ordinary navigation does not trigger a reload.
+
 To start the main services excluding the example typescript template app:
 
 `docker compose up`
