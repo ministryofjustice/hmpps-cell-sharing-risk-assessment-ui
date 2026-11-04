@@ -1,7 +1,7 @@
 import flowConfig from '../lib/transactionFlow/config'
 import { CsraAssessment, CsraAssessmentStageAnswers } from '../data/csraApiTypes'
 import { Prisoner } from '../data/prisonerSearchApiTypes'
-
+import { appendReferrers, type ReferrerKey } from './breadcrumbOrigins'
 /**
  * SectionStatus represents the status of a section in the CSRA assessment task list.
  * - 'LOCKED': The section is locked and cannot be accessed.
@@ -79,12 +79,16 @@ export default function getTaskListSections(
   assessment: CsraAssessment,
   assessmentAnswers: CsraAssessmentStageAnswers,
   prisoner: Prisoner,
+  referrers: readonly ReferrerKey[],
 ): TaskListSections {
   function assessmentSectionToTaskListSection(sectionId: string, title: string) {
     return getSectionForTaskList(
       title,
       getSectionStatus(assessmentAnswers, flowConfig[sectionId]),
-      `/prisoner/${prisoner.prisonerNumber}/csra/${assessment.assessmentId}/section/${sectionId}`,
+      appendReferrers(
+        `/prisoner/${prisoner.prisonerNumber}/csra/${assessment.assessmentId}/section/${sectionId}`,
+        referrers,
+      ),
     )
   }
 

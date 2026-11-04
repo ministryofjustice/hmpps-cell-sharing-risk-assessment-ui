@@ -1,6 +1,6 @@
 import type { ParsedQs } from 'qs'
 import type { Breadcrumb } from '../middleware/addBreadcrumb'
-import { firstQueryValue } from './queryUtils'
+import { firstQueryValue, toArray } from './queryUtils'
 
 /**
  * The screens a prisoner's CSRA pages can be reached from, keyed by the `from` query param value.
@@ -33,4 +33,29 @@ export type OriginKey = keyof typeof ORIGINS
 export const resolveOrigin = (value: ParsedQs[string]): OriginKey | undefined => {
   const key = firstQueryValue(value)
   return key && Object.hasOwn(ORIGINS, key) ? (key as OriginKey) : undefined
+}
+
+/** A page a CSRA page can be reached from, as carried in the `referrer` stack. */
+export type ReferrerKey = OriginKey | 'history'
+
+const isReferrerKey = (value: string): value is ReferrerKey => value === 'history' || Object.hasOwn(ORIGINS, value)
+
+/**
+ * The `referrer` stack from `?referrer=a&referrer=b`, oldest first. Entries that are not known keys
+ * are dropped, for the same reason as `resolveOrigin`.
+ */
+export const referrerStack = (value: ParsedQs[string]): ReferrerKey[] => toArray(value).filter(isReferrerKey)
+
+/** Query string carrying a referrer stack on to a link, e.g. `?referrer=due-for-review&referrer=history`. */
+export const referrerQuery = (stack: readonly ReferrerKey[] = []): string => {
+  const params = new URLSearchParams()
+  stack.forEach(key => params.append('referrer', key))
+  const query = params.toString()
+  return query ? `?${query}` : ''
+}
+
+/** Appends a referrer stack to a URL, using `&` when the URL already has a query string. */
+export const appendReferrers = (url: string, stack: readonly ReferrerKey[] = []): string => {
+  const query = referrerQuery(stack)
+  return query ? `${url}${query.replace('?', url.includes('?') ? '&' : '?')}` : url
 }

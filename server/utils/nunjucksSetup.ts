@@ -33,6 +33,7 @@ import {
 } from './utils'
 import { userDisplayName } from './populateUserDisplayNames'
 import { yesNoValue } from './yesNoValue'
+import { appendReferrers } from './breadcrumbOrigins'
 import config from '../config'
 import logger from '../../logger'
 
@@ -87,6 +88,7 @@ export default function nunjucksSetup(app: express.Express): void {
   }
 
   njkEnv.addGlobal('callAsMacro', callAsMacro)
+  njkEnv.addGlobal('appendReferrers', appendReferrers)
   /** Returns a Date object representing tomorrow's date in the UK timezone, preserving the UK calendar date when the formatUkDate filter reads local date components. */
   njkEnv.addGlobal('tomorrow', () => {
     const ukToday = new Intl.DateTimeFormat('en-GB', {

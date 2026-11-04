@@ -2,6 +2,7 @@ import { type RequestHandler } from 'express'
 
 import type { Services } from '../services'
 import { Page } from '../services/auditService'
+import { appendReferrers, referrerStack } from '../utils/breadcrumbOrigins'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
 
@@ -24,10 +25,12 @@ export default function ratingConfirmedController({
       correlationId: req.id,
     })
 
+    const referrers = referrerStack(req.query.referrer)
+
     res.render('pages/ratingConfirmed', {
       prisoner,
       csra,
-      cancelLink: `/prisoner/${prisoner.prisonerNumber}`,
+      cancelLink: appendReferrers(`/prisoner/${prisoner.prisonerNumber}`, referrers),
     })
   }
 }

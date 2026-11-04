@@ -6,6 +6,7 @@ import getAnswersFromAssessment from './getAnswersFromAssessment'
 import flowConfig from '../lib/transactionFlow/config'
 import { Page } from '../services/auditService'
 import { AssessmentSubmitType, getAssessmentSubmitStatus } from '../utils/getAssessmentSubmitStatus'
+import { appendReferrers, referrerStack } from '../utils/breadcrumbOrigins'
 import getOffenceEvidenceMap from '../utils/getOffenceEvidenceMap'
 import renderCsraAssessmentSubmitted from '../utils/renderCsraAssessmentSubmitted'
 
@@ -32,10 +33,11 @@ export default function csraCheckAnswersController({
       return
     }
 
-    const assessmentUrl = `/prisoner/${prisoner.prisonerNumber}/csra/${assessmentId}`
+    const referrers = referrerStack(req.query.referrer)
+    const assessmentUrl = appendReferrers(`/prisoner/${prisoner.prisonerNumber}/csra/${assessmentId}`, referrers)
     const assessmentAnswers = getAnswersFromAssessment(assessment)
 
-    const submitStatus = getAssessmentSubmitStatus(assessment, assessmentAnswers, prisoner)
+    const submitStatus = getAssessmentSubmitStatus(assessment, assessmentAnswers, prisoner, referrers)
     if (submitStatus.submitType === AssessmentSubmitType.NONE) {
       res.redirect(assessmentUrl)
       return
@@ -56,6 +58,7 @@ export default function csraCheckAnswersController({
       submitType: submitStatus.submitType,
       remainingTasks: submitStatus.remainingTasks,
       flowConfig,
+      referrers,
       backLink: assessmentUrl,
       cancelLink: assessmentUrl,
     })

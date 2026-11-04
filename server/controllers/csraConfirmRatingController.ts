@@ -17,6 +17,7 @@ import {
 } from '../data/csraApiTypes'
 import CsraFormController, { CsraFormParamType } from './csraFormController'
 import { AssessmentSubmitType } from '../utils/getAssessmentSubmitStatus'
+import { appendReferrers } from '../utils/breadcrumbOrigins'
 import FeComponentsService from '../services/feComponentsService'
 import ValidationFunction from '../lib/transactionFlow/validations/validationFunction'
 
@@ -216,7 +217,10 @@ export default class CsraConfirmRatingController extends CsraFormController<Csra
       return false
     }
 
-    locals.backLink = `${locals.cancelLink}/select-rating?selectedRating=${rating}`
+    locals.backLink = appendReferrers(
+      `${locals.assessmentUrl}/select-rating?selectedRating=${rating}`,
+      locals.referrers,
+    )
     locals.csra = await this.csraService.getCurrentRating(username, prisonerNumber)
     this.populateDynamicFields(req, res)
     return true
@@ -315,9 +319,9 @@ export default class CsraConfirmRatingController extends CsraFormController<Csra
 
   protected override getNextLink(req: Request<CsraConfirmRatingParamType>, res: Response): string {
     if (res.locals.submitType === AssessmentSubmitType.PROVISIONAL && req.params.rating === 'HIGH_SPECIFIC') {
-      return `${res.locals.prisonerLink}/rating-confirmed`
+      return appendReferrers(`${res.locals.prisonerLink}/rating-confirmed`, res.locals.referrers)
     }
 
-    return res.locals.prisonerLink
+    return appendReferrers(res.locals.prisonerLink, res.locals.referrers)
   }
 }

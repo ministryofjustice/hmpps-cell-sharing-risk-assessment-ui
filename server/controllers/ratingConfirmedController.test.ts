@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express'
 import ratingConfirmedController from './ratingConfirmedController'
 import { Page } from '../services/auditService'
-import type { CsraCurrentRating } from '../data/csraApiTypes'
+import type { CsraDetailedRating } from '../data/csraApiTypes'
 
 describe('ratingConfirmedController', () => {
   const auditService = { logPageView: jest.fn().mockResolvedValue(null) }
@@ -12,6 +12,7 @@ describe('ratingConfirmedController', () => {
   const request = () =>
     ({
       params: { prisonerNumber: 'A1234BC' },
+      query: {},
       id: 'request-id-123',
     }) as unknown as Request<{ prisonerNumber: string }>
 
@@ -29,7 +30,7 @@ describe('ratingConfirmedController', () => {
   })
 
   it('logs the page view, loads the current rating and renders the confirmation', async () => {
-    const csra: CsraCurrentRating = {
+    const csra: CsraDetailedRating = {
       prisonerNumber: 'A1234BC',
       status: 'PROVISIONAL',
       rating: 'HIGH_SPECIFIC',

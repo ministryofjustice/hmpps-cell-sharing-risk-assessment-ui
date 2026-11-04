@@ -375,6 +375,11 @@ describe('formatTime', () => {
     ['invalid', 'not-a-datetime', ''],
     ['midnight', '2026-08-06T00:00:00', '00:00'],
     ['afternoon', '2026-08-06T14:03:00', '14:03'],
+    ['local time without seconds', '14:03', '14:03'],
+    ['local time with seconds', '09:05:30', '09:05'],
+    ['local time with fractional seconds', '23:59:59.123456789', '23:59'],
+    ['local time out of range', '24:00', ''],
+    ['local time with invalid minutes', '10:60', ''],
   ])('%s formatTime(%s) === %s', (_: string, input: string, expected: string) => {
     expect(formatTime(input)).toEqual(expected)
   })

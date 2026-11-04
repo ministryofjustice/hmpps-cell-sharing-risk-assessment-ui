@@ -108,6 +108,22 @@ describe('CSRA rating controllers', () => {
       })
     })
 
+    it('keeps the referrers on the back and cancel links', async () => {
+      const req = request()
+      req.query.referrer = ['due-for-review']
+      const res = response()
+
+      await controller.requestHandler()(req, res, jest.fn())
+
+      expect(res.render).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          backLink: `${assessmentUrl}/check-answers?referrer=due-for-review`,
+          cancelLink: `${assessmentUrl}?referrer=due-for-review`,
+        }),
+      )
+    })
+
     it('uses the submitted rating rather than a stale query parameter', async () => {
       const req = request('POST', { selectedRating: 'STANDARD' })
       req.query.selectedRating = 'HIGH_SPECIFIC'
@@ -238,6 +254,21 @@ describe('CSRA rating controllers', () => {
         })
         expect(res.redirect).toHaveBeenCalledWith('/prisoner/A1234BC')
       }
+    })
+
+    it('joins the selected rating and referrers with & in the back link', async () => {
+      const req = request()
+      req.query.referrer = ['due-for-review', 'history']
+      const res = response()
+
+      await controller.requestHandler()(req, res, jest.fn())
+
+      expect(res.render).toHaveBeenCalledWith(
+        'pages/csraConfirmRating',
+        expect.objectContaining({
+          backLink: `${assessmentUrl}/select-rating?selectedRating=HIGH_GENERAL&referrer=due-for-review&referrer=history`,
+        }),
+      )
     })
 
     it('audits confirmation and provides a back link retaining the selected rating', async () => {
