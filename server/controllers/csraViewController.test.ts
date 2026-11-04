@@ -92,7 +92,7 @@ describe('csraViewController', () => {
         assessmentAnswers: expect.objectContaining({ stage: 'PROVISIONAL' }),
         detailedRating,
         backLink: '/prisoner/A1234BC',
-        backLinkText: 'CSRA overview',
+        backLinkText: 'Back to CSRA overview',
       }),
     )
   })
@@ -106,7 +106,7 @@ describe('csraViewController', () => {
       'pages/csraView',
       expect.objectContaining({
         backLink: '/prisoner/A1234BC/history?referrer=due-for-review',
-        backLinkText: 'CSRA history',
+        backLinkText: 'Back to CSRA history',
       }),
     )
   })
@@ -118,7 +118,7 @@ describe('csraViewController', () => {
 
     expect(res.render).toHaveBeenCalledWith(
       'pages/csraView',
-      expect.objectContaining({ backLink: '/prisoner/A1234BC/history', backLinkText: 'CSRA history' }),
+      expect.objectContaining({ backLink: '/prisoner/A1234BC/history', backLinkText: 'Back to CSRA history' }),
     )
   })
 
@@ -129,7 +129,10 @@ describe('csraViewController', () => {
 
     expect(res.render).toHaveBeenCalledWith(
       'pages/csraView',
-      expect.objectContaining({ backLink: '/prisoner/A1234BC?referrer=due-for-review', backLinkText: 'CSRA overview' }),
+      expect.objectContaining({
+        backLink: '/prisoner/A1234BC?referrer=due-for-review',
+        backLinkText: 'Back to CSRA overview',
+      }),
     )
   })
 

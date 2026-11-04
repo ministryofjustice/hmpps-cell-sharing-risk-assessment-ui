@@ -110,7 +110,7 @@
       {% endif %}
 
       {{ govukButton({
-        text: "Return to " + backLinkText,
+        text: backLinkText.replace('Back', 'Return'),
         href: backLink
       }) }}
     </div>
