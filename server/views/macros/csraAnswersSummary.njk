@@ -7,6 +7,7 @@
   {% set offenceEvidenceMap = params.offenceEvidenceMap %}
   {% set flowConfig = params.flowConfig %}
   {% set showChangeLinks = params.showChangeLinks !== false %}
+  {% set referrers = params.referrers %}
 
   <div class="csra-check-answers-section">
     <h2 class="govuk-heading-m">Evidence sources</h2>
@@ -23,7 +24,7 @@
           actions: {
             items: [
               {
-                href: "/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/evidenceAndOffences/0",
+                href: appendReferrers("/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/evidenceAndOffences/0", referrers),
                 text: "Change",
                 visuallyHiddenText: "DPS"
               }
@@ -40,7 +41,7 @@
           actions: {
             items: [
               {
-                href: "/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/evidenceAndOffences/0",
+                href: appendReferrers("/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/evidenceAndOffences/0", referrers),
                 text: "Change",
                 visuallyHiddenText: "PER"
               }
@@ -57,7 +58,7 @@
           actions: {
             items: [
               {
-                href: "/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/evidenceAndOffences/0",
+                href: appendReferrers("/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/evidenceAndOffences/0", referrers),
                 text: "Change",
                 visuallyHiddenText: "Warrant"
               }
@@ -74,7 +75,7 @@
           actions: {
             items: [
               {
-                href: "/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/evidenceAndOffences/0",
+                href: appendReferrers("/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/evidenceAndOffences/0", referrers),
                 text: "Change",
                 visuallyHiddenText: "PNC"
               }
@@ -139,7 +140,7 @@
               actions: {
               items: [
                 {
-                  href: "/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/" + sectionId + "/" + stepId,
+                  href: appendReferrers("/prisoner/" + prisoner.prisonerNumber + "/csra/" + assessment.assessmentId + "/section/" + sectionId + "/" + stepId, referrers),
                   text: "Change",
                   visuallyHiddenText: question.question
                 }

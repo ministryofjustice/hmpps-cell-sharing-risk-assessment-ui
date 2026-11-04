@@ -4,11 +4,10 @@ import type {
   AgencyStatus,
   CsraAssessment,
   CsraAssessmentsInProgress,
-  CsraCurrentRating,
+  CsraDetailedRating,
   CsraHighRiskDueForReview,
   CsraPrisonPrisonerList,
   CsraRecentArrivals,
-  CsraReviewDetail,
   CsraReviewHistory,
   CsraReviewsInProgress,
 } from '../../server/data/csraApiTypes'
@@ -27,7 +26,7 @@ export default {
       },
     }),
 
-  stubGetCurrentRating: (prisonerNumber: string, currentRating: Partial<CsraCurrentRating> = {}): SuperAgentRequest =>
+  stubGetCurrentRating: (prisonerNumber: string, currentRating: Partial<CsraDetailedRating> = {}): SuperAgentRequest =>
     stubFor({
       request: {
         method: 'GET',
@@ -44,6 +43,31 @@ export default {
           riskTo: [],
           vulnerabilities: [],
           ...currentRating,
+        },
+      },
+    }),
+
+  stubGetDetailedRating: (
+    assessmentId: string,
+    detailedRating: Partial<CsraDetailedRating> = {},
+    httpStatus = 200,
+  ): SuperAgentRequest =>
+    stubFor({
+      request: {
+        method: 'GET',
+        urlPattern: `/csra-api/csra-review/${assessmentId}/detailed-rating`,
+      },
+      response: {
+        status: httpStatus,
+        headers: { 'Content-Type': 'application/json;charset=UTF-8' },
+        jsonBody: {
+          prisonerNumber: 'A5197BD',
+          status: 'COMPLETE',
+          rating: 'STANDARD',
+          provisional: false,
+          riskTo: [],
+          vulnerabilities: [],
+          ...detailedRating,
         },
       },
     }),
@@ -185,42 +209,6 @@ export default {
           totalPages: 0,
           ...history,
         },
-      },
-    }),
-
-  stubGetCsraReview: (reviewId: string, review: Partial<CsraReviewDetail> = {}): SuperAgentRequest =>
-    stubFor({
-      request: {
-        method: 'GET',
-        urlPattern: `/csra-api/csra-review/${reviewId}`,
-      },
-      response: {
-        status: 200,
-        headers: { 'Content-Type': 'application/json;charset=UTF-8' },
-        jsonBody: {
-          id: reviewId,
-          prisonerNumber: 'A5197BD',
-          prisonId: 'LEI',
-          prisonName: 'Leeds (HMP)',
-          assessmentDate: '2016-10-31',
-          type: 'REVIEW',
-          createdAt: '2016-10-31T09:15:00',
-          createdBy: 'NQP56Y',
-          ...review,
-        },
-      },
-    }),
-
-  stubGetCsraReviewNotFound: (reviewId: string): SuperAgentRequest =>
-    stubFor({
-      request: {
-        method: 'GET',
-        urlPattern: `/csra-api/csra-review/${reviewId}`,
-      },
-      response: {
-        status: 404,
-        headers: { 'Content-Type': 'application/json;charset=UTF-8' },
-        jsonBody: { status: 404, userMessage: 'CSRA review not found' },
       },
     }),
 

@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from 'express'
 import csraBreadcrumbs, { type CsraPage } from './csraBreadcrumbs'
 import type { Breadcrumb } from './addBreadcrumb'
+import { ORIGINS } from '../utils/breadcrumbOrigins'
 
 const prisoner = { prisonerNumber: 'A1234BC', firstName: 'DANIEL', lastName: 'HAVERS' }
 
@@ -43,22 +44,9 @@ describe('csraBreadcrumbs', () => {
     ])
   })
 
-  it('adds a linked history crumb on the review page', () => {
-    const { crumbs } = run('review', { from: 'due-for-review' })
-
-    expect(crumbs).toEqual([
-      { title: 'CSRA', href: '/' },
-      { title: 'High risk prisoners due for review', href: '/due-for-review' },
-      { title: 'Daniel Havers', href: '/prisoner/A1234BC?from=due-for-review' },
-      { title: 'CSRA history', href: '/prisoner/A1234BC/history?from=due-for-review' },
-      { title: 'CSRA review' },
-    ])
-  })
-
   it('gives the page you are on no href, so it renders as text rather than a link', () => {
     expect(run('current').crumbs.at(-1)).not.toHaveProperty('href')
     expect(run('history').crumbs.at(-1)).not.toHaveProperty('href')
-    expect(run('review').crumbs.at(-1)).not.toHaveProperty('href')
   })
 
   it('appends to a trail already started earlier in the request', () => {
@@ -75,12 +63,9 @@ describe('csraBreadcrumbs', () => {
     })
   })
 
-  it('exposes the origin for the page to keep on its own links', () => {
-    expect(run('history', { from: 'due-for-review' }).res.locals).toMatchObject({
-      fromKey: 'due-for-review',
-      fromQuery: '?from=due-for-review',
-    })
-    expect(run('history').res.locals).toMatchObject({ fromKey: undefined, fromQuery: '' })
+  it('exposes the worklist as the start of the referrer stack, for the page to keep on its own links', () => {
+    expect(run('history', { from: 'due-for-review' }).res.locals.referrers).toEqual(['due-for-review'])
+    expect(run('history').res.locals.referrers).toEqual([])
   })
 
   it.each([
@@ -96,15 +81,26 @@ describe('csraBreadcrumbs', () => {
     const { crumbs, res } = run('current', { from })
 
     expect(crumbs).toEqual([{ title: 'CSRA', href: '/' }, { title: 'Daniel Havers' }])
-    expect(res.locals.fromQuery).toBe('')
+    expect(res.locals.referrers).toEqual([])
     expect(JSON.stringify(crumbs)).not.toContain(from || 'nothing-to-find')
   })
 
   it('takes the first value when the param is repeated, and still whitelists it', () => {
-    expect(run('current', { from: ['due-for-review', 'https://evil.example'] }).res.locals.fromKey).toBe(
+    expect(run('current', { from: ['due-for-review', 'https://evil.example'] }).res.locals.referrers).toEqual([
       'due-for-review',
-    )
-    expect(run('current', { from: ['https://evil.example', 'due-for-review'] }).res.locals.fromKey).toBeUndefined()
+    ])
+    expect(run('current', { from: ['https://evil.example', 'due-for-review'] }).res.locals.referrers).toEqual([])
+  })
+
+  it('takes the origin from the referrer stack when there is no from param', () => {
+    const { res, crumbs } = run('view', { referrer: ['due-for-review', 'history'] })
+
+    expect(res.locals.referrers).toEqual(['due-for-review', 'history'])
+    expect(crumbs[1]).toEqual(ORIGINS['due-for-review'])
+  })
+
+  it('drops unknown entries from the referrer stack', () => {
+    expect(run('view', { referrer: ['https://evil.example', 'history'] }).res.locals.referrers).toEqual(['history'])
   })
 
   it('always calls next', () => {

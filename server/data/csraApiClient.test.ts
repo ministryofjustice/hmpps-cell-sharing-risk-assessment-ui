@@ -7,11 +7,10 @@ import type {
   AgencyStatus,
   CsraAssessmentFinalStageRequest,
   CsraAssessmentsInProgress,
-  CsraCurrentRating,
+  CsraDetailedRating,
   CsraHighRiskDueForReview,
   CsraPrisonPrisonerList,
   CsraPrisonRatingSummary,
-  CsraReviewDetail,
   CsraReviewHistory,
 } from './csraApiTypes'
 
@@ -35,7 +34,7 @@ describe('CsraApiClient', () => {
 
   describe('getCurrentCsraRating', () => {
     it('should GET the current rating using a system token stamped with the username', async () => {
-      const currentRating: CsraCurrentRating = {
+      const currentRating: CsraDetailedRating = {
         prisonerNumber: 'A1234BC',
         status: 'COMPLETE',
         rating: 'STANDARD',
@@ -57,7 +56,7 @@ describe('CsraApiClient', () => {
     })
 
     it('should return a NO_RATING result when the prisoner has no assessment', async () => {
-      const noRating: CsraCurrentRating = {
+      const noRating: CsraDetailedRating = {
         prisonerNumber: 'A1234BC',
         status: 'NO_RATING',
         rating: null,
@@ -269,51 +268,6 @@ describe('CsraApiClient', () => {
       })
 
       expect(response).toEqual(history)
-    })
-  })
-
-  describe('getCsraReview', () => {
-    const reviewId = 'de91dfa7-821f-4552-a427-bf2f32eafeb0'
-
-    it('should GET a single review using a system token stamped with the username', async () => {
-      const detail: CsraReviewDetail = {
-        id: reviewId,
-        prisonerNumber: 'A1234BC',
-        prisonId: 'LEI',
-        prisonName: 'Leeds (HMP)',
-        assessmentDate: '2016-10-31',
-        type: 'REVIEW',
-        assessmentType: 'REVIEW',
-        createdAt: '2016-10-31T09:15:00',
-        createdBy: 'NQP56Y',
-        legacy: {
-          level: 'HI',
-          approvedResult: 'HI',
-          calculatedResult: 'STANDARD',
-          assessmentCommittee: { code: 'RECP', name: 'Reception' },
-          questions: [{ question: 'Select Risk Rating', answer: 'High', additionalAnswers: [] }],
-        },
-      }
-
-      nock(config.apis.csraApi.url)
-        .get(`/csra-review/${reviewId}`)
-        .matchHeader('authorization', 'Bearer test-system-token')
-        .reply(200, detail)
-
-      const response = await csraApiClient.getCsraReview('AUSER_GEN', { id: reviewId })
-
-      expect(response).toEqual(detail)
-      expect(mockAuthenticationClient.getToken).toHaveBeenCalledWith('AUSER_GEN')
-    })
-
-    it('should reject with a responseStatus of 404 when the review is unknown', async () => {
-      // Not `status`: the rest client sanitises errors into a shape that names it responseStatus, and
-      // the controller has to branch on that to turn an unknown id into a not-found page.
-      nock(config.apis.csraApi.url).get(`/csra-review/${reviewId}`).reply(404)
-
-      await expect(csraApiClient.getCsraReview('AUSER_GEN', { id: reviewId })).rejects.toMatchObject({
-        responseStatus: 404,
-      })
     })
   })
 
