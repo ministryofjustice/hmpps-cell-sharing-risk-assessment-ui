@@ -103,6 +103,12 @@ pages from their back/forward cache, so a persisted `pageshow` event triggers a 
 to recheck the assessment state on the server. This prevents a cached confirmation form
 remaining usable after final submission; ordinary navigation does not trigger a reload.
 
+When starting the final (day 2) assessment, provisional answers are copied except for
+the evidence sources and offences section. That section remains unanswered in the final
+stage until each applicable question page is saved again. Unsaved questions are
+pre-populated from the provisional assessment, including offence evidence sources and
+details; saved final answers take precedence. Other sections retain their copied answers.
+
 To start the main services excluding the example typescript template app:
 
 `docker compose up`

@@ -1,4 +1,5 @@
 import { CsraAssessment, CsraAssessmentStageAnswers } from '../data/csraApiTypes'
+import flowConfig from '../lib/transactionFlow/config'
 
 export default function getAnswersFromAssessment(assessment: CsraAssessment): CsraAssessmentStageAnswers {
   const provisionalAnswers = assessment.stages.find(s => s.stage === 'PROVISIONAL')
@@ -10,9 +11,12 @@ export default function getAnswersFromAssessment(assessment: CsraAssessment): Cs
       return finalAnswers
     }
 
-    // No FINAL stage yet: seed it from the PROVISIONAL answers as a new FINAL stage
+    // Evidence and offences must be saved again before the final stage is complete.
     if (provisionalAnswers) {
-      return { ...provisionalAnswers, stage: 'FINAL', version: 1 }
+      return flowConfig.evidenceAndOffences.steps.reduce<CsraAssessmentStageAnswers>(
+        (answers, step) => step.eraseAnswers(answers),
+        { ...provisionalAnswers, stage: 'FINAL', version: 1 },
+      )
     }
   }
 
