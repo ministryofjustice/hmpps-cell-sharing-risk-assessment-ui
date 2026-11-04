@@ -11,8 +11,11 @@
 {% set title = "Cell sharing risk assessment - " + prisonerName %}
 {% set pageTitle = applicationName + " - " + title %}
 
-{% set ratingDate = (detailedRating.finalDate or detailedRating.provisionalDate) | formatDate %}
-{% set ratingTime = (detailedRating.finalTime or detailedRating.provisionalTime) | formatTime %}
+{% set isProvisional = detailedRating.status === 'PROVISIONAL' %}
+{% set ratingDate = (detailedRating.provisionalDate if isProvisional else detailedRating.finalDate) | formatDate %}
+{% set ratingTime = (detailedRating.provisionalTime if isProvisional else detailedRating.finalTime) | formatTime %}
+{% set completedBy = detailedRating.provisionalCompletedBy if isProvisional else detailedRating.finalCompletedBy %}
+{% set assessmentComment = detailedRating.provisionalAssessmentComment if isProvisional else detailedRating.assessmentComment %}
 
 {% block content %}
   <div class="govuk-grid-row">
@@ -48,7 +51,7 @@
                 text: "Rating"
               },
               value: {
-                text: detailedRating.rating | csraRatingLabel('PROVISIONAL' if detailedRating.status === 'PROVISIONAL')
+                text: detailedRating.rating | csraRatingLabel('PROVISIONAL' if isProvisional)
               }
             },
             {
@@ -72,7 +75,7 @@
                 text: "Assessment comment"
               },
               value: {
-                text: detailedRating.assessmentComment or 'Not entered'
+                text: assessmentComment or 'Not entered'
               }
             },
             {
@@ -88,9 +91,9 @@
                 text: "Completed by"
               },
               value: {
-                text: userDisplayNames.get(detailedRating.finalCompletedBy or detailedRating.provisionalCompletedBy) or 'Unknown'
+                text: userDisplayNames.get(completedBy) or 'Unknown'
               }
-            } if detailedRating.finalCompletedBy or detailedRating.provisionalCompletedBy
+            }
           ]
         }) }}
       </div>
