@@ -1,7 +1,7 @@
 {#
   CSRA tab navigation. Reads `prisonerNumber` and `currentTab` ("current" | "history") from context,
-  and `fromQuery` from res.locals (set by middleware/csraBreadcrumbs) so switching tabs keeps the
-  worklist the prisoner was reached from in the breadcrumb trail.
+  and `referrers` from res.locals (set by middleware/csraBreadcrumbs) so switching tabs keeps the
+  pages the prisoner was reached through in the breadcrumb trail.
 #}
 {% from "moj/components/sub-navigation/macro.njk" import mojSubNavigation %}
 
@@ -10,12 +10,12 @@
   items: [
     {
       text: "Current rating",
-      href: "/prisoner/" + prisonerNumber + (fromQuery or ""),
+      href: appendReferrers("/prisoner/" + prisonerNumber, referrers),
       active: currentTab == "current"
     },
     {
       text: "CSRA history",
-      href: "/prisoner/" + prisonerNumber + "/history" + (fromQuery or ""),
+      href: appendReferrers("/prisoner/" + prisonerNumber + "/history", referrers),
       active: currentTab == "history"
     }
   ]

@@ -101,7 +101,7 @@
               {% endif %}
             {% endset %}
             <p class="govuk-body govuk-!-margin-bottom-0">
-              <a href="#" class="govuk-link">{{ viewLinkText }}</a>
+              <a href="{{ appendReferrers('/prisoner/' + prisoner.prisonerNumber + '/csra/' + csra.reviewId + '/view', referrers) }}" class="govuk-link">{{ viewLinkText }}</a>
             </p>
           {% endif %}
         </div>
@@ -130,7 +130,7 @@
                 Start a new cell sharing risk assessment.
               {% endif %}
             </p>
-            <a class="govuk-button govuk-!-margin-bottom-0" href="/prisoner/{{ prisoner.prisonerNumber }}/csra/{{ csra.inProgress.reviewId }}" data-qa="start-assessment">
+            <a class="govuk-button govuk-!-margin-bottom-0" href="{{ appendReferrers('/prisoner/' + prisoner.prisonerNumber + '/csra/' + csra.inProgress.reviewId, referrers) }}" data-qa="start-assessment">
               Continue assessment
             </a>
           {% else %}
@@ -138,7 +138,7 @@
               Start a new cell sharing risk assessment.
             </p>
             {% set buttonClass = "govuk-button--secondary" if csra.rating else "" %}
-            <a class="govuk-button {{ buttonClass }} govuk-!-margin-bottom-0" href="/prisoner/{{ prisoner.prisonerNumber }}/csra/start" data-qa="start-assessment">
+            <a class="govuk-button {{ buttonClass }} govuk-!-margin-bottom-0" href="{{ appendReferrers('/prisoner/' + prisoner.prisonerNumber + '/csra/start', referrers) }}" data-qa="start-assessment">
               Start assessment
             </a>
           {% endif %}
@@ -177,7 +177,7 @@
                 Start a review when the prisoner’s risk requires reassessment.
               {% endif %}
             </p>
-            <a class="govuk-button govuk-!-margin-bottom-0" href="/prisoner/{{ prisoner.prisonerNumber }}/csra/{{ csra.inProgress.reviewId }}" data-qa="start-assessment">
+            <a class="govuk-button govuk-!-margin-bottom-0" href="{{ appendReferrers('/prisoner/' + prisoner.prisonerNumber + '/csra/' + csra.inProgress.reviewId, referrers) }}" data-qa="start-assessment">
               Continue review
             </a>
           {% else %}
@@ -185,7 +185,7 @@
               Start a review when the prisoner’s risk requires reassessment.
             </p>
             {% set buttonClass = "govuk-button--secondary" if csra.rating else "" %}
-            <a class="govuk-button {{ buttonClass }} govuk-!-margin-bottom-0" href="/prisoner/{{ prisoner.prisonerNumber }}/csra/start" data-qa="start-assessment">
+            <a class="govuk-button {{ buttonClass }} govuk-!-margin-bottom-0" href="{{ appendReferrers('/prisoner/' + prisoner.prisonerNumber + '/csra/start', referrers) }}" data-qa="start-assessment">
               Start review
             </a>
           {% endif %}
@@ -199,7 +199,7 @@
           <p class="govuk-body">
             See information from all CSRA assessments and reviews.
           </p>
-          <a class="govuk-button govuk-button--secondary" href="{{"/prisoner/" + prisoner.prisonerNumber + "/history" + (fromQuery or "")}}" data-qa="view-history">
+          <a class="govuk-button govuk-button--secondary" href="{{ appendReferrers('/prisoner/' + prisoner.prisonerNumber + '/history', referrers) }}" data-qa="view-history">
             View CSRA history
           </a>
       </div>

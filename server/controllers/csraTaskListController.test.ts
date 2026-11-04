@@ -40,7 +40,7 @@ describe('csraTaskListController', () => {
   const controller = () => csraTaskListController({ auditService, csraService, warrantsService } as never)
 
   const request = () =>
-    ({ id: 'request-id-123', params: { prisonerNumber: 'A1234BC', assessmentId: ASSESSMENT_ID } }) as any
+    ({ id: 'request-id-123', params: { prisonerNumber: 'A1234BC', assessmentId: ASSESSMENT_ID }, query: {} }) as any
 
   const response = () =>
     ({
@@ -60,6 +60,19 @@ describe('csraTaskListController', () => {
 
   afterAll(() => {
     config.warrants.enabled = false
+  })
+
+  it('carries the referrers on the check answers and cancel links', async () => {
+    const res = response()
+
+    await controller()({ ...request(), query: { referrer: ['due-for-review'] } }, res, jest.fn())
+
+    expect(res.render).toHaveBeenCalledWith(
+      'pages/csraTaskList',
+      expect.objectContaining({
+        cancelLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}/cancel?referrer=due-for-review`,
+      }),
+    )
   })
 
   describe('the warrant evidence source', () => {

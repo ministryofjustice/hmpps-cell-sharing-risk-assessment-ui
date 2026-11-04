@@ -8,6 +8,7 @@ import CheckboxQuestion from '../lib/transactionFlow/questionTypes/checkbox'
 import getAnswersFromAssessment from './getAnswersFromAssessment'
 import YesNoQuestion from '../lib/transactionFlow/questionTypes/yesNo'
 import { Page } from '../services/auditService'
+import { appendReferrers, referrerStack } from '../utils/breadcrumbOrigins'
 import InformationStep from '../lib/transactionFlow/informationStep'
 import renderCsraAssessmentSubmitted from '../utils/renderCsraAssessmentSubmitted'
 
@@ -135,18 +136,19 @@ export default function csraQuestionController({ auditService, csraService }: De
 
     const values = currentStep.getFormValues(assessmentAnswers)
 
+    const referrers = referrerStack(req.query.referrer)
     const assessmentUrl = `/prisoner/${prisoner.prisonerNumber}/csra/${assessmentId}`
     const lastAnsweredStep = findLastAnsweredStep(assessmentAnswers, section, currentStepId)
     const backLink = lastAnsweredStep
-      ? `${assessmentUrl}/section/${sectionId}/${lastAnsweredStep.stepId}`
-      : assessmentUrl
+      ? appendReferrers(`${assessmentUrl}/section/${sectionId}/${lastAnsweredStep.stepId}`, referrers)
+      : appendReferrers(assessmentUrl, referrers)
 
     const continueStep =
       currentStep instanceof InformationStep ? findNextAvailableStep(assessmentAnswers, section, currentStepId) : null
     const continueLink = continueStep ? `${assessmentUrl}/section/${sectionId}/${continueStep.stepId}` : assessmentUrl
 
     if (req.method === 'POST' && currentStep instanceof InformationStep) {
-      res.redirect(continueLink)
+      res.redirect(appendReferrers(continueLink, referrers))
       return
     }
 
@@ -236,7 +238,7 @@ export default function csraQuestionController({ auditService, csraService }: De
         if (nextStep) {
           nextStepUrl += `/section/${sectionId}/${nextStep.stepId}`
         }
-        res.redirect(nextStepUrl)
+        res.redirect(appendReferrers(nextStepUrl, referrers))
 
         return
       }
@@ -255,12 +257,13 @@ export default function csraQuestionController({ auditService, csraService }: De
       prisoner,
       section,
       currentStep,
+      referrers,
       ...(Object.keys(validationErrors).length > 0 ? { validationErrors } : {}),
       values,
       assessmentAnswers,
       provisionalRatingEntered: questionContext.provisionalRatingEntered,
       questionContext,
-      cancelLink: assessmentUrl,
+      cancelLink: appendReferrers(assessmentUrl, referrers),
       backLink,
       continueLink,
     })

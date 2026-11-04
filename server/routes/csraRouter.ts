@@ -10,11 +10,18 @@ import csraWarrantsController, { csraWarrantFileController } from '../controller
 import permissionGuard from '../middleware/permissionGuard'
 import CsraSelectRatingController from '../controllers/csraSelectRatingController'
 import CsraConfirmRatingController from '../controllers/csraConfirmRatingController'
+import csraViewController from '../controllers/csraViewController'
 
 export default function csraRouter(
-  services: Pick<Services, 'auditService' | 'csraService' | 'prisonApiService' | 'warrantsService'>,
+  services: Pick<
+    Services,
+    'auditService' | 'csraService' | 'manageUsersService' | 'prisonApiService' | 'warrantsService'
+  >,
 ): Router {
   const router = Router({ mergeParams: true })
+
+  // Read-only view, open like the old history review page, so it sits above the edit guard.
+  router.get('/:assessmentId/view', csraBreadcrumbs('view'), csraViewController(services))
 
   router.use(permissionGuard('edit_assessment'))
   router.use((_req, res, next) => {
