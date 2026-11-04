@@ -48,10 +48,9 @@ export default function csraViewController({
       throw NotFound(`No CSRA rating found for ID: ${req.params.assessmentId}`)
     }
 
-    const completedBy = detailedRating.finalCompletedBy || detailedRating.provisionalCompletedBy
-    if (completedBy) {
-      await populateUserDisplayNames(locals, manageUsersService, username, [completedBy])
-    }
+    const isProvisional = detailedRating.status === 'PROVISIONAL'
+    const completedBy = isProvisional ? detailedRating.provisionalCompletedBy : detailedRating.finalCompletedBy
+    await populateUserDisplayNames(locals, manageUsersService, username, completedBy ? [completedBy] : [])
 
     const referrers = referrerStack(req.query.referrer)
     let backLink = appendReferrers(`/prisoner/${prisoner.prisonerNumber}`, referrers)
