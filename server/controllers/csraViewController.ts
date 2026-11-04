@@ -54,10 +54,10 @@ export default function csraViewController({
 
     const referrers = referrerStack(req.query.referrer)
     let backLink = appendReferrers(`/prisoner/${prisoner.prisonerNumber}`, referrers)
-    let backLinkText = 'CSRA overview'
+    let backLinkText = 'Back to CSRA overview'
     if (referrers.at(-1) === 'history') {
       backLink = appendReferrers(`/prisoner/${prisoner.prisonerNumber}/history`, referrers.slice(0, -1))
-      backLinkText = 'CSRA history'
+      backLinkText = 'Back to CSRA history'
     }
 
     await auditService.logPageView(Page.PRISONER_CSRA_VIEW, {
