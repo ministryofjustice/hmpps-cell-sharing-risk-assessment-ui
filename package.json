@@ -86,7 +86,7 @@
     "@types/supertest": "^7.2.1",
     "audit-ci": "^7.1.0",
     "aws-sdk-client-mock": "^4.1.0",
-    "chokidar": "^4.0.3",
+    "chokidar": "^6.0.0",
     "del": "8.0.1",
     "esbuild": "^0.28.2",
     "esbuild-plugin-copy": "^2.1.1",
