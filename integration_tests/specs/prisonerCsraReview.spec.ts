@@ -104,7 +104,8 @@ test.describe('CSRA review detail', () => {
 
   test('shows the legacy NOMIS record and its questions and answers', async ({ page }) => {
     await signInAs(page)
-    await csraApi.stubGetCsraReview(REVIEW_ID, legacy)
+    await csraApi.stubGetCsraReview(REVIEW_ID, { ...legacy, createdBy: 'NQP56Y' })
+    await manageUsersApi.stubGetUserDetails('NQP56Y', 'Jane Smith')
 
     await page.goto(`/prisoner/A5197BD/history/${REVIEW_ID}`)
 
@@ -119,7 +120,7 @@ test.describe('CSRA review detail', () => {
     await expect(reviewPage.details).toContainText('2 November 2016')
     await expect(reviewPage.details).toContainText('Previous violence towards cellmates.')
     await expect(reviewPage.details).toContainText('Leeds (HMP)')
-    await expect(reviewPage.details).toContainText('Reception')
+    await expect(reviewPage.details).toContainText('Reception - Jane Smith')
     await expect(reviewPage.details).toContainText('31 October 2017')
     // Not in the NOMIS migration contract, so never offered.
     await expect(reviewPage.details).not.toContainText('Override')

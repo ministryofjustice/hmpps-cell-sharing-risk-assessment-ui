@@ -15,7 +15,18 @@ export interface AnsweredQuestion {
 
 const NOT_ENTERED = 'Not entered'
 
+/** NOMIS accounts that stand for a process rather than a person, so they have no name to show. */
+const SYSTEM_ACCOUNTS = ['SYS', 'XTAG']
+
 const row = (key: string, value: string): SummaryRow => ({ key: { text: key }, value: { text: value } })
+
+/** The username to look a legacy assessor's name up with, or undefined where it is not a person. */
+export const legacyAssessorUsername = (detail: CsraReviewDetail): string | undefined =>
+  detail.legacy && !SYSTEM_ACCOUNTS.includes(detail.createdBy) ? detail.createdBy : undefined
+
+/** Follows the profile page's "committee - name" format, without doubling up where neither is known. */
+const assessedBy = (committee?: string, assessorName?: string): string =>
+  committee || assessorName ? `${committee || NOT_ENTERED} - ${assessorName || NOT_ENTERED}` : NOT_ENTERED
 
 /**
  * The summary rows for a migrated NOMIS review.
@@ -27,7 +38,7 @@ const row = (key: string, value: string): SummaryRow => ({ key: { text: key }, v
  * "Override result" and "Override reason" are on that page but deliberately absent here: NOMIS's
  * OVERRIDED_SUP_LEVEL_TYPE and its reason are not in the migration contract, so we never receive them.
  */
-export const buildLegacyReviewRows = (detail: CsraReviewDetail): SummaryRow[] => {
+export const buildLegacyReviewRows = (detail: CsraReviewDetail, assessorName?: string): SummaryRow[] => {
   const legacy = detail.legacy!
   const rows: SummaryRow[] = []
 
@@ -52,7 +63,7 @@ export const buildLegacyReviewRows = (detail: CsraReviewDetail): SummaryRow[] =>
     row('Calculated result', csraLevelLabel(legacy.calculatedResult) || NOT_ENTERED),
     row('Type', csraTypeLabel(detail.type)),
     row('Location', detail.prisonName || detail.prisonId || NOT_ENTERED),
-    row('Assessed by', legacy.assessmentCommittee?.name || NOT_ENTERED),
+    row('Assessed by', assessedBy(legacy.assessmentCommittee?.name, assessorName)),
     row('Next review date', formatDate(legacy.nextReviewDate) || NOT_ENTERED),
   )
 

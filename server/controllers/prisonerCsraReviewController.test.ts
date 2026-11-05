@@ -20,8 +20,9 @@ const review = (overrides: Partial<CsraReviewDetail> = {}): CsraReviewDetail => 
 
 const auditService = { logPageView: jest.fn().mockResolvedValue(null) }
 const csraService = { getReview: jest.fn() }
+const manageUsersService = { getUserDetails: jest.fn() }
 
-const controller = () => new PrisonerCsraReviewController({ auditService, csraService } as never)
+const controller = () => new PrisonerCsraReviewController({ auditService, csraService, manageUsersService } as never)
 
 type ReviewRequest = Request<{ prisonerNumber: string; reviewId: string }>
 
@@ -69,6 +70,59 @@ describe('PrisonerCsraReviewController', () => {
       correlationId: 'request-id-123',
       details: { reviewId: REVIEW_ID },
     })
+  })
+
+  describe('Assessed by', () => {
+    const assessedBy = (res: Response) => {
+      const { rows } = (res.render as jest.Mock).mock.calls[0][1]
+      return rows.find((row: { key: { text: string } }) => row.key.text === 'Assessed by').value.text
+    }
+    const legacyReview = (createdBy = 'NQP56Y') =>
+      review({
+        createdBy,
+        legacy: { assessmentCommittee: { code: 'RECP', name: 'Reception' }, questions: [] },
+      })
+
+    it('shows the committee and the name of the assessor', async () => {
+      csraService.getReview.mockResolvedValue(legacyReview())
+      manageUsersService.getUserDetails.mockResolvedValue({ name: 'Jane Smith' })
+      const res = response()
+
+      await controller().index(request(), res, jest.fn())
+
+      expect(manageUsersService.getUserDetails).toHaveBeenCalledWith('user1', 'NQP56Y')
+      expect(assessedBy(res)).toBe('Reception - Jane Smith')
+    })
+
+    it('still loads the page, showing the username, when the name cannot be found', async () => {
+      csraService.getReview.mockResolvedValue(legacyReview())
+      manageUsersService.getUserDetails.mockRejectedValue(new Error('Not found'))
+      const res = response()
+      const next = jest.fn()
+
+      await controller().index(request(), res, next)
+
+      expect(next).not.toHaveBeenCalled()
+      expect(assessedBy(res)).toBe('Reception - NQP56Y')
+    })
+
+    it('does not look up or show a system account', async () => {
+      csraService.getReview.mockResolvedValue(legacyReview('SYS'))
+      const res = response()
+
+      await controller().index(request(), res, jest.fn())
+
+      expect(manageUsersService.getUserDetails).not.toHaveBeenCalled()
+      expect(assessedBy(res)).toBe('Reception - Not entered')
+    })
+  })
+
+  it('does not look up a name for a DPS-created review', async () => {
+    csraService.getReview.mockResolvedValue(review({ type: 'CSRA_INITIAL_REVIEW' }))
+
+    await controller().index(request(), response(), jest.fn())
+
+    expect(manageUsersService.getUserDetails).not.toHaveBeenCalled()
   })
 
   it('renders a DPS-created review with no questions', async () => {

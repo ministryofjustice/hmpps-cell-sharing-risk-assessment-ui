@@ -1,4 +1,9 @@
-import { answeredQuestions, buildDpsReviewRows, buildLegacyReviewRows } from './csraReviewSummaryRows'
+import {
+  answeredQuestions,
+  buildDpsReviewRows,
+  buildLegacyReviewRows,
+  legacyAssessorUsername,
+} from './csraReviewSummaryRows'
 import type { CsraLegacyReviewDetail, CsraReviewDetail } from '../data/csraApiTypes'
 
 const review = (overrides: Partial<CsraReviewDetail> = {}): CsraReviewDetail => ({
@@ -21,7 +26,34 @@ const labels = (rows: { key: { text: string } }[]) => rows.map(row => row.key.te
 const valueOf = (rows: { key: { text: string }; value: { text: string } }[], key: string) =>
   rows.find(row => row.key.text === key)?.value.text
 
+describe('legacyAssessorUsername', () => {
+  it('returns the username of a person', () => {
+    expect(legacyAssessorUsername(legacyReview({}, { createdBy: 'LQF68R' }))).toBe('LQF68R')
+  })
+
+  it.each(['SYS', 'XTAG'])('returns nothing for the %s system account', createdBy => {
+    expect(legacyAssessorUsername(legacyReview({}, { createdBy }))).toBeUndefined()
+  })
+
+  it('returns nothing for a review created in this service', () => {
+    expect(legacyAssessorUsername(review())).toBeUndefined()
+  })
+})
+
 describe('buildLegacyReviewRows', () => {
+  const reception = { code: 'RECP', name: 'Reception' } as const
+
+  it.each([
+    ['the committee and the name', reception, 'Jane Smith', 'Reception - Jane Smith'],
+    ['Not entered in place of a missing committee', undefined, 'Jane Smith', 'Not entered - Jane Smith'],
+    ['Not entered in place of a missing name', reception, undefined, 'Reception - Not entered'],
+    ['a single Not entered where neither is known', undefined, undefined, 'Not entered'],
+  ])('shows %s in Assessed by', (_, assessmentCommittee, assessorName, expected) => {
+    const rows = buildLegacyReviewRows(legacyReview({ assessmentCommittee }), assessorName)
+
+    expect(valueOf(rows, 'Assessed by')).toBe(expected)
+  })
+
   it('shows the approval block first when a level was approved', () => {
     const rows = buildLegacyReviewRows(
       legacyReview({

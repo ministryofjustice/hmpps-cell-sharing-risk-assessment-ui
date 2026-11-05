@@ -3,9 +3,15 @@ import createError from 'http-errors'
 
 import type { Services } from '../services'
 import { Page } from '../services/auditService'
-import { answeredQuestions, buildDpsReviewRows, buildLegacyReviewRows } from '../utils/csraReviewSummaryRows'
+import {
+  answeredQuestions,
+  buildDpsReviewRows,
+  buildLegacyReviewRows,
+  legacyAssessorUsername,
+} from '../utils/csraReviewSummaryRows'
+import { populateUserDisplayNames } from '../utils/populateUserDisplayNames'
 
-type Dependencies = Pick<Services, 'auditService' | 'csraService'>
+type Dependencies = Pick<Services, 'auditService' | 'csraService' | 'manageUsersService'>
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -21,7 +27,7 @@ export default class PrisonerCsraReviewController {
   constructor(private readonly dependencies: Dependencies) {}
 
   index: RequestHandler<{ prisonerNumber: string; reviewId: string }> = async (req, res, next) => {
-    const { auditService, csraService } = this.dependencies
+    const { auditService, csraService, manageUsersService } = this.dependencies
     const { prisonerNumber, reviewId } = req.params
     const { username } = res.locals.user
     const { prisoner } = res.locals
@@ -57,12 +63,17 @@ export default class PrisonerCsraReviewController {
 
     const isLegacy = Boolean(review.legacy)
 
+    // A failed lookup is ignored, so an account the user service no longer knows shows its username.
+    const assessorUsername = legacyAssessorUsername(review)
+    if (assessorUsername) await populateUserDisplayNames(res.locals, manageUsersService, username, [assessorUsername])
+    const assessorName = res.locals.userDisplayNames?.get(assessorUsername) ?? assessorUsername
+
     return res.render('pages/prisonerCsraReview', {
       prisonerNumber,
       prisoner,
       review,
       isLegacy,
-      rows: isLegacy ? buildLegacyReviewRows(review) : buildDpsReviewRows(review),
+      rows: isLegacy ? buildLegacyReviewRows(review, assessorName) : buildDpsReviewRows(review),
       questions: answeredQuestions(review.legacy?.questions),
     })
   }
