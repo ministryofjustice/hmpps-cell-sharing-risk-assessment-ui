@@ -39,6 +39,20 @@ describe('buildLegacyReviewRows', () => {
     expect(valueOf(rows, 'Approval date')).toBe('2 November 2016')
   })
 
+  it('shows the override result after the calculated result', () => {
+    const rows = buildLegacyReviewRows(legacyReview({ calculatedResult: 'STANDARD', overrideResult: 'HI' }))
+
+    const names = labels(rows)
+    expect(names.indexOf('Override result')).toBe(names.indexOf('Calculated result') + 1)
+    expect(valueOf(rows, 'Override result')).toBe('High')
+  })
+
+  it.each([[undefined], [null], ['PEND' as const]])('omits the override result when it is %s', overrideResult => {
+    const rows = buildLegacyReviewRows(legacyReview({ overrideResult }))
+
+    expect(labels(rows)).not.toContain('Override result')
+  })
+
   it('omits the whole approval block when nothing was approved', () => {
     const rows = buildLegacyReviewRows(legacyReview({ approvalDate: '2016-11-02' }))
 

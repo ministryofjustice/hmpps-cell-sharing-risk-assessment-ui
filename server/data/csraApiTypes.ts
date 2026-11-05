@@ -166,6 +166,7 @@ export interface CsraLegacyDetail {
   assessmentComment?: string | null
   assessmentDate: string
   approvalStatus?: CsraApprovalStatus | null
+  levelChangedAtApproval?: boolean
   approvalComment?: string | null
   approvalCommitteeComment?: string | null
   approvalDate?: string | null
@@ -253,7 +254,9 @@ export interface CsraReviewQuestion {
 export interface CsraLegacyReviewDetail {
   level?: CsraLevel | null
   approvalStatus?: CsraApprovalStatus | null
+  levelChangedAtApproval?: boolean
   calculatedResult?: CsraLevel | null
+  overrideResult?: CsraLevel | null
   approvedResult?: CsraLevel | null
   assessmentComment?: string | null
   approvalCommitteeComment?: string | null

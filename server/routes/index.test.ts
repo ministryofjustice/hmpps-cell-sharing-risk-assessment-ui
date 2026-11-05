@@ -719,6 +719,7 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
         legacy: {
           level,
           approvalStatus,
+          levelChangedAtApproval: level === 'MED',
           calculatedLevel: level === 'MED' ? 'LOW' : level,
           assessmentDate: '2011-06-15',
           approvalDate: '2011-06-17',
@@ -741,6 +742,24 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
     }
     const tagColor = approvalStatus === 'NOT_APPROVED' ? 'orange' : 'green'
     expect(response.text).toContain(`govuk-tag--${level === 'MED' ? 'blue' : tagColor}`)
+  })
+
+  it('follows the API on whether the level changed, not a difference between the levels', async () => {
+    const response = await showEntry(
+      entry({
+        type: 'NOMIS_REVIEW',
+        assessmentType: 'REVIEW',
+        legacy: {
+          level: 'HI',
+          calculatedLevel: 'PEND',
+          approvalStatus: 'APPROVED',
+          levelChangedAtApproval: false,
+          assessmentDate: '2011-06-15',
+        },
+      }),
+    )
+    expect(visibleText(response.text)).toContain('Approved')
+    expect(visibleText(response.text)).not.toContain('Level changed at approval')
   })
 
   it('does not invent an approval state or approval date for a NOMIS row with no approval', async () => {

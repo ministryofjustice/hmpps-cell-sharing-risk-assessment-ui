@@ -8,6 +8,8 @@ export default class PrisonerCsraReviewPage extends AbstractPage {
 
   readonly rating: Locator
 
+  readonly approvalState: Locator
+
   readonly details: Locator
 
   readonly questions: Locator
@@ -23,6 +25,7 @@ export default class PrisonerCsraReviewPage extends AbstractPage {
     this.heading = page.getByTestId('page-heading')
     this.prisonerBanner = page.getByTestId('prisoner-banner')
     this.rating = page.getByTestId('review-rating')
+    this.approvalState = page.getByTestId('approval-state')
     this.details = page.getByTestId('review-details')
     this.questions = page.getByTestId('review-questions')
     this.noQuestions = page.getByTestId('no-questions')

@@ -24,8 +24,7 @@ const row = (key: string, value: string): SummaryRow => ({ key: { text: key }, v
  * (hmpps-prisoner-profile/server/mappers/csraReviewToSummaryListMapper.ts) so the two screens read the
  * same way while both exist.
  *
- * "Override result" and "Override reason" are on that page but deliberately absent here: NOMIS's
- * OVERRIDED_SUP_LEVEL_TYPE and its reason are not in the migration contract, so we never receive them.
+ * "Override reason" is on that page but not yet here. It is being brought in under MAPA-500.
  */
 export const buildLegacyReviewRows = (detail: CsraReviewDetail): SummaryRow[] => {
   const legacy = detail.legacy!
@@ -50,6 +49,14 @@ export const buildLegacyReviewRows = (detail: CsraReviewDetail): SummaryRow[] =>
   rows.push(
     row('Assessment comments', legacy.assessmentComment || 'No assessment comment entered'),
     row('Calculated result', csraLevelLabel(legacy.calculatedResult) || NOT_ENTERED),
+  )
+
+  // Pending is NOMIS's placeholder for no level chosen, so it is not an override.
+  if (legacy.overrideResult && legacy.overrideResult !== 'PEND') {
+    rows.push(row('Override result', csraLevelLabel(legacy.overrideResult)))
+  }
+
+  rows.push(
     row('Type', csraTypeLabel(detail.type)),
     row('Location', detail.prisonName || detail.prisonId || NOT_ENTERED),
     row('Assessed by', legacy.assessmentCommittee?.name || NOT_ENTERED),

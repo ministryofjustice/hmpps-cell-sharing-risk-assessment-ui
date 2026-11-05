@@ -1,0 +1,12 @@
+{% from "govuk/components/tag/macro.njk" import govukTag %}
+
+{# What became of a NOMIS review at approval. Shows nothing where it never went through approval. #}
+{% macro legacyApprovalTag(legacy) %}
+  {% if legacy.approvalStatus == "NOT_APPROVED" %}
+    {{ govukTag({ text: "Not approved", classes: "govuk-tag--orange", attributes: { "data-qa": "approval-state" } }) }}
+  {% elif legacy.approvalStatus == "APPROVED" and legacy.levelChangedAtApproval %}
+    {{ govukTag({ text: "Level changed at approval", classes: "govuk-tag--blue", attributes: { "data-qa": "approval-state" } }) }}
+  {% elif legacy.approvalStatus == "APPROVED" %}
+    {{ govukTag({ text: "Approved", classes: "govuk-tag--green", attributes: { "data-qa": "approval-state" } }) }}
+  {% endif %}
+{% endmacro %}

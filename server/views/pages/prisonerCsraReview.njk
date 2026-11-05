@@ -4,6 +4,8 @@
 {% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
 {% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
 
+{% from "../macros/legacyApprovalTag.njk" import legacyApprovalTag %}
+
 {% set prisonerName = (prisoner.firstName + " " + prisoner.lastName) | convertToTitleCase %}
 {% set pageTitle = applicationName + " - CSRA review for " + prisonerName %}
 {% set mainClasses = "govuk-body" %}
@@ -40,6 +42,11 @@
           {{ govukTag({ text: "NOMIS record", classes: "govuk-tag--grey", attributes: { "data-qa": "review-legacy" } }) }}
         {% endif %}
       </p>
+
+      {# On its own line for the same reason: "Level changed at approval" is wider than the cap. #}
+      {% if review.legacy.approvalStatus %}
+        <p class="govuk-body">{{ legacyApprovalTag(review.legacy) }}</p>
+      {% endif %}
 
       {{ govukSummaryList({
         classes: "govuk-summary-list--no-border",

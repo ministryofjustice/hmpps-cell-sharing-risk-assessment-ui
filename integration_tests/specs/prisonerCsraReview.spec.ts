@@ -26,8 +26,11 @@ const legacy: Partial<CsraReviewDetail> = {
   finalResultDate: '2016-10-31',
   legacy: {
     level: 'HI',
+    approvalStatus: 'APPROVED',
+    levelChangedAtApproval: true,
     approvedResult: 'HI',
-    calculatedResult: 'STANDARD',
+    calculatedResult: 'PEND',
+    overrideResult: 'STANDARD',
     approvalCommitteeComment: 'Agreed at review board.',
     approvalCommittee: { code: 'REVIEW', name: 'Review Board' },
     approvalDate: '2016-11-02',
@@ -78,9 +81,11 @@ const history: CsraReviewHistory = {
       prisonName: 'Leeds (HMP)',
       legacy: {
         level: 'HI',
-        calculatedLevel: null,
+        calculatedLevel: 'PEND',
         assessmentDate: '2016-10-31',
         assessmentComment: 'Previous violence towards cellmates.',
+        approvalStatus: 'APPROVED',
+        levelChangedAtApproval: true,
       },
     },
   ],
@@ -112,6 +117,7 @@ test.describe('CSRA review detail', () => {
     await expect(reviewPage.heading).toContainText('31 October 2016')
     await expect(reviewPage.prisonerBanner).toContainText('Daniel Havers')
     await expect(reviewPage.rating).toHaveText('High')
+    await expect(reviewPage.approvalState).toHaveText('Level changed at approval')
 
     await expect(reviewPage.details).toContainText('Approved result')
     await expect(reviewPage.details).toContainText('Agreed at review board.')
@@ -121,8 +127,8 @@ test.describe('CSRA review detail', () => {
     await expect(reviewPage.details).toContainText('Leeds (HMP)')
     await expect(reviewPage.details).toContainText('Reception')
     await expect(reviewPage.details).toContainText('31 October 2017')
-    // Not in the NOMIS migration contract, so never offered.
-    await expect(reviewPage.details).not.toContainText('Override')
+    await expect(reviewPage.details).toContainText('Override result')
+    await expect(reviewPage.details).not.toContainText('Override reason')
 
     await expect(reviewPage.questions).toContainText('Select Risk Rating')
     // The additional answer the existing DPS profile page drops.
@@ -155,9 +161,11 @@ test.describe('CSRA review detail', () => {
     await page.goto('/prisoner/A5197BD/history?from=due-for-review')
 
     const historyPage = await PrisonerCsraHistoryPage.verifyOnPage(page)
+    await expect(historyPage.reviews.first().getByTestId('approval-state')).toHaveText('Level changed at approval')
     await historyPage.reviews.first().getByTestId('view-full-link').click()
 
     const reviewPage = await PrisonerCsraReviewPage.verifyOnPage(page)
+    await expect(reviewPage.approvalState).toHaveText('Level changed at approval')
     await expect(reviewPage.breadcrumbs).toContainText('High risk prisoners due for review')
     await expect(reviewPage.breadcrumbs).toContainText('Daniel Havers')
     await expect(reviewPage.breadcrumbs).toContainText('CSRA history')
