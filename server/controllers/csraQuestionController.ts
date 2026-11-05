@@ -133,7 +133,19 @@ export default function csraQuestionController({ auditService, csraService }: De
       throw NotFound('Assessment step not found')
     }
 
-    const values = currentStep.getFormValues(assessmentAnswers)
+    const values = Object.fromEntries(
+      currentStep.questions.flatMap(question =>
+        Object.entries(
+          question.getFormValues(
+            sectionId === 'evidenceAndOffences' &&
+              questionContext.provisionalAnswers &&
+              !question.isAnswered(assessmentAnswers)
+              ? questionContext.provisionalAnswers
+              : assessmentAnswers,
+          ),
+        ),
+      ),
+    )
 
     const assessmentUrl = `/prisoner/${prisoner.prisonerNumber}/csra/${assessmentId}`
     const lastAnsweredStep = findLastAnsweredStep(assessmentAnswers, section, currentStepId)

@@ -1,5 +1,6 @@
 import { CsraAssessment, CsraAssessmentStageAnswers } from '../data/csraApiTypes'
 import getAnswersFromAssessment from './getAnswersFromAssessment'
+import flowConfig from '../lib/transactionFlow/config'
 
 const makeStageAnswers = (overrides: Partial<CsraAssessmentStageAnswers> = {}): CsraAssessmentStageAnswers => ({
   stage: 'PROVISIONAL',
@@ -41,13 +42,47 @@ describe('getAnswersFromAssessment', () => {
     expect(getAnswersFromAssessment(assessment)).toBe(provisional)
   })
 
-  it('returns a FINAL copy of the provisional answers at version 1 when a provisional rating exists but no final stage', () => {
-    const provisional = makeStageAnswers({ prisonId: 'MDI', likelyToHarmCellmate: true, version: 4 })
+  it('copies other sections but clears evidence and offences in a new final stage at version 1', () => {
+    const provisional = makeStageAnswers({
+      prisonId: 'MDI',
+      likelyToHarmCellmate: true,
+      version: 4,
+      pncChecked: true,
+      warrantChecked: true,
+      dpsChecked: false,
+      perChecked: false,
+      offenceMurderManslaughter: true,
+      offenceAssistingSuicide: false,
+      offenceSexualAssault: false,
+      offenceRepeatedViolence: false,
+      offencePrejudiceMotivated: false,
+      offenceArson: false,
+      offenceKidnapHostage: false,
+      offenceEvidence: [{ offence: 'MURDER_MANSLAUGHTER', sources: ['PNC'], details: 'Provisional evidence' }],
+    })
+    const original = structuredClone(provisional)
     const assessment = makeAssessment({ interimResult: 'HIGH_GENERAL', stages: [provisional] })
 
-    expect(getAnswersFromAssessment(assessment)).toEqual({ ...provisional, stage: 'FINAL', version: 1 })
-    expect(provisional.stage).toBe('PROVISIONAL')
-    expect(provisional.version).toBe(4)
+    const final = getAnswersFromAssessment(assessment)
+    expect(final).toEqual({
+      ...provisional,
+      stage: 'FINAL',
+      version: 1,
+      pncChecked: null,
+      warrantChecked: null,
+      dpsChecked: null,
+      perChecked: null,
+      offenceMurderManslaughter: null,
+      offenceAssistingSuicide: null,
+      offenceSexualAssault: null,
+      offenceRepeatedViolence: null,
+      offencePrejudiceMotivated: null,
+      offenceArson: null,
+      offenceKidnapHostage: null,
+      offenceEvidence: [],
+    })
+    expect(flowConfig.evidenceAndOffences.steps[0].isAnswered(final)).toBe(false)
+    expect(provisional).toEqual(original)
   })
 
   it('falls back to an empty provisional stage when there are no stored answers', () => {
