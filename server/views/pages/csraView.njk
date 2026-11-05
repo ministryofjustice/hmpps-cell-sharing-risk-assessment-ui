@@ -1,0 +1,118 @@
+{% extends "../partials/layout.njk" %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/details/macro.njk" import govukDetails %}
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "govuk/components/task-list/macro.njk" import govukTaskList %}
+
+{% from "../macros/csraAnswersSummary.njk" import csraAnswersSummary %}
+
+{% set prisonerName = (prisoner.firstName + " " + prisoner.lastName) | convertToTitleCase %}
+{% set title = "Cell sharing risk assessment - " + prisonerName %}
+{% set pageTitle = applicationName + " - " + title %}
+
+{% set isProvisional = detailedRating.status === 'PROVISIONAL' %}
+{% set ratingDate = (detailedRating.provisionalDate if isProvisional else detailedRating.finalDate) | formatDate %}
+{% set ratingTime = (detailedRating.provisionalTime if isProvisional else detailedRating.finalTime) | formatTime %}
+{% set completedBy = detailedRating.provisionalCompletedBy if isProvisional else detailedRating.finalCompletedBy %}
+{% set assessmentComment = detailedRating.provisionalAssessmentComment if isProvisional else detailedRating.assessmentComment %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <p>
+        Assessed
+        {{- " at " + detailedRating.prisonName if detailedRating.prisonName }}
+        {{- " on " + ratingDate if ratingDate }}
+        {{- " at " + ratingTime if ratingTime }}.
+      </p>
+
+      <div class="csra-check-answers-section">
+        <h2 class="govuk-heading-m">Rating and comment</h2>
+
+        {% set riskToHtml = "" %}
+        {% if detailedRating.riskTo.length %}
+          {% for riskTo in detailedRating.riskTo %}
+            {% set riskToHtml = riskToHtml + "<p>" + csraRiskToCategoryLabelMap[riskTo.category] + (" - " + (riskTo.details | e) if riskTo.details else "") + "</p>" %}
+          {% endfor %}
+        {% endif %}
+
+        {% set vulnerabilitiesHtml = "" %}
+        {% if detailedRating.vulnerabilities.length %}
+          {% for vulnerability in detailedRating.vulnerabilities %}
+            {% set vulnerabilitiesHtml = vulnerabilitiesHtml + "<p>" + csraVulnerabilityCategoryLabelMap[vulnerability.category] + (" - " + (vulnerability.details | e) if vulnerability.details else "") + "</p>" %}
+          {% endfor %}
+        {% endif %}
+
+        {{ govukSummaryList({
+          rows: [
+            {
+              key: {
+                text: "Rating"
+              },
+              value: {
+                text: detailedRating.rating | csraRatingLabel('PROVISIONAL' if isProvisional)
+              }
+            },
+            {
+              key: {
+                text: "Risk to"
+              },
+              value: {
+                html: riskToHtml
+              }
+            } if riskToHtml,
+            {
+              key: {
+                text: "Vulnerable due to"
+              },
+              value: {
+                html: vulnerabilitiesHtml
+              }
+            } if vulnerabilitiesHtml,
+            {
+              key: {
+                text: "Assessment comment"
+              },
+              value: {
+                text: assessmentComment or 'Not entered'
+              }
+            },
+            {
+              key: {
+                text: "Next review due by"
+              },
+              value: {
+                text: detailedRating.nextReviewDate | formatDayMonthYear
+              }
+            } if detailedRating.nextReviewDate,
+            {
+              key: {
+                text: "Completed by"
+              },
+              value: {
+                text: userDisplayNames.get(completedBy) or 'Unknown'
+              }
+            }
+          ]
+        }) }}
+      </div>
+
+      {% if assessmentAnswers %}
+        {{ csraAnswersSummary({
+          prisoner: prisoner,
+          assessment: assessment,
+          assessmentAnswers: assessmentAnswers,
+          offenceEvidenceMap: offenceEvidenceMap,
+          flowConfig: flowConfig,
+          showChangeLinks: false
+        }) }}
+      {% endif %}
+
+      {{ govukButton({
+        text: backLinkText.replace('Back', 'Return'),
+        href: backLink
+      }) }}
+    </div>
+  </div>
+{% endblock %}

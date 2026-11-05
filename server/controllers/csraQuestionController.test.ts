@@ -49,6 +49,7 @@ describe('csraQuestionController', () => {
       id: 'request-id-123',
       method,
       body,
+      query: {},
       params: {
         prisonerNumber: 'A1234BC',
         assessmentId: ASSESSMENT_ID,
@@ -103,6 +104,27 @@ describe('csraQuestionController', () => {
         }),
       }),
     )
+  })
+
+  it('keeps the referrers on the back and cancel links, and on the redirect to the next step', async () => {
+    const res = response()
+
+    await controller()({ ...request(), query: { referrer: ['due-for-review'] } }, res, jest.fn())
+    expect(res.render).toHaveBeenCalledWith(
+      'pages/csraQuestion',
+      expect.objectContaining({
+        backLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}?referrer=due-for-review`,
+        cancelLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}?referrer=due-for-review`,
+      }),
+    )
+
+    const postRes = response()
+    await controller()(
+      { ...request('POST', { officerSpokeToPrisoner: 'YES' }), query: { referrer: ['due-for-review'] } },
+      postRes,
+      jest.fn(),
+    )
+    expect(postRes.redirect).toHaveBeenCalledWith(`/prisoner/A1234BC/csra/${ASSESSMENT_ID}?referrer=due-for-review`)
   })
 
   it('passes provisional-rating state to the evidence sources question', async () => {

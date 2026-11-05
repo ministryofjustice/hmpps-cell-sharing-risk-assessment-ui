@@ -64,6 +64,7 @@ describe('csraCheckAnswersController', () => {
     ({
       id: 'request-id-123',
       params: { prisonerNumber: 'A1234BC', assessmentId: ASSESSMENT_ID },
+      query: {},
     }) as any
 
   const response = () =>
@@ -115,6 +116,18 @@ describe('csraCheckAnswersController', () => {
         cancelLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}`,
         flowConfig,
       }),
+    )
+  })
+
+  it('keeps the referrers on the back link and the cancel link', async () => {
+    const res = response()
+
+    await controller()({ ...request(), query: { referrer: ['due-for-review', 'history'] } }, res, jest.fn())
+
+    const expectedUrl = `/prisoner/A1234BC/csra/${ASSESSMENT_ID}?referrer=due-for-review&referrer=history`
+    expect(res.render).toHaveBeenCalledWith(
+      'pages/csraCheckAnswers',
+      expect.objectContaining({ backLink: expectedUrl, cancelLink: expectedUrl }),
     )
   })
 

@@ -55,6 +55,7 @@ describe('getAssessmentSubmitStatus', () => {
       makeAssessment(makeStageAnswers({ offenceArson: undefined })),
       makeStageAnswers({ offenceArson: undefined }),
       prisoner,
+      [],
     )
 
     expect(result).toEqual({ submitType: AssessmentSubmitType.NONE, remainingTasks: [], allowedRatings: [] })
@@ -63,7 +64,7 @@ describe('getAssessmentSubmitStatus', () => {
   it('allows a provisional rating when evidence and healthcare are answered but the assessment is incomplete', () => {
     const answers = makeStageAnswers({ seenByHealthcare: false })
 
-    expect(getAssessmentSubmitStatus(makeAssessment(answers), answers, prisoner)).toEqual({
+    expect(getAssessmentSubmitStatus(makeAssessment(answers), answers, prisoner, [])).toEqual({
       submitType: AssessmentSubmitType.PROVISIONAL,
       remainingTasks: ['ensure the prisoner has been seen by healthcare'],
       allowedRatings: ['HIGH_GENERAL', 'HIGH_SPECIFIC'],
@@ -73,7 +74,7 @@ describe('getAssessmentSubmitStatus', () => {
   it('allows a final rating when every assessment section is complete', () => {
     const answers = makeStageAnswers()
 
-    expect(getAssessmentSubmitStatus(makeAssessment(answers), answers, prisoner)).toEqual({
+    expect(getAssessmentSubmitStatus(makeAssessment(answers), answers, prisoner, [])).toEqual({
       submitType: AssessmentSubmitType.FINAL,
       remainingTasks: [],
       allowedRatings: ['HIGH_GENERAL', 'HIGH_SPECIFIC', 'STANDARD'],
@@ -89,6 +90,7 @@ describe('getAssessmentSubmitStatus', () => {
       makeAssessment(answers, { finalResult: 'HIGH_GENERAL' }),
       answers,
       prisoner,
+      [],
     )
 
     expect(result).toEqual({ submitType: AssessmentSubmitType.NONE, remainingTasks: [], allowedRatings: [] })
@@ -98,7 +100,7 @@ describe('getAssessmentSubmitStatus', () => {
     const answers = makeStageAnswers({ seenByHealthcare: false })
 
     expect(
-      getAssessmentSubmitStatus(makeAssessment(answers, { interimResult: 'HIGH_GENERAL' }), answers, prisoner),
+      getAssessmentSubmitStatus(makeAssessment(answers, { interimResult: 'HIGH_GENERAL' }), answers, prisoner, []),
     ).toEqual({ submitType: AssessmentSubmitType.NONE, remainingTasks: [], allowedRatings: [] })
   })
 
@@ -107,7 +109,7 @@ describe('getAssessmentSubmitStatus', () => {
   //   const answers = makeStageAnswers()
   //
   //   expect(
-  //     getAssessmentSubmitStatus(makeAssessment(answers, { interimResult: 'HIGH_GENERAL' }), answers, prisoner),
+  //     getAssessmentSubmitStatus(makeAssessment(answers, { interimResult: 'HIGH_GENERAL' }), answers, prisoner, []),
   //   ).toEqual({ submitType: AssessmentSubmitType.FINAL, remainingTasks: [] })
   // })
 
@@ -123,7 +125,7 @@ describe('getAssessmentSubmitStatus', () => {
       seenByHealthcare: false,
     })
 
-    expect(getAssessmentSubmitStatus(makeAssessment(answers), answers, prisoner)).toEqual({
+    expect(getAssessmentSubmitStatus(makeAssessment(answers), answers, prisoner, [])).toEqual({
       submitType: AssessmentSubmitType.PROVISIONAL,
       allowedRatings: ['HIGH_GENERAL', 'HIGH_SPECIFIC'],
       remainingTasks: [
@@ -143,13 +145,13 @@ describe('getAssessmentSubmitStatus', () => {
       seenByHealthcare: false,
     })
 
-    expect(getAssessmentSubmitStatus(makeAssessment(answers), answers, prisoner).remainingTasks).toContain(
+    expect(getAssessmentSubmitStatus(makeAssessment(answers), answers, prisoner, []).remainingTasks).toContain(
       'record if there is reason to believe the prisoner may harm someone they share a cell with',
     )
 
     const noHarmAnswers = makeStageAnswers({ seenByHealthcare: false })
     expect(
-      getAssessmentSubmitStatus(makeAssessment(noHarmAnswers), noHarmAnswers, prisoner).remainingTasks,
+      getAssessmentSubmitStatus(makeAssessment(noHarmAnswers), noHarmAnswers, prisoner, []).remainingTasks,
     ).not.toContain('record if there is reason to believe the prisoner may harm someone they share a cell with')
   })
 
@@ -165,7 +167,7 @@ describe('getAssessmentSubmitStatus', () => {
         offenceEvidence: [{ offence, sources: ['PNC'], details: 'Evidence recorded' }],
       })
 
-      expect(getAssessmentSubmitStatus(makeAssessment(answers), answers, prisoner)).toEqual({
+      expect(getAssessmentSubmitStatus(makeAssessment(answers), answers, prisoner, [])).toEqual({
         submitType: seenByHealthcare ? AssessmentSubmitType.FINAL : AssessmentSubmitType.PROVISIONAL,
         remainingTasks: seenByHealthcare ? [] : ['ensure the prisoner has been seen by healthcare'],
         allowedRatings: ['HIGH_GENERAL'],
@@ -179,7 +181,7 @@ describe('getAssessmentSubmitStatus', () => {
         offenceEvidence: [{ offence: 'ARSON', sources: ['PNC'], details: 'Evidence recorded' }],
       })
 
-      expect(getAssessmentSubmitStatus(makeAssessment(answers), answers, prisoner).allowedRatings).toEqual(
+      expect(getAssessmentSubmitStatus(makeAssessment(answers), answers, prisoner, []).allowedRatings).toEqual(
         seenByHealthcare ? ['HIGH_GENERAL', 'HIGH_SPECIFIC', 'STANDARD'] : ['HIGH_GENERAL', 'HIGH_SPECIFIC'],
       )
     })

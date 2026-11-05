@@ -24,7 +24,8 @@
         assessment: assessment,
         assessmentAnswers: assessmentAnswers,
         offenceEvidenceMap: offenceEvidenceMap,
-        flowConfig: flowConfig
+        flowConfig: flowConfig,
+        referrers: referrers
       }) }}
 
       {% if remainingTasks.length %}
@@ -50,7 +51,7 @@
       {% endif %}
 
       <div class="govuk-body">
-        <a class="govuk-button" href="/prisoner/{{ prisoner.prisonerNumber }}/csra/{{ assessment.assessmentId }}/select-rating" data-qa="continue-button">
+        <a class="govuk-button" href="{{ appendReferrers('/prisoner/' + prisoner.prisonerNumber + '/csra/' + assessment.assessmentId + '/select-rating', referrers) }}" data-qa="continue-button">
           {% if submitType == 'PROVISIONAL' %}
             Continue to provisional rating
           {% else %}

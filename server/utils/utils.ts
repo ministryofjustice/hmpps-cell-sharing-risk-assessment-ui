@@ -120,12 +120,22 @@ export const formatFileSize = (bytes?: number | null): string => {
 }
 
 /**
- * Format an ISO date-time as a time, e.g. "09:30". Returns '' for a missing/invalid value.
+ * Java LocalTime as serialised by Jackson: HH:mm, HH:mm:ss, or HH:mm:ss.fraction.
  */
-export const formatTime = (isoDateTime?: string | null): string => {
-  if (!isoDateTime) return ''
-  const dateTime = parseISO(isoDateTime)
+const JAVA_LOCAL_TIME = /^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d(\.\d+)?)?$/
+
+/**
+ * Format an ISO date-time or a Java LocalTime as a time, e.g. "09:30". Returns '' for a missing/invalid value.
+ */
+export const formatTime = (value?: string | null): string => {
+  if (!value) return ''
+
+  const localTime = JAVA_LOCAL_TIME.exec(value)
+  if (localTime) return `${localTime[1]}:${localTime[2]}`
+
+  const dateTime = parseISO(value)
   if (!isValid(dateTime)) return ''
+
   return format(dateTime, 'HH:mm')
 }
 

@@ -1,6 +1,7 @@
 import { CsraAssessment, CsraAssessmentStageAnswers } from '../data/csraApiTypes'
 import getTaskListSections from './getTaskListSections'
 import { Prisoner } from '../data/prisonerSearchApiTypes'
+import type { ReferrerKey } from './breadcrumbOrigins'
 
 function getRemainingTasks(assessmentAnswers: CsraAssessmentStageAnswers): string[] {
   const remainingTasks: string[] = []
@@ -59,6 +60,7 @@ export function getAssessmentSubmitStatus(
   assessment: CsraAssessment,
   assessmentAnswers: CsraAssessmentStageAnswers,
   prisoner: Prisoner,
+  referrers: readonly ReferrerKey[],
 ): {
   submitType: AssessmentSubmitType
   remainingTasks: string[]
@@ -68,7 +70,7 @@ export function getAssessmentSubmitStatus(
     return { submitType: AssessmentSubmitType.NONE, remainingTasks: [], allowedRatings: [] }
   }
 
-  const sections = getTaskListSections(assessment, assessmentAnswers, prisoner)
+  const sections = getTaskListSections(assessment, assessmentAnswers, prisoner, referrers)
 
   const canSubmitProvisionalRating =
     ['COMPLETE', 'PROVISIONAL_COMPLETE'].includes(sections.evidenceAndOffences.status) &&
