@@ -29,6 +29,10 @@ export default class CsraService {
     return this.csraApiClient.getCurrentCsraRating(username, { prisonerNumber })
   }
 
+  getDetailedRating(username: string, assessmentId: string): Promise<CsraCurrentRating> {
+    return this.csraApiClient.getDetailedRating(username, { id: assessmentId })
+  }
+
   /**
    * Get a prison's in-progress initial assessments split by stage.
    * `username` is stamped onto the system token used for the call.

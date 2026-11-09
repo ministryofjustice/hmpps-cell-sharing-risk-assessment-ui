@@ -87,6 +87,7 @@ describe('CsraApiClient', () => {
           offenceEvidence: [],
           riskTo: [],
           vulnerabilities: [],
+          provisionalReviewed: true,
         }
         const scope = nock(config.apis.csraApi.url)
           .put('/csra-review/prisoner/A1234BC/assessment/assessment-1/final', JSON.parse(JSON.stringify(payload)))
@@ -104,6 +105,46 @@ describe('CsraApiClient', () => {
         expect(mockAuthenticationClient.getToken).toHaveBeenCalledWith('AUSER_GEN')
       },
     )
+  })
+
+  it('gets the selected assessment detailed rating with an acting-user system token', async () => {
+    const rating: CsraCurrentRating = {
+      prisonerNumber: 'A1234BC',
+      reviewId: 'assessment-123',
+      status: 'PROVISIONAL',
+      rating: 'HIGH_SPECIFIC',
+      provisional: true,
+      provisionalCompletedBy: 'ASSESSOR',
+      provisionalDate: '2026-07-06',
+      provisionalTime: '21:07:00',
+      provisionalAssessmentComment: 'Provisional notes',
+      riskTo: [],
+      vulnerabilities: [],
+    }
+    const scope = nock(config.apis.csraApi.url)
+      .get('/csra-review/assessment-123/detailed-rating')
+      .matchHeader('authorization', /^Bearer /)
+      .reply(200, rating)
+
+    expect(await csraApiClient.getDetailedRating('AUSER_GEN', { id: 'assessment-123' })).toEqual(rating)
+    expect(scope.isDone()).toBe(true)
+    expect(mockAuthenticationClient.getToken).toHaveBeenCalledWith('AUSER_GEN')
+  })
+
+  it.each([true, false])('sends provisionalReviewed=%s when saving final-stage answers', async provisionalReviewed => {
+    const answers = { prisonId: 'LEI', provisionalReviewed, version: 5 }
+    const scope = nock(config.apis.csraApi.url)
+      .put('/csra-review/prisoner/A1234BC/assessment/assessment-123/stage/FINAL/answers', answers)
+      .matchHeader('authorization', /^Bearer /)
+      .reply(200, { assessmentId: 'assessment-123' })
+
+    await csraApiClient.updateCsraAssessment(
+      'AUSER_GEN',
+      { prisonerNumber: 'A1234BC', assessmentId: 'assessment-123', stage: 'FINAL' },
+      answers,
+    )
+    expect(scope.isDone()).toBe(true)
+    expect(mockAuthenticationClient.getToken).toHaveBeenCalledWith('AUSER_GEN')
   })
 
   describe('getAssessmentsInProgress', () => {

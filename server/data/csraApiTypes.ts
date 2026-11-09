@@ -335,7 +335,11 @@ export interface CsraCurrentRating {
   riskTo: CsraRiskToDetail[]
   vulnerabilities: CsraVulnerabilityDetail[]
   provisionalDate?: string | null
+  provisionalCompletedBy?: string | null
+  provisionalTime?: string | null
   finalDate?: string | null
+  finalCompletedBy?: string | null
+  finalTime?: string | null
   nextReviewDate?: string | null
   startedBy?: string | null
   startedAt?: string | null
@@ -416,6 +420,7 @@ export interface CsraAssessmentStageAnswers {
   prisonId: string
   lastSavedBy?: string | null
   lastSavedAt?: string | null
+  provisionalReviewed?: boolean | null
 
   // Evidence sources checked (null = not answered)
   dpsChecked?: boolean | null

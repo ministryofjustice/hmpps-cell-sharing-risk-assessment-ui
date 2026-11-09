@@ -41,6 +41,12 @@ export default class CsraApiClient extends BaseApiClient {
     options: { asSystem: true },
   })
 
+  getDetailedRating = this.apiCall<CsraCurrentRating, { id: string }>({
+    path: '/csra-review/:id/detailed-rating',
+    requestType: 'get',
+    options: { asSystem: true },
+  })
+
   /**
    * Get a prison's in-progress initial assessments, split by whether a provisional rating exists.
    * Called `asSystem` (see getCurrentCsraRating).

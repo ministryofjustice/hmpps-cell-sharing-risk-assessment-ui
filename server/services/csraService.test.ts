@@ -22,6 +22,7 @@ describe('CsraService', () => {
   beforeEach(() => {
     csraApiClient = {
       getCurrentCsraRating: jest.fn(),
+      getDetailedRating: jest.fn(),
       getAssessmentsInProgress: jest.fn(),
       getCsraHistory: jest.fn(),
       getCsraAssessment: jest.fn(),
@@ -63,6 +64,7 @@ describe('CsraService', () => {
         riskTo: [],
         vulnerabilities: [],
         version: 1,
+        ...(stage === 'FINAL' ? { provisionalReviewed: false } : {}),
       }
 
       await csraService.updateCsraAssessment('AUSER_GEN', 'A1234BC', 'assessment-1', answers, stage)
@@ -72,6 +74,20 @@ describe('CsraService', () => {
         { prisonerNumber: 'A1234BC', assessmentId: 'assessment-1', stage },
         answers,
       )
+    })
+
+    it('delegates detailed-rating reads with the acting username and assessment id', async () => {
+      const rating: CsraCurrentRating = {
+        prisonerNumber: 'A1234BC',
+        status: 'PROVISIONAL',
+        provisional: true,
+        riskTo: [],
+        vulnerabilities: [],
+      }
+      csraApiClient.getDetailedRating.mockResolvedValue(rating)
+
+      expect(await csraService.getDetailedRating('AUSER_GEN', 'assessment-123')).toEqual(rating)
+      expect(csraApiClient.getDetailedRating).toHaveBeenCalledWith('AUSER_GEN', { id: 'assessment-123' })
     })
   })
 

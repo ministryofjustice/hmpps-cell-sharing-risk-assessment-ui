@@ -6,6 +6,8 @@ import type { CsraAssessment, CsraAssessmentStageAnswers } from '../data/csraApi
 import { Role } from '../utils/roles'
 import flowConfig from '../lib/transactionFlow/config'
 import config from '../config'
+import getAnswersFromAssessment from '../controllers/getAnswersFromAssessment'
+import { Page } from '../services/auditService'
 
 const prisoner: Prisoner = {
   prisonerNumber: 'A1234BC',
@@ -13,6 +15,7 @@ const prisoner: Prisoner = {
   lastName: 'SMITH',
   prisonId: 'LEI',
   prisonName: 'Leeds (HMP)',
+  dateOfBirth: '1972-02-03',
 }
 
 const assessmentUrl = '/prisoner/A1234BC/csra/assessment-123'
@@ -65,6 +68,7 @@ describe('csraRouter', () => {
   const csraService = {
     getCsraAssessment: jest.fn(),
     getCurrentRating: jest.fn(),
+    getDetailedRating: jest.fn(),
     startCsraAssessment: jest.fn(),
     cancelCsraAssessment: jest.fn(),
     submitProvisionalRating: jest.fn().mockResolvedValue({}),
@@ -76,6 +80,7 @@ describe('csraRouter', () => {
   }
   const manageUsersService = {
     getUserCaseloads: jest.fn(),
+    getUserDetails: jest.fn(),
   }
   const prisonApiService = {} as never
   const activeAgenciesService = {
@@ -110,8 +115,312 @@ describe('csraRouter', () => {
     csraService.startCsraAssessment.mockResolvedValue({ assessmentId: 'assessment-123' })
     csraService.getCsraAssessment.mockResolvedValue(assessment())
     csraService.getCurrentRating.mockResolvedValue({ status: 'NO_RATING', rating: null })
+    csraService.getDetailedRating.mockResolvedValue({
+      prisonerNumber: prisoner.prisonerNumber,
+      reviewId: 'assessment-123',
+      prisonName: 'Moorland (HMP & YOI)',
+      rating: 'HIGH_SPECIFIC',
+      provisionalAssessmentComment: 'Late arrival. PNC and warrant not checked.',
+      provisionalDate: '2026-07-06',
+      provisionalTime: '21:07:59',
+      provisionalCompletedBy: 'DBENTLEY',
+    })
+    manageUsersService.getUserDetails.mockResolvedValue({ name: 'DAVID BENTLEY' })
     activeAgenciesService.isPrisonActive.mockResolvedValue(true)
     flashProvider.mockReturnValue([])
+  })
+
+  describe('review provisional assessment', () => {
+    const reviewUrl = `${assessmentUrl}/review-provisional`
+    const provisional = () =>
+      completeStageAnswers({
+        pncChecked: false,
+        warrantChecked: false,
+        officerSpokeToPrisoner: false,
+        likelyToHarmCellmate: true,
+        likelyToHarmCellmateDetail: 'Hidden harm detail',
+        significantlyVulnerable: true,
+        significantlyVulnerableDetail: 'Hidden vulnerability detail',
+        causeForConcernSharing: null,
+        otherHighRiskIndicators: null,
+        seenByHealthcare: false,
+        healthcareIncreasedRisk: true,
+        healthcareIncreasedRiskDetail: 'Hidden healthcare detail',
+      })
+    const provisionallyRated = (final?: CsraAssessmentStageAnswers) =>
+      assessment({
+        interimResult: 'HIGH_SPECIFIC',
+        stages: [provisional(), ...(final ? [final] : [])],
+      })
+
+    beforeEach(() => {
+      csraService.getCsraAssessment.mockResolvedValue(provisionallyRated())
+    })
+
+    it('shows the recorded rating details, read-only provisional answers and remaining tasks', async () => {
+      csraService.getCsraAssessment.mockResolvedValue(
+        provisionallyRated(completeStageAnswers({ stage: 'FINAL', officerSpokeToPrisoner: true })),
+      )
+      const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .get(reviewUrl)
+        .expect(200)
+      const text = response.text.replace(/\s+/g, ' ')
+
+      expect(text).toContain('Prison number: A1234BC')
+      expect(text).toContain('Date of birth: 3 February 1972')
+      expect(text).toContain('Provisional cell sharing risk assessment - John Smith')
+      expect(text).toContain('Assessed at Moorland (HMP &amp; YOI) on 6 July 2026 at 21:07')
+      expect(text).toContain('High risk – specific (provisional)')
+      expect(text).toContain('Late arrival. PNC and warrant not checked.')
+      expect(text).toContain('David Bentley')
+      expect(text).toContain('Not checked')
+      expect(text).toContain('Not answered')
+      expect(text).toContain('check remaining evidence sources (PNC, Warrant)')
+      expect(text).toContain('review offence questions after checking remaining evidence sources')
+      expect(text).toContain('speak to the prisoner about sharing a cell')
+      expect(text).toContain('record any observations that cause a cell sharing concern')
+      expect(text).toContain('record any other indicators that suggest the prisoner is high risk')
+      expect(text).toContain('ensure the prisoner has been seen by healthcare')
+      for (const hiddenText of ['Hidden harm detail', 'Hidden vulnerability detail', 'Hidden healthcare detail']) {
+        expect(text).not.toContain(hiddenText)
+      }
+      expect(text).not.toContain('>Change')
+      expect(text).not.toContain('Continue to provisional rating')
+      expect(text).not.toContain('It will stay provisional')
+      expect(response.headers['cache-control']).toBe('private, no-store')
+      expect(response.text).toContain('data-revalidate-on-history-restore')
+      expect(csraService.getDetailedRating).toHaveBeenCalledWith('user1', 'assessment-123')
+      expect(manageUsersService.getUserDetails).toHaveBeenCalledWith('user1', 'DBENTLEY')
+      expect(auditService.logPageView).toHaveBeenCalledWith(
+        Page.PRISONER_CSRA_REVIEW_PROVISIONAL,
+        expect.objectContaining({ who: 'user1', subjectId: 'assessment-123' }),
+      )
+    })
+
+    it('plays back offence evidence and visible follow-up details using the check-answers rules', async () => {
+      const answers = completeStageAnswers({
+        offenceArson: true,
+        offenceEvidence: [
+          { offence: 'ARSON', sources: ['PNC', 'OTHER'], otherSourceDetail: 'Report', details: 'Fire evidence' },
+        ],
+        likelyToHarmCellmate: true,
+        likelyToHarmCellmateDetail: 'Harm detail',
+        significantlyVulnerable: true,
+        significantlyVulnerableDetail: 'Vulnerability detail',
+        healthcareIncreasedRisk: true,
+        healthcareIncreasedRiskDetail: 'Healthcare detail',
+      })
+      csraService.getCsraAssessment.mockResolvedValue(assessment({ interimResult: 'HIGH_SPECIFIC', stages: [answers] }))
+
+      const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .get(reviewUrl)
+        .expect(200)
+      for (const detail of ['Fire evidence', 'Report', 'Harm detail', 'Vulnerability detail', 'Healthcare detail']) {
+        expect(response.text).toContain(detail)
+      }
+      expect(response.text).not.toContain('Remaining tasks to complete')
+      expect(response.text).not.toContain('>Change')
+    })
+
+    it.each([undefined, null, false, true])(
+      'shows the latest task status for %s and always links to the review page',
+      async provisionalReviewed => {
+        csraService.getCsraAssessment.mockResolvedValue(
+          provisionallyRated(completeStageAnswers({ stage: 'FINAL', provisionalReviewed })),
+        )
+        const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+          .get(assessmentUrl)
+          .expect(200)
+        const task = response.text
+          .match(/<li class="govuk-task-list__item[\s\S]*?<\/li>/g)
+          ?.find(item => item.includes('Review provisional assessment'))
+
+        expect(task).toContain(`href="${reviewUrl}"`)
+        const expectedStatus =
+          { true: 'Complete', false: 'Incomplete' }[String(provisionalReviewed)] || 'Not yet started'
+        expect(task).toContain(expectedStatus)
+      },
+    )
+
+    it.each([true, false])('preselects the latest saved answer %s', async provisionalReviewed => {
+      csraService.getCsraAssessment.mockResolvedValue(
+        provisionallyRated(stageAnswers({ stage: 'FINAL', provisionalReviewed })),
+      )
+      const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .get(reviewUrl)
+        .expect(200)
+      expect(response.text).toMatch(new RegExp(`value="${provisionalReviewed ? 'YES' : 'NO'}" checked`))
+      expect(csraService.updateCsraAssessment).not.toHaveBeenCalled()
+    })
+
+    it.each(['YES', 'NO'])(
+      'saves %s in the final stage, preserves other answers and updates the latest status',
+      async answer => {
+        const current = provisionallyRated(
+          completeStageAnswers({ stage: 'FINAL', provisionalReviewed: true, version: 5 }),
+        )
+        csraService.getCsraAssessment.mockResolvedValue(current)
+        csraService.updateCsraAssessment.mockImplementationOnce(async (_username, _number, _id, answers) => {
+          const updated = { ...current, stages: [current.stages[0], answers] }
+          csraService.getCsraAssessment.mockResolvedValue(updated)
+          return updated
+        })
+        const app = buildApp([Role.CSRA__ASSESSMENT_EDIT])
+        await request(app)
+          .post(reviewUrl)
+          .type('form')
+          .send({ provisionalReviewed: answer })
+          .expect(302)
+          .expect('Location', assessmentUrl)
+        expect(csraService.updateCsraAssessment).toHaveBeenCalledWith(
+          'user1',
+          'A1234BC',
+          'assessment-123',
+          { ...current.stages[1], provisionalReviewed: answer === 'YES' },
+          'FINAL',
+        )
+        expect(current.stages[0]).toEqual(provisional())
+        const taskList = await request(app).get(assessmentUrl).expect(200)
+        const task = taskList.text
+          .match(/<li class="govuk-task-list__item[\s\S]*?<\/li>/g)
+          ?.find(item => item.includes('Review provisional assessment'))
+        expect(task).toContain(answer === 'YES' ? 'Complete' : 'Incomplete')
+        const playback = await request(app).get(reviewUrl).expect(200)
+        expect(playback.text).toMatch(new RegExp(`value="${answer}" checked`))
+      },
+    )
+
+    it('initialises a final stage without prematurely completing the evidence and offences section', async () => {
+      const current = provisionallyRated()
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(reviewUrl)
+        .type('form')
+        .send({ provisionalReviewed: 'YES' })
+        .expect(302)
+        .expect('Location', assessmentUrl)
+      expect(csraService.updateCsraAssessment).toHaveBeenCalledWith(
+        'user1',
+        'A1234BC',
+        'assessment-123',
+        { ...getAnswersFromAssessment(current), prisonId: 'LEI', provisionalReviewed: true },
+        'FINAL',
+      )
+    })
+
+    it.each([{}, { provisionalReviewed: 'invalid' }, { provisionalReviewed: ['YES', 'NO'] }])(
+      'rejects missing or invalid answers %j without saving even when an answer was previously saved',
+      async body => {
+        csraService.getCsraAssessment.mockResolvedValue(
+          provisionallyRated(stageAnswers({ stage: 'FINAL', provisionalReviewed: true })),
+        )
+        const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+          .post(reviewUrl)
+          .type('form')
+          .send(body)
+          .expect(200)
+        expect(response.text).toContain('There is a problem')
+        expect(response.text).toContain('Select yes if you have reviewed the provisional assessment')
+        expect(response.text).toContain('href="#provisionalReviewed"')
+        expect(csraService.updateCsraAssessment).not.toHaveBeenCalled()
+      },
+    )
+
+    it('returns to the task list from Back or Cancel without saving', async () => {
+      const app = buildApp([Role.CSRA__ASSESSMENT_EDIT])
+      const response = await request(app).get(reviewUrl).expect(200)
+      expect(response.text).toContain(`href="${assessmentUrl}" class="govuk-back-link"`)
+      expect(response.text).toContain(`href="${assessmentUrl}" class="govuk-link">Cancel</a>`)
+      await request(app).get(assessmentUrl).expect(200)
+      expect(csraService.updateCsraAssessment).not.toHaveBeenCalled()
+    })
+
+    it.each(['get', 'post'] as const)('blocks %s access without the assessor role', async method => {
+      await request(buildApp([]))[method](reviewUrl).expect(302).expect('Location', '/sign-out')
+      expect(csraService.getDetailedRating).not.toHaveBeenCalled()
+      expect(csraService.updateCsraAssessment).not.toHaveBeenCalled()
+    })
+
+    it.each(['get', 'post'] as const)('rejects %s access without a provisional rating', async method => {
+      csraService.getCsraAssessment.mockResolvedValue(assessment())
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        [method](reviewUrl)
+        .expect(404)
+      expect(csraService.updateCsraAssessment).not.toHaveBeenCalled()
+    })
+
+    it('does not show the review row before a provisional rating', async () => {
+      csraService.getCsraAssessment.mockResolvedValue(assessment())
+      const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .get(assessmentUrl)
+        .expect(200)
+      expect(response.text).not.toContain('Review provisional assessment')
+    })
+
+    it.each(['get', 'post'] as const)('blocks %s after final submission', async method => {
+      csraService.getCsraAssessment.mockResolvedValue({ ...provisionallyRated(), finalResult: 'STANDARD' })
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        [method](reviewUrl)
+        .expect(403)
+      expect(csraService.updateCsraAssessment).not.toHaveBeenCalled()
+    })
+
+    it('rejects a detailed rating belonging to another prisoner', async () => {
+      csraService.getDetailedRating.mockResolvedValue({ prisonerNumber: 'B1234CD', reviewId: 'assessment-123' })
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .get(reviewUrl)
+        .expect(404)
+      expect(manageUsersService.getUserDetails).not.toHaveBeenCalled()
+    })
+
+    it.each([undefined, false, true])(
+      'gates final-rating routes on the saved review answer %s',
+      async provisionalReviewed => {
+        csraService.getCsraAssessment.mockResolvedValue(
+          provisionallyRated(completeStageAnswers({ stage: 'FINAL', provisionalReviewed })),
+        )
+        const app = buildApp([Role.CSRA__ASSESSMENT_EDIT])
+        const responses = await Promise.all(
+          ['/check-answers', '/select-rating', '/confirm-rating/STANDARD'].map(path =>
+            request(app).get(`${assessmentUrl}${path}`),
+          ),
+        )
+        for (const response of responses) {
+          if (provisionalReviewed === true) {
+            expect(response.status).toBe(200)
+          } else {
+            expect(response.status).toBe(302)
+            expect(response.headers.location).toBe(assessmentUrl)
+          }
+        }
+        const confirmation = await request(app)
+          .post(`${assessmentUrl}/confirm-rating/STANDARD`)
+          .type('form')
+          .send({ assessmentComment: 'Final assessment complete' })
+          .expect(302)
+        if (provisionalReviewed === true) {
+          expect(confirmation.headers.location).toBe('/prisoner/A1234BC')
+          expect(csraService.submitFinalRating).toHaveBeenCalledWith(
+            'user1',
+            'A1234BC',
+            'assessment-123',
+            expect.objectContaining({ provisionalReviewed: true, rating: 'STANDARD' }),
+          )
+        } else {
+          expect(confirmation.headers.location).toBe(assessmentUrl)
+          expect(csraService.submitFinalRating).not.toHaveBeenCalled()
+        }
+      },
+    )
+
+    it('surfaces save failures without redirecting as if the review were saved', async () => {
+      csraService.updateCsraAssessment.mockRejectedValueOnce(new Error('Unable to save review'))
+      const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(reviewUrl)
+        .type('form')
+        .send({ provisionalReviewed: 'YES' })
+        .expect(500)
+      expect(response.headers.location).toBeUndefined()
+    })
   })
 
   it('blocks CSRA routes when the user lacks permission to edit assessments', async () => {

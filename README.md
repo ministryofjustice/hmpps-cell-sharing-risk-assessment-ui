@@ -109,6 +109,14 @@ stage until each applicable question page is saved again. Unsaved questions are
 pre-populated from the provisional assessment, including offence evidence sources and
 details; saved final answers take precedence. Other sections retain their copied answers.
 
+Provisionally rated assessments also include a read-only "Review provisional assessment"
+task for CSRA Assessors. Playback and remaining tasks use the recorded provisional answers,
+while rating metadata comes from `GET /csra-review/{id}/detailed-rating` and the completing
+user's name from Manage Users. Save and return writes `provisionalReviewed` to the FINAL
+stage alongside its existing answers: null/unanswered is Not yet started, false is
+Incomplete, and true is Complete. A final rating remains locked until this review and
+all other assessment sections are complete. Back and Cancel do not save.
+
 To start the main services excluding the example typescript template app:
 
 `docker compose up`
@@ -163,7 +171,7 @@ the sample data.
 | Service | Port | Stub of | Endpoints |
 | --- | --- | --- | --- |
 | `prisoner-search` | 8083 | hmpps-prisoner-search | `GET /prisoner/{prisonerNumber}` (response-templated, so any number works), `GET /prisoner-search/prison/{prisonId}` and `POST /prisoner-search/prisoner-numbers` (the 5-prisoner `MDI` roll the API counts), `GET /health/ping` |
-| `manage-users-api` | 8084 | hmpps-manage-users-api | `GET /users/me/caseloads` (seeded caseload `MDI`, matching the prisoner stub so the access guard allows any prisoner), `GET /health/ping` |
+| `manage-users-api` | 8084 | hmpps-manage-users-api | `GET /users/me/caseloads` (seeded caseload `MDI`, matching the prisoner stub so the access guard allows any prisoner), `GET /users/{username}` (sample assessor name), `GET /health/ping` |
 | `component-api` | 8085 | DPS frontend-components | `GET /components` (shared header/footer), `GET /ping` |
 | `prison-api` | 8086 | prison-api | `GET /api/bookings/offenderNo/{prisonerNumber}/image/data` (the prisoner photo), `GET /api/movements/{prisonId}/in` (recent arrivals, dated relative to today), `GET /health/ping` |
 | `prison-register` | 8087 | prison-register | `GET /prisons` (prison id → name reference data), `GET /health/ping` |
@@ -266,6 +274,10 @@ After first install ensure playwright is initialised:
 And then either, run tests in headless mode with:
 
 `npm run int-test`
+
+To run individual tests, for example the provisional-assessment review journey only:
+
+`npm run int-test -- integration_tests/specs/reviewProvisionalAssessment.spec.ts`
 
 Or run tests with the UI:
 
