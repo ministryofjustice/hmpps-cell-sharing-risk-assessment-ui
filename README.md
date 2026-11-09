@@ -108,6 +108,9 @@ the evidence sources and offences section. That section remains unanswered in th
 stage until each applicable question page is saved again. Unsaved questions are
 pre-populated from the provisional assessment, including offence evidence sources and
 details; saved final answers take precedence. Other sections retain their copied answers.
+Adding a checked evidence source clears the subsequent offence answers in the current
+stage, so the section cannot be complete until every applicable question page is saved
+again. Saving the same sources does not clear those answers.
 
 Provisionally rated assessments also include a read-only "Review provisional assessment"
 task for CSRA Assessors. Playback and remaining tasks use the recorded provisional answers,

@@ -441,6 +441,103 @@ describe('csraQuestionController', () => {
     )
   })
 
+  it.each(['PROVISIONAL', 'FINAL'] as const)(
+    'clears subsequent offence answers when adding an evidence source in the %s stage',
+    async stage => {
+      const answers = makeStageAnswers({
+        stage,
+        version: 4,
+        pncChecked: true,
+        warrantChecked: true,
+        dpsChecked: true,
+        perChecked: false,
+        offenceMurderManslaughter: true,
+        offenceAssistingSuicide: false,
+        offenceSexualAssault: false,
+        offenceRepeatedViolence: false,
+        offencePrejudiceMotivated: false,
+        offenceArson: false,
+        offenceKidnapHostage: false,
+        offenceEvidence: [{ offence: 'MURDER_MANSLAUGHTER', sources: ['PNC'], details: 'Previously saved evidence' }],
+        seenByHealthcare: true,
+      })
+      const provisional = makeStageAnswers({ pncChecked: true, warrantChecked: true })
+      const assessment = makeAssessment({
+        ...(stage === 'FINAL'
+          ? { interimResult: 'HIGH_GENERAL', stages: [provisional, answers] }
+          : { stages: [answers] }),
+      })
+      const original = structuredClone(assessment)
+      csraService.getCsraAssessment.mockResolvedValue(assessment)
+      csraService.updateCsraAssessment.mockImplementation(
+        async (_username, _prisonerNumber, _assessmentId, saved: CsraAssessmentStageAnswers) => ({
+          ...assessment,
+          stages: stage === 'FINAL' ? [provisional, saved] : [saved],
+        }),
+      )
+      const res = response()
+
+      await controller()(
+        request(
+          'POST',
+          { evidenceSources: ['pncChecked', 'warrantChecked', 'dpsChecked', 'perChecked'] },
+          '0',
+          'evidenceAndOffences',
+        ),
+        res,
+        jest.fn(),
+      )
+
+      const saved = csraService.updateCsraAssessment.mock.calls[0][3] as CsraAssessmentStageAnswers
+      expect(saved).toEqual({
+        ...answers,
+        perChecked: true,
+        offenceMurderManslaughter: null,
+        offenceAssistingSuicide: null,
+        offenceSexualAssault: null,
+        offenceRepeatedViolence: null,
+        offencePrejudiceMotivated: null,
+        offenceArson: null,
+        offenceKidnapHostage: null,
+        offenceEvidence: [],
+      })
+      expect(getTaskListSections(assessment, saved, res.locals.prisoner).evidenceAndOffences.status).toBe('IN_PROGRESS')
+      expect(assessment).toEqual(original)
+    },
+  )
+
+  it('does not clear offence answers when saving the same evidence sources', async () => {
+    const answers = makeStageAnswers({
+      stage: 'FINAL',
+      pncChecked: true,
+      warrantChecked: true,
+      dpsChecked: true,
+      perChecked: true,
+      offenceMurderManslaughter: true,
+      offenceAssistingSuicide: false,
+      offenceSexualAssault: false,
+      offenceRepeatedViolence: false,
+      offencePrejudiceMotivated: false,
+      offenceArson: false,
+      offenceKidnapHostage: false,
+      offenceEvidence: [{ offence: 'MURDER_MANSLAUGHTER', sources: ['PNC'], details: 'Saved evidence' }],
+    })
+    csraService.getCsraAssessment.mockResolvedValue(
+      makeAssessment({
+        interimResult: 'HIGH_GENERAL',
+        stages: [makeStageAnswers({ pncChecked: true, warrantChecked: true }), answers],
+      }),
+    )
+
+    await controller()(
+      request('POST', { evidenceSources: ['dpsChecked', 'perChecked'] }, '0', 'evidenceAndOffences'),
+      response(),
+      jest.fn(),
+    )
+
+    expect(csraService.updateCsraAssessment).toHaveBeenCalledWith('user1', 'A1234BC', ASSESSMENT_ID, answers, 'FINAL')
+  })
+
   it('does not save when the configured information step is submitted', async () => {
     csraService.getCsraAssessment.mockResolvedValue(
       makeAssessment({
@@ -496,8 +593,8 @@ describe('csraQuestionController', () => {
     const provisional = makeStageAnswers({
       pncChecked: true,
       warrantChecked: true,
-      dpsChecked: true,
-      perChecked: true,
+      dpsChecked: false,
+      perChecked: false,
       offenceMurderManslaughter: offence,
       offenceAssistingSuicide: false,
       offenceSexualAssault: false,
@@ -532,28 +629,45 @@ describe('csraQuestionController', () => {
     const { steps } = flowConfig.evidenceAndOffences
     let savedPages = 0
     /* eslint-disable no-await-in-loop -- Each page must read the answers persisted by the previous submission. */
-    for (const [stepId, step] of steps.entries()) {
-      if (!step.removeIf(getAnswersFromAssessment(assessment))) {
-        expect(status()).not.toBe('COMPLETE')
-        const res = response()
-        await controller()(request('GET', {}, String(stepId), 'evidenceAndOffences'), res, jest.fn())
-        expect(csraService.updateCsraAssessment).toHaveBeenCalledTimes(savedPages)
+    for (const sources of [['dpsChecked'], ['dpsChecked', 'perChecked']]) {
+      for (const [stepId, step] of steps.entries()) {
+        if (!step.removeIf(getAnswersFromAssessment(assessment))) {
+          if (stepId !== 0) expect(status()).not.toBe('COMPLETE')
+          const res = response()
+          await controller()(request('GET', {}, String(stepId), 'evidenceAndOffences'), res, jest.fn())
+          expect(csraService.updateCsraAssessment).toHaveBeenCalledTimes(savedPages)
 
-        if (!(step instanceof InformationStep)) {
-          const formValues = step.getFormValues(provisional)
-          expect(res.render).toHaveBeenCalledWith('pages/csraQuestion', expect.objectContaining({ values: formValues }))
-          await controller()(request('POST', formValues, String(stepId), 'evidenceAndOffences'), response(), jest.fn())
-          savedPages += 1
-          expect(csraService.updateCsraAssessment).toHaveBeenCalledTimes(savedPages)
-        } else {
-          await controller()(request('POST', {}, String(stepId), 'evidenceAndOffences'), response(), jest.fn())
-          expect(csraService.updateCsraAssessment).toHaveBeenCalledTimes(savedPages)
+          if (!(step instanceof InformationStep)) {
+            const formValues = step.getFormValues(provisional)
+            if (stepId !== 0) {
+              expect(res.render).toHaveBeenCalledWith(
+                'pages/csraQuestion',
+                expect.objectContaining({ values: formValues }),
+              )
+            }
+            await controller()(
+              request(
+                'POST',
+                stepId === 0 ? { evidenceSources: sources } : formValues,
+                String(stepId),
+                'evidenceAndOffences',
+              ),
+              response(),
+              jest.fn(),
+            )
+            savedPages += 1
+            expect(csraService.updateCsraAssessment).toHaveBeenCalledTimes(savedPages)
+          } else {
+            await controller()(request('POST', {}, String(stepId), 'evidenceAndOffences'), response(), jest.fn())
+            expect(csraService.updateCsraAssessment).toHaveBeenCalledTimes(savedPages)
+          }
         }
       }
+      expect(status()).toBe(sources.length === 2 ? 'COMPLETE' : 'PROVISIONAL_COMPLETE')
     }
     /* eslint-enable no-await-in-loop */
 
-    expect(savedPages).toBe(offence ? 8 : 7)
+    expect(savedPages).toBe(offence ? 16 : 14)
     expect(status()).toBe('COMPLETE')
     expect(getAnswersFromAssessment(assessment).offenceEvidence).toEqual(offence ? provisional.offenceEvidence : [])
     expect(provisional).toEqual(original)

@@ -10,6 +10,7 @@ import YesNoQuestion from '../lib/transactionFlow/questionTypes/yesNo'
 import { Page } from '../services/auditService'
 import InformationStep from '../lib/transactionFlow/informationStep'
 import renderCsraAssessmentSubmitted from '../utils/renderCsraAssessmentSubmitted'
+import EvidenceCheckboxQuestion from '../lib/transactionFlow/questionTypes/evidenceCheckbox'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
 
@@ -227,10 +228,16 @@ export default function csraQuestionController({ auditService, csraService }: De
           version: assessmentAnswers.version || 0,
         }
 
-        // Check if any subsequent steps should be removed based on the new answers and erase their answers if so
+        const addedEvidenceSource = currentStep.questions.some(
+          question =>
+            question instanceof EvidenceCheckboxQuestion &&
+            question.items.some(item => mutatedAssessmentAnswers[item.value] && !assessmentAnswers[item.value]),
+        )
+
+        // New evidence requires all subsequent offence questions to be saved again.
         for (let i = currentStepId + 1; i < section.steps.length; i += 1) {
           const step = section.steps[i]
-          if (step.removeIf(mutatedAssessmentAnswers)) {
+          if (addedEvidenceSource || step.removeIf(mutatedAssessmentAnswers)) {
             mutatedAssessmentAnswers = step.eraseAnswers(mutatedAssessmentAnswers)
           }
         }
