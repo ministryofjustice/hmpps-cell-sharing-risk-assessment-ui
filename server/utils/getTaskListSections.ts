@@ -93,9 +93,14 @@ export default function getTaskListSections(
   }
 
   if (assessment.interimResult) {
-    sections.reviewProvisional = assessmentSectionToTaskListSection(
-      'reviewProvisional',
+    let reviewStatus: TaskListSectionStatus = 'NOT_STARTED'
+    if (typeof assessmentAnswers.provisionalReviewed === 'boolean') {
+      reviewStatus = assessmentAnswers.provisionalReviewed ? 'COMPLETE' : 'IN_PROGRESS'
+    }
+    sections.reviewProvisional = getSectionForTaskList(
       'Review provisional assessment',
+      reviewStatus,
+      `/prisoner/${prisoner.prisonerNumber}/csra/${assessment.assessmentId}/review-provisional`,
     )
   }
 

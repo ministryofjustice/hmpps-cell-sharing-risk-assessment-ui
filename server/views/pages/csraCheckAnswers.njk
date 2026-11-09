@@ -27,21 +27,9 @@
         flowConfig: flowConfig
       }) }}
 
+      {% include "../partials/csraRemainingTasks.njk" %}
+
       {% if remainingTasks.length %}
-        {% call govukInsetText({ classes: "guidance-panel" }) %}
-          <h2 class="govuk-heading-m">Remaining tasks to complete</h2>
-
-          <p>
-            To complete the assessment, you need to:
-          </p>
-
-          <ul class="govuk-list govuk-list--bullet">
-            {% for task in remainingTasks %}
-              <li>{{ task }}</li>
-            {% endfor %}
-          </ul>
-        {% endcall %}
-
         {% call govukInsetText() %}
           <p>
             As the assessment is incomplete, you can only enter a provisional CSRA rating. It will stay provisional until the assessment is completed and a final rating is entered.

@@ -102,14 +102,20 @@ describe('getAssessmentSubmitStatus', () => {
     ).toEqual({ submitType: AssessmentSubmitType.NONE, remainingTasks: [], allowedRatings: [] })
   })
 
-  // TODO: this test requires the reviewProvisional section to also be complete, but that section is not yet implemented
-  // it('allows a final rating when an interim result has been entered', () => {
-  //   const answers = makeStageAnswers()
-  //
-  //   expect(
-  //     getAssessmentSubmitStatus(makeAssessment(answers, { interimResult: 'HIGH_GENERAL' }), answers, prisoner),
-  //   ).toEqual({ submitType: AssessmentSubmitType.FINAL, remainingTasks: [] })
-  // })
+  it.each([undefined, null, false, true])(
+    'allows a final rating after a provisional rating only when provisionalReviewed is true (%s)',
+    provisionalReviewed => {
+      const answers = makeStageAnswers({ stage: 'FINAL', provisionalReviewed })
+
+      expect(
+        getAssessmentSubmitStatus(makeAssessment(answers, { interimResult: 'HIGH_GENERAL' }), answers, prisoner),
+      ).toEqual({
+        submitType: provisionalReviewed === true ? AssessmentSubmitType.FINAL : AssessmentSubmitType.NONE,
+        remainingTasks: [],
+        allowedRatings: provisionalReviewed === true ? ['HIGH_GENERAL', 'HIGH_SPECIFIC', 'STANDARD'] : [],
+      })
+    },
+  )
 
   it('lists unchecked sources and unfinished assessment actions in order', () => {
     const answers = makeStageAnswers({

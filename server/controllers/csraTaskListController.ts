@@ -37,7 +37,6 @@ export default function csraTaskListController({
       reviewProvisional,
     } = getTaskListSections(assessment, assessmentAnswers, prisoner)
 
-    // TODO: implement reviewProvisional section in flowConfig
     const taskLists = [
       ...(reviewProvisional
         ? [

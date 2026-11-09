@@ -1,0 +1,18 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/users/[^/]+"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "username": "{{request.pathSegments.[1]}}",
+      "name": "Alex Smith",
+      "active": true,
+      "authSource": "nomis",
+      "userId": "local-assessor"
+    },
+    "transformers": ["response-template"]
+  }
+}

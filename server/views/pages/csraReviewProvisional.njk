@@ -1,0 +1,66 @@
+{% extends "../partials/layout.njk" %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/radios/macro.njk" import govukRadios %}
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "../macros/csraAnswersSummary.njk" import csraAnswersSummary %}
+
+{% set prisonerName = (prisoner.firstName + " " + prisoner.lastName) | convertToTitleCase %}
+{% set title = "Provisional cell sharing risk assessment - " + prisonerName %}
+{% set pageTitle = applicationName + " - " + title %}
+
+{% block outerHeading %}
+  {% include "../partials/compactPrisonerBanner.njk" %}
+  {{ super() }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <p class="govuk-body">
+        Assessed at {{ rating.prisonName or "Not entered" }} on {{ (rating.provisionalDate | formatDate) or "Not entered" }} at {{ rating.provisionalTime.slice(0, 5) if rating.provisionalTime else "Not entered" }}
+      </p>
+
+      <h2 class="govuk-heading-m">Rating and comment</h2>
+      {{ govukSummaryList({
+        rows: [
+          { key: { text: "Rating" }, value: { text: assessment.interimResult | csraRatingLabel('PROVISIONAL') } },
+          { key: { text: "Provisional assessment comment" }, value: { text: rating.provisionalAssessmentComment or "Not entered" } },
+          { key: { text: "Completed by" }, value: { text: (completedBy | convertToTitleCase) or "Not entered" } }
+        ]
+      }) }}
+
+      {{ csraAnswersSummary({
+        prisoner: prisoner,
+        assessment: assessment,
+        assessmentAnswers: assessmentAnswers,
+        offenceEvidenceMap: offenceEvidenceMap,
+        flowConfig: flowConfig,
+        showChangeLinks: false
+      }) }}
+
+      {% include "../partials/csraRemainingTasks.njk" %}
+
+      <form method="post" action>
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+        {{ govukRadios({
+          idPrefix: "provisionalReviewed",
+          name: "provisionalReviewed",
+          fieldset: {
+            legend: {
+              text: "Have you reviewed the provisional assessment?",
+              classes: "govuk-fieldset__legend--m"
+            }
+          },
+          items: [
+            { value: "YES", text: "Yes, I've reviewed it", checked: selectedAnswer === "YES" },
+            { value: "NO", text: "No, I'll come back to it later", checked: selectedAnswer === "NO" }
+          ],
+          errorMessage: validationErrors.provisionalReviewed if validationErrors
+        }) }}
+        {{ govukButton({ text: "Save and return" }) }}
+      </form>
+      <p class="govuk-body"><a href="{{ cancelLink }}" class="govuk-link">Cancel</a></p>
+    </div>
+  </div>
+{% endblock %}

@@ -10,9 +10,13 @@ import csraWarrantsController, { csraWarrantFileController } from '../controller
 import permissionGuard from '../middleware/permissionGuard'
 import CsraSelectRatingController from '../controllers/csraSelectRatingController'
 import CsraConfirmRatingController from '../controllers/csraConfirmRatingController'
+import csraReviewProvisionalController from '../controllers/csraReviewProvisionalController'
 
 export default function csraRouter(
-  services: Pick<Services, 'auditService' | 'csraService' | 'prisonApiService' | 'warrantsService'>,
+  services: Pick<
+    Services,
+    'auditService' | 'csraService' | 'prisonApiService' | 'warrantsService' | 'manageUsersService'
+  >,
 ): Router {
   const router = Router({ mergeParams: true })
 
@@ -33,6 +37,10 @@ export default function csraRouter(
   router.get('/:assessmentId/warrants/:documentId/file', csraWarrantFileController(services))
 
   router.get('/:assessmentId/check-answers', csraCheckAnswersController(services))
+
+  const reviewProvisionalHandler = csraReviewProvisionalController(services)
+  router.get('/:assessmentId/review-provisional', reviewProvisionalHandler)
+  router.post('/:assessmentId/review-provisional', reviewProvisionalHandler)
 
   const selectRatingHandler = new CsraSelectRatingController(services).requestHandler()
   router.get('/:assessmentId/select-rating', selectRatingHandler)

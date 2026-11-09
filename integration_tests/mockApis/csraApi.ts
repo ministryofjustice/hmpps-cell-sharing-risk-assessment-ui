@@ -61,6 +61,33 @@ export default {
       },
     }),
 
+  stubGetDetailedRating: (
+    prisonerNumber: string,
+    assessmentId: string,
+    rating: Partial<CsraCurrentRating> = {},
+  ): SuperAgentRequest =>
+    stubFor({
+      request: {
+        method: 'GET',
+        urlPattern: `/csra-api/csra-review/${assessmentId}/detailed-rating`,
+      },
+      response: {
+        status: 200,
+        headers: { 'Content-Type': 'application/json;charset=UTF-8' },
+        jsonBody: {
+          prisonerNumber,
+          reviewId: assessmentId,
+          status: 'PROVISIONAL',
+          rating: 'HIGH_SPECIFIC',
+          provisional: true,
+          ratingStage: 'PROVISIONAL',
+          riskTo: [],
+          vulnerabilities: [],
+          ...rating,
+        },
+      },
+    }),
+
   stubGetAssessment: (
     prisonerNumber: string,
     assessmentId: string,

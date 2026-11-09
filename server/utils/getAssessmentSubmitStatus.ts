@@ -2,7 +2,7 @@ import { CsraAssessment, CsraAssessmentStageAnswers } from '../data/csraApiTypes
 import getTaskListSections from './getTaskListSections'
 import { Prisoner } from '../data/prisonerSearchApiTypes'
 
-function getRemainingTasks(assessmentAnswers: CsraAssessmentStageAnswers): string[] {
+export function getRemainingTasks(assessmentAnswers: CsraAssessmentStageAnswers): string[] {
   const remainingTasks: string[] = []
 
   const uncheckedSources = []
