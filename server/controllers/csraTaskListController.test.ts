@@ -303,6 +303,7 @@ describe('csraTaskListController', () => {
             dpsChecked: true,
             perChecked: true,
             warrantChecked: true,
+            offenceEvidenceReviewed: true,
             seenByHealthcare: true,
             healthcareIncreasedRisk: false,
             officerSpokeToPrisoner: true,

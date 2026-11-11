@@ -28,7 +28,10 @@ export interface TaskListSections {
   reviewProvisional?: TaskListSection
 }
 
-function getSectionStatus(assessmentAnswers: CsraAssessmentStageAnswers, section: Section): TaskListSectionStatus {
+export function getSectionStatus(
+  assessmentAnswers: CsraAssessmentStageAnswers,
+  section: Section,
+): TaskListSectionStatus {
   if (!section) {
     return 'LOCKED'
   }
@@ -37,6 +40,10 @@ function getSectionStatus(assessmentAnswers: CsraAssessmentStageAnswers, section
 
   if (steps.length === 0) {
     return 'LOCKED'
+  }
+
+  if (section.isCompleteForSection?.(assessmentAnswers) === false) {
+    return 'IN_PROGRESS'
   }
 
   if (steps.every(s => s.isComplete(assessmentAnswers))) {

@@ -17,6 +17,7 @@ const makeStageAnswers = (overrides: Partial<CsraAssessmentStageAnswers> = {}): 
   offenceArson: false,
   offenceKidnapHostage: false,
   offenceEvidence: [],
+  offenceEvidenceReviewed: null,
   officerSpokeToPrisoner: true,
   likelyToHarmCellmate: false,
   significantlyVulnerable: false,
@@ -71,7 +72,7 @@ describe('getAssessmentSubmitStatus', () => {
   })
 
   it('allows a final rating when every assessment section is complete', () => {
-    const answers = makeStageAnswers()
+    const answers = makeStageAnswers({ offenceEvidenceReviewed: true })
 
     expect(getAssessmentSubmitStatus(makeAssessment(answers), answers, prisoner)).toEqual({
       submitType: AssessmentSubmitType.FINAL,
@@ -105,7 +106,7 @@ describe('getAssessmentSubmitStatus', () => {
   it.each([undefined, null, false, true])(
     'allows a final rating after a provisional rating only when provisionalReviewed is true (%s)',
     provisionalReviewed => {
-      const answers = makeStageAnswers({ stage: 'FINAL', provisionalReviewed })
+      const answers = makeStageAnswers({ stage: 'FINAL', provisionalReviewed, offenceEvidenceReviewed: true })
 
       expect(
         getAssessmentSubmitStatus(makeAssessment(answers, { interimResult: 'HIGH_GENERAL' }), answers, prisoner),
@@ -167,6 +168,7 @@ describe('getAssessmentSubmitStatus', () => {
     ] as const)('restricts ratings to high-general for %s', (field, offence) => {
       const answers = makeStageAnswers({
         seenByHealthcare,
+        offenceEvidenceReviewed: seenByHealthcare ? true : null,
         [field]: true,
         offenceEvidence: [{ offence, sources: ['PNC'], details: 'Evidence recorded' }],
       })
@@ -181,6 +183,7 @@ describe('getAssessmentSubmitStatus', () => {
     it('does not force high-general for other offences with recorded evidence', () => {
       const answers = makeStageAnswers({
         seenByHealthcare,
+        offenceEvidenceReviewed: seenByHealthcare ? true : null,
         offenceArson: true,
         offenceEvidence: [{ offence: 'ARSON', sources: ['PNC'], details: 'Evidence recorded' }],
       })

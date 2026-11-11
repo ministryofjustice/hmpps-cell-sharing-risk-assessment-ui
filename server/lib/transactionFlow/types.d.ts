@@ -5,6 +5,8 @@ declare type ValidationFunction = (value: string | string[] | number | undefined
 declare type Section = {
   title: string
   steps: import('./step').default[]
+  // An additional completion requirement; the applicable steps must still be answered.
+  isCompleteForSection?: (assessmentAnswers: import('../../data/csraApiTypes').CsraAssessmentStageAnswers) => boolean
 }
 
 declare type CheckboxItem = {

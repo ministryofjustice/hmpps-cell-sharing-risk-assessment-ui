@@ -4,6 +4,8 @@ import getAnswersFromAssessment from './getAnswersFromAssessment'
 import flowConfig from '../lib/transactionFlow/config'
 import InformationStep from '../lib/transactionFlow/informationStep'
 import getTaskListSections from '../utils/getTaskListSections'
+import Step from '../lib/transactionFlow/step'
+import YesNoQuestion from '../lib/transactionFlow/questionTypes/yesNo'
 
 const ASSESSMENT_ID = 'assessment-123'
 
@@ -558,6 +560,70 @@ describe('csraQuestionController', () => {
     expect(getAnswersFromAssessment(assessment).offenceEvidence).toEqual(offence ? provisional.offenceEvidence : [])
     expect(provisional).toEqual(original)
   })
+
+  it.each([false, true])(
+    'uses the configured next step to mark evidence reviewed (new step applicable: %s)',
+    async applicable => {
+      const section = flowConfig.evidenceAndOffences
+      const finalQuestionId = section.steps.findIndex(step =>
+        step.questions.some(question => question.id === 'offenceKidnapHostage'),
+      )
+      const newStep = new Step({
+        questions: [new YesNoQuestion('New evidence question', 'seenByHealthcare')],
+      }).onlyWhen(() => applicable)
+      const replacement = jest.replaceProperty(flowConfig, 'evidenceAndOffences', {
+        ...section,
+        steps: [...section.steps, newStep],
+      })
+      let assessment = makeAssessment({
+        interimResult: 'HIGH_GENERAL',
+        stages: [
+          makeStageAnswers({
+            stage: 'FINAL',
+            pncChecked: true,
+            offenceMurderManslaughter: false,
+            offenceAssistingSuicide: false,
+            offenceSexualAssault: false,
+            offenceRepeatedViolence: false,
+            offencePrejudiceMotivated: false,
+            offenceArson: false,
+            offenceKidnapHostage: false,
+            offenceEvidenceReviewed: false,
+          }),
+        ],
+      })
+      csraService.getCsraAssessment.mockImplementation(async () => assessment)
+      csraService.updateCsraAssessment.mockImplementation(
+        async (_username, _prisonerNumber, _assessmentId, answers: CsraAssessmentStageAnswers) => {
+          assessment = { ...assessment, stages: [answers] }
+          return assessment
+        },
+      )
+      try {
+        const res = response()
+        await controller()(
+          request('POST', { offenceKidnapHostage: 'NO' }, String(finalQuestionId), 'evidenceAndOffences'),
+          res,
+          jest.fn(),
+        )
+        expect(getAnswersFromAssessment(assessment).offenceEvidenceReviewed).toBe(!applicable)
+        const assessmentUrl = `/prisoner/A1234BC/csra/${ASSESSMENT_ID}`
+        expect(res.redirect).toHaveBeenCalledWith(
+          applicable ? `${assessmentUrl}/section/evidenceAndOffences/${section.steps.length}` : assessmentUrl,
+        )
+        if (applicable) {
+          await controller()(
+            request('POST', { seenByHealthcare: 'NO' }, String(section.steps.length), 'evidenceAndOffences'),
+            response(),
+            jest.fn(),
+          )
+          expect(getAnswersFromAssessment(assessment).offenceEvidenceReviewed).toBe(true)
+        }
+      } finally {
+        replacement.restore()
+      }
+    },
+  )
 
   it('uses saved final offence answers, including false, ahead of provisional answers', async () => {
     csraService.getCsraAssessment.mockResolvedValue(
