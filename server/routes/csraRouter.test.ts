@@ -1403,6 +1403,49 @@ describe('csraRouter', () => {
       expect(csraService.getCsraAssessment).not.toHaveBeenCalled()
     })
 
+    it('keeps the referrers through the cancel page, its redirects and the finish button', async () => {
+      const referrers = '?referrer=due-for-review&referrer=history'
+      csraService.getCsraAssessment.mockResolvedValue(assessment({ stages: [stageAnswers({ pncChecked: true })] }))
+
+      const getResponse = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .get(`${assessmentUrl}/cancel${referrers}`)
+        .expect(200)
+
+      expect(getResponse.text).toContain(
+        `href="${assessmentUrl}${referrers.replace(/&/g, '&amp;')}" class="govuk-back-link"`,
+      )
+      expect(getResponse.text).toContain(`href="${assessmentUrl}${referrers.replace(/&/g, '&amp;')}">Cancel</a>`)
+
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(`${assessmentUrl}/cancel${referrers}`)
+        .type('form')
+        .send({})
+        .expect(302)
+        .expect('Location', `${assessmentUrl}/cancel${referrers}`)
+
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(`${assessmentUrl}/cancel${referrers}`)
+        .type('form')
+        .send({ confirmCancel: 'no' })
+        .expect(302)
+        .expect('Location', `${assessmentUrl}${referrers}`)
+
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(`${assessmentUrl}/cancel${referrers}`)
+        .type('form')
+        .send({ confirmCancel: 'yes' })
+        .expect(302)
+        .expect('Location', `${assessmentUrl}/cancelled${referrers}`)
+
+      const cancelledResponse = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .get(`${assessmentUrl}/cancelled${referrers}`)
+        .expect(200)
+
+      expect(cancelledResponse.text).toMatch(
+        /href="\/prisoner\/A1234BC\?referrer=due-for-review&amp;referrer=history"[^>]*data-qa="finish-button"/,
+      )
+    })
+
     it.each(['CsraAssessmentNotCancellable', 'CsraReviewNotWritable'])(
       'shows the error page with a 409 when the API rejects the cancellation with %s',
       async errorCode => {

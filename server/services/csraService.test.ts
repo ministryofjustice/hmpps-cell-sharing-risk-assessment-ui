@@ -91,12 +91,13 @@ describe('CsraService', () => {
     })
 
     it('delegates detailed-rating reads with the acting username and assessment id', async () => {
-      const rating: CsraCurrentRating = {
+      const rating: CsraDetailedRating = {
         prisonerNumber: 'A1234BC',
         status: 'PROVISIONAL',
         provisional: true,
         riskTo: [],
         vulnerabilities: [],
+        stages: [],
       }
       csraApiClient.getDetailedRating.mockResolvedValue(rating)
 

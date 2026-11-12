@@ -3,109 +3,113 @@
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/details/macro.njk" import govukDetails %}
 {% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "govuk/components/tabs/macro.njk" import govukTabs %}
+{% from "govuk/components/tag/macro.njk" import govukTag %}
 {% from "govuk/components/task-list/macro.njk" import govukTaskList %}
 
-{% from "../macros/csraAnswersSummary.njk" import csraAnswersSummary %}
+{% from "../macros/csraSummary.njk" import csraSummary %}
+{% from "../macros/legacyCsraSummary.njk" import legacyCsraSummary %}
 
 {% set prisonerName = (prisoner.firstName + " " + prisoner.lastName) | convertToTitleCase %}
 {% set title = "Cell sharing risk assessment - " + prisonerName %}
+{% if provisionalAssessmentAnswers and not finalAssessmentAnswers %}
+  {% set title = title.replace('Cell', 'Provisional cell') %}
+{% endif %}
 {% set pageTitle = applicationName + " - " + title %}
 
-{% set isProvisional = detailedRating.status === 'PROVISIONAL' %}
-{% set ratingDate = (detailedRating.provisionalDate if isProvisional else detailedRating.finalDate) | formatDate %}
-{% set ratingTime = (detailedRating.provisionalTime if isProvisional else detailedRating.finalTime) | formatTime %}
-{% set completedBy = detailedRating.provisionalCompletedBy if isProvisional else detailedRating.finalCompletedBy %}
-{% set assessmentComment = detailedRating.provisionalAssessmentComment if isProvisional else detailedRating.assessmentComment %}
+{% set finalSummaryHtml %}
+  {{ csraSummary({
+    prisoner: prisoner,
+    cellSharingHistory: cellSharingHistory,
+    assessment: assessment,
+    assessmentAnswers: finalAssessmentAnswers,
+    offenceEvidenceMap: finalOffenceEvidenceMap,
+    flowConfig: flowConfig,
+    detailedRating: detailedRating,
+    userDisplayNames: userDisplayNames,
+    csraRiskToCategoryLabelMap: csraRiskToCategoryLabelMap,
+    csraVulnerabilityCategoryLabelMap: csraVulnerabilityCategoryLabelMap,
+    summaryRows: finalSummaryRows
+  }) }}
+{% endset %}
+
+{% set provisionalSummaryHtml %}
+  {{ csraSummary({
+    prisoner: prisoner,
+    cellSharingHistory: cellSharingHistory,
+    assessment: assessment,
+    assessmentAnswers: provisionalAssessmentAnswers,
+    offenceEvidenceMap: provisionalOffenceEvidenceMap,
+    flowConfig: flowConfig,
+    detailedRating: detailedRating,
+    userDisplayNames: userDisplayNames,
+    csraRiskToCategoryLabelMap: csraRiskToCategoryLabelMap,
+    csraVulnerabilityCategoryLabelMap: csraVulnerabilityCategoryLabelMap,
+    summaryRows: provisionalSummaryRows
+  }) }}
+{% endset %}
 
 {% block content %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
-      <p>
-        Assessed
-        {{- " at " + detailedRating.prisonName if detailedRating.prisonName }}
-        {{- " on " + ratingDate if ratingDate }}
-        {{- " at " + ratingTime if ratingTime }}.
-      </p>
 
-      <div class="csra-check-answers-section">
-        <h2 class="govuk-heading-m">Rating and comment</h2>
+      {% if finalAssessmentAnswers and provisionalAssessmentAnswers %}
+        {% set finalHtml %}
+          <h2 class="govuk-heading-l">Final assessment</h2>
 
-        {% set riskToHtml = "" %}
-        {% if detailedRating.riskTo.length %}
-          {% for riskTo in detailedRating.riskTo %}
-            {% set riskToHtml = riskToHtml + "<p>" + csraRiskToCategoryLabelMap[riskTo.category] + (" - " + (riskTo.details | e) if riskTo.details else "") + "</p>" %}
-          {% endfor %}
+          {{ finalSummaryHtml | safe }}
+        {% endset -%}
+
+        {% set provisionalHtml %}
+          <h2 class="govuk-heading-l">Provisional assessment</h2>
+
+          {{ provisionalSummaryHtml | safe }}
+        {% endset -%}
+
+        {{ govukTabs({
+          items: [
+            {
+              label: "Final assessment",
+              id: 'final-assessment',
+              panel: {
+                html: finalHtml
+              }
+            },
+            {
+              label: "Provisional assessment",
+              id: 'provisional-assessment',
+              panel: {
+                html: provisionalHtml
+              }
+            }
+          ],
+          classes: 'govuk-tabs--borderless'
+        }) }}
+      {% elseif finalAssessmentAnswers %}
+        {{ finalSummaryHtml | safe }}
+      {% elseif provisionalAssessmentAnswers %}
+        {{ provisionalSummaryHtml | safe }}
+      {% else %}
+        {% if detailedRating.legacy.approvalStatus == "APPROVED" %}
+          {{ govukTag({ text: "Approved", classes: "govuk-tag--green govuk-!-margin-bottom-5", attributes: { "data-qa": "approval-state" } }) }}
         {% endif %}
 
-        {% set vulnerabilitiesHtml = "" %}
-        {% if detailedRating.vulnerabilities.length %}
-          {% for vulnerability in detailedRating.vulnerabilities %}
-            {% set vulnerabilitiesHtml = vulnerabilitiesHtml + "<p>" + csraVulnerabilityCategoryLabelMap[vulnerability.category] + (" - " + (vulnerability.details | e) if vulnerability.details else "") + "</p>" %}
-          {% endfor %}
+        {% set ratingDate = detailedRating.startedAt | formatDate %}
+        {% if ratingDate %}
+          <p>
+            Assessed
+            {{- " on " + ratingDate if ratingDate }}
+          </p>
         {% endif %}
 
         {{ govukSummaryList({
-          rows: [
-            {
-              key: {
-                text: "Rating"
-              },
-              value: {
-                text: detailedRating.rating | csraRatingLabel('PROVISIONAL' if isProvisional)
-              }
-            },
-            {
-              key: {
-                text: "Risk to"
-              },
-              value: {
-                html: riskToHtml
-              }
-            } if riskToHtml,
-            {
-              key: {
-                text: "Vulnerable due to"
-              },
-              value: {
-                html: vulnerabilitiesHtml
-              }
-            } if vulnerabilitiesHtml,
-            {
-              key: {
-                text: "Assessment comment"
-              },
-              value: {
-                text: assessmentComment or 'Not entered'
-              }
-            },
-            {
-              key: {
-                text: "Next review due by"
-              },
-              value: {
-                text: detailedRating.nextReviewDate | formatDayMonthYear
-              }
-            } if detailedRating.nextReviewDate,
-            {
-              key: {
-                text: "Completed by"
-              },
-              value: {
-                text: userDisplayNames.get(completedBy) or 'Unknown'
-              }
-            }
-          ]
+          rows: legacySummaryRows
         }) }}
-      </div>
 
-      {% if assessmentAnswers %}
-        {{ csraAnswersSummary({
-          prisoner: prisoner,
-          assessment: assessment,
-          assessmentAnswers: assessmentAnswers,
-          offenceEvidenceMap: offenceEvidenceMap,
-          flowConfig: flowConfig,
-          showChangeLinks: false
+        <h3 class="govuk-heading-m">Review questions</h3>
+
+        {{ govukSummaryList({
+          rows: legacyQuestionsRows
         }) }}
       {% endif %}
 

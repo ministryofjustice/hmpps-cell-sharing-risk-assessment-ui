@@ -33,11 +33,12 @@ describe('ratingConfirmedController', () => {
     const csra: CsraDetailedRating = {
       prisonerNumber: 'A1234BC',
       status: 'PROVISIONAL',
-      rating: 'HIGH_SPECIFIC',
+      provisionalRating: 'HIGH_SPECIFIC',
       provisional: true,
       ratingStage: 'PROVISIONAL',
       riskTo: [],
       vulnerabilities: [],
+      stages: [],
     }
     csraService.getCurrentRating.mockResolvedValue(csra)
     const res = response()

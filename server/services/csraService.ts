@@ -114,6 +114,10 @@ export default class CsraService {
     return this.csraApiClient.getCsraAssessment(username, { prisonerNumber, assessmentId })
   }
 
+  getCsraReview(username: string, assessmentId: string) {
+    return this.csraApiClient.getCsraReview(username, { assessmentId })
+  }
+
   updateCsraAssessment(
     username: string,
     prisonerNumber: string,

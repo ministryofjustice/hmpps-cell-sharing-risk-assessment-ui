@@ -465,7 +465,7 @@ describe('csraQuestionController', () => {
     )
   })
 
-  it('does not save when the configured information step is submitted', async () => {
+  it('saves the configured information step when it is submitted and continues to the next step', async () => {
     csraService.getCsraAssessment.mockResolvedValue(
       makeAssessment({
         interimResult: 'HIGH_GENERAL',
@@ -476,7 +476,7 @@ describe('csraQuestionController', () => {
 
     await controller()(request('POST', {}, '1', 'evidenceAndOffences'), res, jest.fn())
 
-    expect(csraService.updateCsraAssessment).not.toHaveBeenCalled()
+    expect(csraService.updateCsraAssessment).toHaveBeenCalled()
     expect(res.redirect).toHaveBeenCalledWith(`/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/2`)
   })
 
@@ -542,7 +542,7 @@ describe('csraQuestionController', () => {
     let assessment = makeAssessment({ interimResult: 'HIGH_GENERAL', stages: [provisional] })
     const { prisoner } = response().locals
     const status = () =>
-      getTaskListSections(assessment, getAnswersFromAssessment(assessment), prisoner).evidenceAndOffences.status
+      getTaskListSections(assessment, getAnswersFromAssessment(assessment), prisoner, []).evidenceAndOffences.status
     expect(status()).toBe('IN_PROGRESS')
 
     csraService.getCsraAssessment.mockImplementation(async () => assessment)
@@ -571,13 +571,14 @@ describe('csraQuestionController', () => {
           expect(csraService.updateCsraAssessment).toHaveBeenCalledTimes(savedPages)
         } else {
           await controller()(request('POST', {}, String(stepId), 'evidenceAndOffences'), response(), jest.fn())
+          savedPages += 1
           expect(csraService.updateCsraAssessment).toHaveBeenCalledTimes(savedPages)
         }
       }
     }
     /* eslint-enable no-await-in-loop */
 
-    expect(savedPages).toBe(offence ? 8 : 7)
+    expect(savedPages).toBe(offence ? 9 : 8)
     expect(status()).toBe('COMPLETE')
     expect(getAnswersFromAssessment(assessment).offenceEvidence).toEqual(offence ? provisional.offenceEvidence : [])
     expect(provisional).toEqual(original)

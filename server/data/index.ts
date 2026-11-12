@@ -12,6 +12,7 @@ import PrisonApiAgencySwitchClient from './prisonApiAgencySwitchClient'
 import ManageUsersApiClient from './manageUsersApiClient'
 import CourtDataApiClient from './courtDataApiClient'
 import DocumentApiClient from './documentApiClient'
+import ChangeSomeonesCellApiClient from './changeSomeonesCellApiClient'
 
 const applicationInfo = applicationInfoSupplier()
 
@@ -25,6 +26,7 @@ export const dataAccess = () => {
   return {
     applicationInfo,
     hmppsAuthClient,
+    changeSomeonesCellApiClient: new ChangeSomeonesCellApiClient(redisClient, hmppsAuthClient),
     csraApiClient: new CsraApiClient(redisClient, hmppsAuthClient),
     prisonerSearchApiClient: new PrisonerSearchApiClient(redisClient, hmppsAuthClient),
     prisonApiClient: new PrisonApiClient(hmppsAuthClient),

@@ -14,6 +14,7 @@ import type {
   CsraPrisonRatingSummary,
   CsraRecentArrivals,
   CsraRecentArrivalsQuery,
+  CsraReviewDetail,
   CsraReviewHistory,
   CsraReviewsInProgress,
   CsraAssessment,
@@ -36,6 +37,12 @@ export default class CsraApiClient extends BaseApiClient {
    */
   getCurrentCsraRating = this.apiCall<CsraDetailedRating, { prisonerNumber: string }>({
     path: '/csra-review/prisoner/:prisonerNumber/current-rating',
+    requestType: 'get',
+    options: { asSystem: true },
+  })
+
+  getCsraReview = this.apiCall<CsraReviewDetail, { assessmentId: string }>({
+    path: '/csra-review/:assessmentId',
     requestType: 'get',
     options: { asSystem: true },
   })

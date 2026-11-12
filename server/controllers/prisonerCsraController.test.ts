@@ -33,10 +33,11 @@ describe('PrisonerCsraController', () => {
     csraService.getCurrentRating.mockResolvedValue({
       prisonerNumber: 'A1234BC',
       status: 'COMPLETE',
-      rating: 'HIGH',
+      finalRating: 'HIGH',
       provisional: false,
       riskTo: [],
       vulnerabilities: [],
+      stages: [],
     })
     const res = response()
 
@@ -63,10 +64,11 @@ describe('PrisonerCsraController', () => {
     csraService.getCurrentRating.mockResolvedValue({
       prisonerNumber: 'A1234BC',
       status: 'IN_PROGRESS',
-      rating: 'STANDARD',
+      finalRating: 'STANDARD',
       provisional: false,
       riskTo: [],
       vulnerabilities: [],
+      stages: [],
       inProgress: {
         reviewId: 'review-123',
         type: 'CSRA_INITIAL_REVIEW',
@@ -91,7 +93,16 @@ describe('PrisonerCsraController', () => {
   })
 
   it('consumes a success flash and passes it to the notification banner', async () => {
-    csraService.getCurrentRating.mockResolvedValue({ status: 'NO_RATING', rating: null })
+    csraService.getCurrentRating.mockResolvedValue({
+      prisonerNumber: 'A1234BC',
+      status: 'NO_RATING',
+      finalRating: null,
+      provisionalRating: null,
+      provisional: false,
+      riskTo: [],
+      vulnerabilities: [],
+      stages: [],
+    })
     const success = { title: 'CSRA rating confirmed', content: 'Rating confirmed.' }
     const req = request()
     req.flash = jest.fn().mockReturnValue([success])
@@ -104,7 +115,16 @@ describe('PrisonerCsraController', () => {
   })
 
   it('does not display a success banner when there is no flash message', async () => {
-    csraService.getCurrentRating.mockResolvedValue({ status: 'NO_RATING', rating: null })
+    csraService.getCurrentRating.mockResolvedValue({
+      prisonerNumber: 'A1234BC',
+      status: 'NO_RATING',
+      finalRating: null,
+      provisionalRating: null,
+      provisional: false,
+      riskTo: [],
+      vulnerabilities: [],
+      stages: [],
+    })
     const res = response()
 
     await controller().index(request(), res, jest.fn())
