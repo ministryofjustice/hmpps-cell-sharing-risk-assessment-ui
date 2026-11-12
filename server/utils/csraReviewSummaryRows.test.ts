@@ -109,6 +109,37 @@ describe('createSummaryRows', () => {
     ])
   })
 
+  it('formats legacy override levels and omits the unsupported override reason', () => {
+    const legacyRating: CsraDetailedRating = {
+      ...detailedRating,
+      legacy: {
+        level: 'HI',
+        approvalStatus: 'APPROVED',
+        calculatedResult: 'MED',
+        overrideResult: 'LOW',
+        approvedResult: null,
+        assessmentComment: null,
+        approvalCommitteeComment: null,
+        approvalComment: null,
+        approvalDate: null,
+        assessmentCommittee: null,
+        approvalCommittee: null,
+        nextReviewDate: null,
+        questions: [],
+      },
+    }
+
+    const rows = createSummaryRows({
+      detailedRating: legacyRating,
+      userDisplayNames: new Map(),
+    })
+
+    expect(rows).toContainEqual({ key: { text: 'Approved result' }, value: { text: 'High' } })
+    expect(rows).toContainEqual({ key: { text: 'Calculated result' }, value: { text: 'Medium' } })
+    expect(rows).toContainEqual({ key: { text: 'Override result' }, value: { text: 'Low' } })
+    expect(rows.map(summaryRow => summaryRow.key.text)).not.toContain('Override reason')
+  })
+
   it('excludes system accounts from legacy assessor name lookups', () => {
     const legacyRating: CsraDetailedRating = {
       ...detailedRating,
@@ -188,18 +219,20 @@ describe('createSummaryRows', () => {
     ])
   })
 
-  it('creates legacy question rows and excludes the completion marker', () => {
+  it('includes additional answers in legacy question rows and excludes unanswered questions and the completion marker', () => {
     expect(
       createLegacyQuestionsRows({
         questions: [
           { question: 'Is the assessment complete', answer: 'Yes', additionalAnswers: [] },
-          { question: 'Question one', answer: 'No', additionalAnswers: [] },
+          { question: 'Question one', answer: 'No', additionalAnswers: ['Additional detail & <notes>'] },
           { question: 'Question two', answer: null, additionalAnswers: [] },
         ],
       }),
     ).toEqual([
-      { key: { text: 'Question one' }, value: { text: 'No' } },
-      { key: { text: 'Question two' }, value: { text: 'Not entered' } },
+      {
+        key: { text: 'Question one' },
+        value: { html: '<p>No</p><p>Additional detail &amp; &lt;notes&gt;</p>' },
+      },
     ])
   })
 })
