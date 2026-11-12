@@ -1,7 +1,7 @@
 {
   "request": {
     "method": "GET",
-    "urlPath": "/cell-movements/prisoner/:prisonerNumber/cell-sharing"
+    "urlPathPattern": "/cell-movements/prisoner/[^/]+/cell-sharing"
   },
   "response": {
     "status": 200,
