@@ -72,7 +72,8 @@ export const buildLegacyReviewRows = (
   )
 
   if (legacy.overrideResult) {
-    rows.push(row('Override result', legacy.overrideResult), row('Override reason', 'TODO'))
+    rows.push(row('Override result', csraLevelLabel(legacy.overrideResult)))
+    // TODO: add Override reason when the API contract is updated to include it. The profile page has it, but we don't get it from the migration API. See MAPA-500
   }
 
   rows.push(
