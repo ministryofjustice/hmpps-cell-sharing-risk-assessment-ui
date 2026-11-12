@@ -215,7 +215,7 @@ describe('csraViewController', () => {
           { key: { text: 'Assessment comments' }, value: { text: 'Legacy assessment comment' } },
           { key: { text: 'Assessed by' }, value: { text: 'Assessment committee - Jane Doe' } },
         ]),
-        legacyQuestionsRows: [{ key: { text: 'Legacy question' }, value: { text: 'Yes' } }],
+        legacyQuestionsRows: [{ key: { text: 'Legacy question' }, value: { html: '<p>Yes</p>' } }],
       }),
     )
   })

@@ -95,7 +95,9 @@ type SummaryRowsInput = {
 }
 
 export const createLegacyQuestionsRows = ({ questions }: { questions: CsraReviewQuestion[] }): SummaryRow[] =>
-  questions.filter(q => q.question !== 'Is the assessment complete').map(q => row(q.question, q.answer || NOT_ENTERED))
+  answeredQuestions(questions)
+    .filter(q => q.question !== 'Is the assessment complete')
+    .map(q => htmlRow(q.question, q.answers.map(a => `<p>${escape(a)}</p>`).join('')))
 
 /** The summary rows for a current assessment stage, or a migrated legacy review. */
 export const createSummaryRows = ({
