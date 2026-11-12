@@ -169,6 +169,7 @@ test.describe('Prisoner CSRA', () => {
   test('shows an assessment in progress for a provisional high general rating', async ({ page }) => {
     const prisonerCsraPage = await stubPrisonerPage(page, {
       status: 'PROVISIONAL',
+      finalRating: null,
       provisionalRating: 'HIGH_GENERAL',
       provisional: true,
       ratingStage: 'PROVISIONAL',
@@ -184,6 +185,7 @@ test.describe('Prisoner CSRA', () => {
   test('shows an assessment in progress for a provisional high specific rating', async ({ page }) => {
     const prisonerCsraPage = await stubPrisonerPage(page, {
       status: 'PROVISIONAL',
+      finalRating: null,
       provisionalRating: 'HIGH_SPECIFIC',
       provisional: true,
       ratingStage: 'PROVISIONAL',
@@ -229,6 +231,7 @@ test.describe('Prisoner CSRA', () => {
   }) => {
     const prisonerCsraPage = await stubPrisonerPage(page, {
       status: 'PROVISIONAL',
+      finalRating: null,
       provisionalRating: 'HIGH_GENERAL',
       provisional: true,
       ratingStage: 'PROVISIONAL',
@@ -318,6 +321,7 @@ test.describe('Prisoner CSRA', () => {
   test('shows a review in progress for an interim high general rating', async ({ page }) => {
     const prisonerCsraPage = await stubPrisonerPage(page, {
       status: 'PROVISIONAL',
+      finalRating: null,
       provisionalRating: 'HIGH_GENERAL',
       provisional: true,
       ratingStage: 'INTERIM',
@@ -365,6 +369,7 @@ test.describe('Prisoner CSRA', () => {
   test('shows an inherited interim rating and existing review comment', async ({ page }) => {
     const prisonerCsraPage = await stubPrisonerPage(page, {
       status: 'PROVISIONAL',
+      finalRating: null,
       provisionalRating: 'HIGH_GENERAL',
       provisional: true,
       ratingStage: 'INTERIM',
@@ -528,6 +533,7 @@ test.describe('Prisoner CSRA', () => {
     await page.getByLabel('Assessment comment').fill('All available sources checked. Manager approved sharing.')
     await csraApi.stubGetCurrentRating('A1234BC', {
       status: 'PROVISIONAL',
+      finalRating: null,
       provisionalRating: 'HIGH_SPECIFIC',
       provisional: true,
       ratingStage: 'PROVISIONAL',
