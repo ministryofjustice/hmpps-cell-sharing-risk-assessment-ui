@@ -245,6 +245,36 @@ describe('csraRouter', () => {
       },
     )
 
+    it.each(['YES', 'NO', 'invalid'])(
+      'preserves worklist referrers through provisional review for %s',
+      async answer => {
+        const referrers = '?referrer=due-for-review&referrer=history'
+        const htmlReferrers = referrers.replace(/&/g, '&amp;')
+        const app = buildApp([Role.CSRA__ASSESSMENT_EDIT])
+        const taskList = await request(app).get(`${assessmentUrl}${referrers}`).expect(200)
+        expect(taskList.text).toContain(`href="${reviewUrl}${htmlReferrers}"`)
+
+        const response = await request(app).get(`${reviewUrl}${referrers}`).expect(200)
+        expect(response.text).toContain(`href="${assessmentUrl}${htmlReferrers}" class="govuk-back-link"`)
+        expect(response.text).toContain(`href="${assessmentUrl}${htmlReferrers}" class="govuk-link">Cancel</a>`)
+
+        const submitted = await request(app)
+          .post(`${reviewUrl}${referrers}`)
+          .type('form')
+          .send({ provisionalReviewed: answer })
+
+        if (answer === 'invalid') {
+          expect(submitted.status).toBe(200)
+          expect(submitted.text).toContain(`href="${assessmentUrl}${htmlReferrers}" class="govuk-back-link"`)
+          expect(submitted.text).toContain(`href="${assessmentUrl}${htmlReferrers}" class="govuk-link">Cancel</a>`)
+          expect(csraService.updateCsraAssessment).not.toHaveBeenCalled()
+        } else {
+          expect(submitted.status).toBe(302)
+          expect(submitted.headers.location).toBe(`${assessmentUrl}${referrers}`)
+        }
+      },
+    )
+
     it.each([true, false])('preselects the latest saved answer %s', async provisionalReviewed => {
       csraService.getCsraAssessment.mockResolvedValue(
         provisionallyRated(stageAnswers({ stage: 'FINAL', provisionalReviewed })),
@@ -1401,6 +1431,49 @@ describe('csraRouter', () => {
       expect(response.text).toContain('You can start a new assessment for this prisoner if required.')
       expect(response.text).toMatch(/href="\/prisoner\/A1234BC"[^>]*data-qa="finish-button"/)
       expect(csraService.getCsraAssessment).not.toHaveBeenCalled()
+    })
+
+    it('keeps the referrers through the cancel page, its redirects and the finish button', async () => {
+      const referrers = '?referrer=due-for-review&referrer=history'
+      csraService.getCsraAssessment.mockResolvedValue(assessment({ stages: [stageAnswers({ pncChecked: true })] }))
+
+      const getResponse = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .get(`${assessmentUrl}/cancel${referrers}`)
+        .expect(200)
+
+      expect(getResponse.text).toContain(
+        `href="${assessmentUrl}${referrers.replace(/&/g, '&amp;')}" class="govuk-back-link"`,
+      )
+      expect(getResponse.text).toContain(`href="${assessmentUrl}${referrers.replace(/&/g, '&amp;')}">Cancel</a>`)
+
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(`${assessmentUrl}/cancel${referrers}`)
+        .type('form')
+        .send({})
+        .expect(302)
+        .expect('Location', `${assessmentUrl}/cancel${referrers}`)
+
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(`${assessmentUrl}/cancel${referrers}`)
+        .type('form')
+        .send({ confirmCancel: 'no' })
+        .expect(302)
+        .expect('Location', `${assessmentUrl}${referrers}`)
+
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(`${assessmentUrl}/cancel${referrers}`)
+        .type('form')
+        .send({ confirmCancel: 'yes' })
+        .expect(302)
+        .expect('Location', `${assessmentUrl}/cancelled${referrers}`)
+
+      const cancelledResponse = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .get(`${assessmentUrl}/cancelled${referrers}`)
+        .expect(200)
+
+      expect(cancelledResponse.text).toMatch(
+        /href="\/prisoner\/A1234BC\?referrer=due-for-review&amp;referrer=history"[^>]*data-qa="finish-button"/,
+      )
     })
 
     it.each(['CsraAssessmentNotCancellable', 'CsraReviewNotWritable'])(

@@ -6,6 +6,7 @@
 {% set pageTitle = applicationName + " - Provisional CSRA rating confirmed" %}
 {% set prisonerName = prisoner.firstName | convertToTitleCase %}
 {% set isProvisional = csra.status === 'PROVISIONAL' %}
+{% set currentRating = csra.finalRating or csra.provisionalRating %}
 
 {% block heading %}
   {% include "../partials/compactPrisonerBanner.njk" %}
@@ -23,10 +24,10 @@
         titleText: ("Provisional " if isProvisional else "") + "CSRA rating confirmed",
         classes: 'govuk-!-margin-bottom-6'
       }) %}
-        {{ prisonerName }} is rated {{ csra.rating | csraRatingLabel('PROVISIONAL' if isProvisional) }}
+        {{ prisonerName }} is rated {{ currentRating | csraRatingLabel('PROVISIONAL' if isProvisional) }}
       {% endcall %}
 
-      {% if isProvisional and csra.rating === 'HIGH_SPECIFIC' %}
+      {% if isProvisional and currentRating === 'HIGH_SPECIFIC' %}
         <h2 class="govuk-heading-m">
           What must happen next
         </h2>

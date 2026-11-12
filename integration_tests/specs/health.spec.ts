@@ -8,6 +8,7 @@ import manageUsersApi from '../mockApis/manageUsersApi'
 import componentApi from '../mockApis/componentApi'
 import courtDataApi from '../mockApis/courtDataApi'
 import documentApi from '../mockApis/documentApi'
+import changeSomeonesCellApi from '../mockApis/changeSomeonesCellApi'
 
 import { resetStubs } from '../testUtils'
 
@@ -28,6 +29,7 @@ test.describe('Health', () => {
         componentApi.stubPing(),
         courtDataApi.stubPing(),
         documentApi.stubPing(),
+        changeSomeonesCellApi.stubPing(),
       ])
     })
 
@@ -58,6 +60,7 @@ test.describe('Health', () => {
         tokenVerification.stubPing(500),
         prisonerSearchApi.stubPing(),
         componentApi.stubPing(),
+        changeSomeonesCellApi.stubPing(),
       ])
     })
 

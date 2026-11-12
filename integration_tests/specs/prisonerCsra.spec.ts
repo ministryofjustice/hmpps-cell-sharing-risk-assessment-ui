@@ -72,7 +72,11 @@ const stubRatingSelectionAssessment = async (page: Page, answers: CsraAssessment
   await prisonerSearchApi.stubGetPrisoner(prisoner)
   await prisonApi.stubGetPrisonerImage(prisoner.prisonerNumber)
   await manageUsersApi.stubGetUserCaseloads(['MDI'])
-  await csraApi.stubGetCurrentRating(prisoner.prisonerNumber, { status: 'NO_RATING', rating: null })
+  await csraApi.stubGetCurrentRating(prisoner.prisonerNumber, {
+    status: 'NO_RATING',
+    finalRating: null,
+    provisionalRating: null,
+  })
   await csraApi.stubGetAssessment(prisoner.prisonerNumber, 'assessment-123', {
     status: 'IN_PROGRESS',
     stages: [answers],
@@ -91,7 +95,7 @@ test.describe('Prisoner CSRA', () => {
     await manageUsersApi.stubGetUserCaseloads(['MDI'])
     await csraApi.stubGetCurrentRating('A1234BC', {
       status: 'COMPLETE',
-      rating: 'HIGH_SPECIFIC',
+      finalRating: 'HIGH_SPECIFIC',
       provisional: false,
       assessmentComment: 'PNC checked. No issues found.',
       riskTo: [{ category: 'DIFFERENT_ETHNICITY', details: 'Racist towards other ethnicities.' }],
@@ -119,7 +123,11 @@ test.describe('Prisoner CSRA', () => {
     await prisonerSearchApi.stubGetPrisoner(prisoner)
     await prisonApi.stubGetPrisonerImage('A1234BC')
     await manageUsersApi.stubGetUserCaseloads(['MDI'])
-    await csraApi.stubGetCurrentRating('A1234BC', { status: 'NO_RATING', rating: null })
+    await csraApi.stubGetCurrentRating('A1234BC', {
+      status: 'NO_RATING',
+      finalRating: null,
+      provisionalRating: null,
+    })
 
     await page.goto('/prisoner/A1234BC')
 
@@ -129,7 +137,11 @@ test.describe('Prisoner CSRA', () => {
   })
 
   test('shows the assessment section when there is no rating', async ({ page }) => {
-    const prisonerCsraPage = await stubPrisonerPage(page, { status: 'NO_RATING', rating: null })
+    const prisonerCsraPage = await stubPrisonerPage(page, {
+      status: 'NO_RATING',
+      finalRating: null,
+      provisionalRating: null,
+    })
 
     await expect(prisonerCsraPage.assessmentSection).toBeVisible()
     await expect(prisonerCsraPage.reviewSection).toBeHidden()
@@ -139,7 +151,8 @@ test.describe('Prisoner CSRA', () => {
   test('shows an assessment in progress when an unrated assessment has started', async ({ page }) => {
     const prisonerCsraPage = await stubPrisonerPage(page, {
       status: 'NO_RATING',
-      rating: null,
+      finalRating: null,
+      provisionalRating: null,
       inProgress: {
         reviewId: 'assessment-123',
         type: 'CSRA_INITIAL_REVIEW',
@@ -156,7 +169,8 @@ test.describe('Prisoner CSRA', () => {
   test('shows an assessment in progress for a provisional high general rating', async ({ page }) => {
     const prisonerCsraPage = await stubPrisonerPage(page, {
       status: 'PROVISIONAL',
-      rating: 'HIGH_GENERAL',
+      finalRating: null,
+      provisionalRating: 'HIGH_GENERAL',
       provisional: true,
       ratingStage: 'PROVISIONAL',
       inProgress: { reviewId: 'assessment-123', type: 'CSRA_INITIAL_REVIEW' },
@@ -171,7 +185,8 @@ test.describe('Prisoner CSRA', () => {
   test('shows an assessment in progress for a provisional high specific rating', async ({ page }) => {
     const prisonerCsraPage = await stubPrisonerPage(page, {
       status: 'PROVISIONAL',
-      rating: 'HIGH_SPECIFIC',
+      finalRating: null,
+      provisionalRating: 'HIGH_SPECIFIC',
       provisional: true,
       ratingStage: 'PROVISIONAL',
       inProgress: { reviewId: 'assessment-123', type: 'CSRA_INITIAL_REVIEW' },
@@ -182,7 +197,7 @@ test.describe('Prisoner CSRA', () => {
   })
 
   test('does not show a review due date for a standard rating', async ({ page }) => {
-    const prisonerCsraPage = await stubPrisonerPage(page, { status: 'COMPLETE', rating: 'STANDARD' })
+    const prisonerCsraPage = await stubPrisonerPage(page, { status: 'COMPLETE', finalRating: 'STANDARD' })
 
     await expect(prisonerCsraPage.assessmentSection).toBeVisible()
     await expect(prisonerCsraPage.reviewSection).toBeVisible()
@@ -192,7 +207,7 @@ test.describe('Prisoner CSRA', () => {
   test('shows the review due date for a high specific rating', async ({ page }) => {
     const prisonerCsraPage = await stubPrisonerPage(page, {
       status: 'COMPLETE',
-      rating: 'HIGH_SPECIFIC',
+      finalRating: 'HIGH_SPECIFIC',
       nextReviewDate: '2027-05-06',
     })
 
@@ -203,7 +218,7 @@ test.describe('Prisoner CSRA', () => {
   test('shows an overdue message for a high general rating', async ({ page }) => {
     const prisonerCsraPage = await stubPrisonerPage(page, {
       status: 'COMPLETE',
-      rating: 'HIGH_GENERAL',
+      finalRating: 'HIGH_GENERAL',
       nextReviewDate: '2026-09-01',
     })
 
@@ -216,7 +231,8 @@ test.describe('Prisoner CSRA', () => {
   }) => {
     const prisonerCsraPage = await stubPrisonerPage(page, {
       status: 'PROVISIONAL',
-      rating: 'HIGH_GENERAL',
+      finalRating: null,
+      provisionalRating: 'HIGH_GENERAL',
       provisional: true,
       ratingStage: 'PROVISIONAL',
       inheritedAfterTransfer: true,
@@ -238,7 +254,7 @@ test.describe('Prisoner CSRA', () => {
     await manageUsersApi.stubGetUserCaseloads(['MDI'])
     await csraApi.stubGetCurrentRating('A1234BC', {
       status: 'COMPLETE',
-      rating: 'HIGH_SPECIFIC',
+      finalRating: 'HIGH_SPECIFIC',
       nextReviewDate: '2027-05-06',
       inProgress: {
         reviewId: 'review-123',
@@ -267,7 +283,7 @@ test.describe('Prisoner CSRA', () => {
     await manageUsersApi.stubGetUserCaseloads(['MDI'])
     await csraApi.stubGetCurrentRating('A1234BC', {
       status: 'COMPLETE',
-      rating: 'HIGH_SPECIFIC',
+      finalRating: 'HIGH_SPECIFIC',
       nextReviewDate: '2027-05-06',
       inProgress: {
         reviewId: 'review-123',
@@ -288,7 +304,7 @@ test.describe('Prisoner CSRA', () => {
   test('shows a review in progress for a standard rating', async ({ page }) => {
     const prisonerCsraPage = await stubPrisonerPage(page, {
       status: 'COMPLETE',
-      rating: 'STANDARD',
+      finalRating: 'STANDARD',
       inProgress: {
         reviewId: 'review-123',
         type: 'CSRA_REVIEW',
@@ -305,7 +321,8 @@ test.describe('Prisoner CSRA', () => {
   test('shows a review in progress for an interim high general rating', async ({ page }) => {
     const prisonerCsraPage = await stubPrisonerPage(page, {
       status: 'PROVISIONAL',
-      rating: 'HIGH_GENERAL',
+      finalRating: null,
+      provisionalRating: 'HIGH_GENERAL',
       provisional: true,
       ratingStage: 'INTERIM',
       inProgress: { reviewId: 'review-123', type: 'CSRA_REVIEW' },
@@ -320,7 +337,7 @@ test.describe('Prisoner CSRA', () => {
   test('shows an existing review comment for a standard rating', async ({ page }) => {
     const prisonerCsraPage = await stubPrisonerPage(page, {
       status: 'COMPLETE',
-      rating: 'STANDARD',
+      finalRating: 'STANDARD',
       assessmentComment: 'Review comment recorded.',
     })
 
@@ -330,7 +347,7 @@ test.describe('Prisoner CSRA', () => {
   test('shows an existing review comment for a high specific rating', async ({ page }) => {
     const prisonerCsraPage = await stubPrisonerPage(page, {
       status: 'COMPLETE',
-      rating: 'HIGH_SPECIFIC',
+      finalRating: 'HIGH_SPECIFIC',
       assessmentComment: 'Review comment recorded.',
     })
 
@@ -340,7 +357,7 @@ test.describe('Prisoner CSRA', () => {
   test('shows an overdue message and existing review comment together', async ({ page }) => {
     const prisonerCsraPage = await stubPrisonerPage(page, {
       status: 'COMPLETE',
-      rating: 'HIGH_GENERAL',
+      finalRating: 'HIGH_GENERAL',
       nextReviewDate: '2026-09-01',
       assessmentComment: 'Review comment recorded.',
     })
@@ -352,7 +369,8 @@ test.describe('Prisoner CSRA', () => {
   test('shows an inherited interim rating and existing review comment', async ({ page }) => {
     const prisonerCsraPage = await stubPrisonerPage(page, {
       status: 'PROVISIONAL',
-      rating: 'HIGH_GENERAL',
+      finalRating: null,
+      provisionalRating: 'HIGH_GENERAL',
       provisional: true,
       ratingStage: 'INTERIM',
       inheritedAfterTransfer: true,
@@ -372,7 +390,11 @@ test.describe('Prisoner CSRA', () => {
     await prisonerSearchApi.stubGetPrisoner(prisoner)
     await prisonApi.stubGetPrisonerImage('A1234BC')
     await manageUsersApi.stubGetUserCaseloads(['MDI'])
-    await csraApi.stubGetCurrentRating('A1234BC', { status: 'NO_RATING', rating: null })
+    await csraApi.stubGetCurrentRating('A1234BC', {
+      status: 'NO_RATING',
+      finalRating: null,
+      provisionalRating: null,
+    })
     await csraApi.stubStartAssessment('A1234BC', 'assessment-123')
     await csraApi.stubGetAssessment('A1234BC', 'assessment-123', {
       status: 'IN_PROGRESS',
@@ -410,7 +432,11 @@ test.describe('Prisoner CSRA', () => {
     await prisonerSearchApi.stubGetPrisoner(prisoner)
     await prisonApi.stubGetPrisonerImage('A1234BC')
     await manageUsersApi.stubGetUserCaseloads(['MDI'])
-    await csraApi.stubGetCurrentRating('A1234BC', { status: 'NO_RATING', rating: null })
+    await csraApi.stubGetCurrentRating('A1234BC', {
+      status: 'NO_RATING',
+      finalRating: null,
+      provisionalRating: null,
+    })
     await csraApi.stubGetAssessment('A1234BC', 'assessment-123', {
       status: 'IN_PROGRESS',
       stages: [
@@ -507,7 +533,8 @@ test.describe('Prisoner CSRA', () => {
     await page.getByLabel('Assessment comment').fill('All available sources checked. Manager approved sharing.')
     await csraApi.stubGetCurrentRating('A1234BC', {
       status: 'PROVISIONAL',
-      rating: 'HIGH_SPECIFIC',
+      finalRating: null,
+      provisionalRating: 'HIGH_SPECIFIC',
       provisional: true,
       ratingStage: 'PROVISIONAL',
     })

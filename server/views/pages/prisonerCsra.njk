@@ -7,6 +7,7 @@
 {% set prisonerName = (prisoner.firstName + " " + prisoner.lastName) | convertToTitleCase %}
 {% set pageTitle = applicationName + " - CSRA for " + prisonerName %}
 {% set mainClasses = "govuk-body" %}
+{% set currentRating = csra.finalRating or csra.provisionalRating %}
 
 {% set currentTab = "current" %}
 
@@ -19,7 +20,7 @@
 
       <h1 class="govuk-heading-l" data-qa="page-heading">Current CSRA rating</h1>
 
-      {% if not csra.rating %}
+      {% if not currentRating %}
 
         <div class="csra-rating-panel" data-qa="no-csra">
           <h2 class="csra-rating-panel__title">
@@ -32,10 +33,10 @@
 
       {% else %}
 
-        <div class="csra-rating-panel govuk-!-margin-bottom-4 {{ csra.rating | csraRatingPanelClass }}" data-qa="csra-rating-panel">
+        <div class="csra-rating-panel govuk-!-margin-bottom-4 {{ currentRating | csraRatingPanelClass }}" data-qa="csra-rating-panel">
           <span class="govuk-caption-m">{{ "Provisional assessment" if csra.provisional else "Assessment" }}</span>
           <h2 class="csra-rating-panel__title">
-            {{ csra.rating | csraRatingLabel(csra.ratingStage) or (csra.status | csraStatusLabel) }}
+            {{ currentRating | csraRatingLabel(csra.ratingStage) or (csra.status | csraStatusLabel) }}
           </h2>
 
           {% if csra.provisional and csra.inheritedAfterTransfer %}
@@ -101,7 +102,7 @@
               {% endif %}
             {% endset %}
             <p class="govuk-body govuk-!-margin-bottom-0">
-              <a href="#" class="govuk-link">{{ viewLinkText }}</a>
+              <a href="{{ appendReferrers('/prisoner/' + prisoner.prisonerNumber + '/csra/' + csra.reviewId + '/view', referrers) }}" class="govuk-link">{{ viewLinkText }}</a>
             </p>
           {% endif %}
         </div>
@@ -130,22 +131,22 @@
                 Start a new cell sharing risk assessment.
               {% endif %}
             </p>
-            <a class="govuk-button govuk-!-margin-bottom-0" href="/prisoner/{{ prisoner.prisonerNumber }}/csra/{{ csra.inProgress.reviewId }}" data-qa="start-assessment">
+            <a class="govuk-button govuk-!-margin-bottom-0" href="{{ appendReferrers('/prisoner/' + prisoner.prisonerNumber + '/csra/' + csra.inProgress.reviewId, referrers) }}" data-qa="start-assessment">
               Continue assessment
             </a>
           {% else %}
             <p class="govuk-body">
               Start a new cell sharing risk assessment.
             </p>
-            {% set buttonClass = "govuk-button--secondary" if csra.rating else "" %}
-            <a class="govuk-button {{ buttonClass }} govuk-!-margin-bottom-0" href="/prisoner/{{ prisoner.prisonerNumber }}/csra/start" data-qa="start-assessment">
+            {% set buttonClass = "govuk-button--secondary" if currentRating else "" %}
+            <a class="govuk-button {{ buttonClass }} govuk-!-margin-bottom-0" href="{{ appendReferrers('/prisoner/' + prisoner.prisonerNumber + '/csra/start', referrers) }}" data-qa="start-assessment">
               Start assessment
             </a>
           {% endif %}
         </div>
       {% endif %}
 
-      {% if csra.rating and csra.rating != "STANDARD" and csra.nextReviewDate and not assessmentInProgress and not csra.inheritedAfterTransfer %}
+      {% if currentRating and currentRating != "STANDARD" and csra.nextReviewDate and not assessmentInProgress and not csra.inheritedAfterTransfer %}
         <div id="csra-review-due-date-section" class="govuk-!-margin-top-6">
           <h2 class="govuk-heading-m">Review due by</h2>
           <p class="govuk-body">
@@ -159,7 +160,7 @@
         </div>
       {% endif %}
 
-      {% if canAccess('edit_review') and csra.rating and not assessmentInProgress %}
+      {% if canAccess('edit_review') and currentRating and not assessmentInProgress %}
         <div id="csra-review-csra-section" class="govuk-!-margin-top-6">
           <h2 class="govuk-heading-m">
             Review
@@ -177,15 +178,15 @@
                 Start a review when the prisoner’s risk requires reassessment.
               {% endif %}
             </p>
-            <a class="govuk-button govuk-!-margin-bottom-0" href="/prisoner/{{ prisoner.prisonerNumber }}/csra/{{ csra.inProgress.reviewId }}" data-qa="start-assessment">
+            <a class="govuk-button govuk-!-margin-bottom-0" href="{{ appendReferrers('/prisoner/' + prisoner.prisonerNumber + '/csra/' + csra.inProgress.reviewId, referrers) }}" data-qa="start-assessment">
               Continue review
             </a>
           {% else %}
             <p class="govuk-body">
               Start a review when the prisoner’s risk requires reassessment.
             </p>
-            {% set buttonClass = "govuk-button--secondary" if csra.rating else "" %}
-            <a class="govuk-button {{ buttonClass }} govuk-!-margin-bottom-0" href="/prisoner/{{ prisoner.prisonerNumber }}/csra/start" data-qa="start-assessment">
+            {% set buttonClass = "govuk-button--secondary" if currentRating else "" %}
+            <a class="govuk-button {{ buttonClass }} govuk-!-margin-bottom-0" href="{{ appendReferrers('/prisoner/' + prisoner.prisonerNumber + '/csra/start', referrers) }}" data-qa="start-assessment">
               Start review
             </a>
           {% endif %}
@@ -199,7 +200,7 @@
           <p class="govuk-body">
             See information from all CSRA assessments and reviews.
           </p>
-          <a class="govuk-button govuk-button--secondary" href="{{"/prisoner/" + prisoner.prisonerNumber + "/history" + (fromQuery or "")}}" data-qa="view-history">
+          <a class="govuk-button govuk-button--secondary" href="{{ appendReferrers('/prisoner/' + prisoner.prisonerNumber + '/history', referrers) }}" data-qa="view-history">
             View CSRA history
           </a>
       </div>

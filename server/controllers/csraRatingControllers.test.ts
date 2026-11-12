@@ -63,10 +63,12 @@ describe('CSRA rating controllers', () => {
     csraService.getCurrentRating.mockResolvedValue({
       prisonerNumber: 'A1234BC',
       status: 'NO_RATING',
-      rating: null,
       provisional: false,
+      finalRating: null,
+      provisionalRating: null,
       riskTo: [],
       vulnerabilities: [],
+      stages: [],
     })
     submitStatus.mockReturnValue({
       submitType: AssessmentSubmitType.FINAL,
@@ -106,6 +108,22 @@ describe('CSRA rating controllers', () => {
         subjectType: 'ASSESSMENT_ID',
         correlationId: 'request-123',
       })
+    })
+
+    it('keeps the referrers on the back and cancel links', async () => {
+      const req = request()
+      req.query.referrer = ['due-for-review']
+      const res = response()
+
+      await controller.requestHandler()(req, res, jest.fn())
+
+      expect(res.render).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          backLink: `${assessmentUrl}/check-answers?referrer=due-for-review`,
+          cancelLink: `${assessmentUrl}?referrer=due-for-review`,
+        }),
+      )
     })
 
     it('uses the submitted rating rather than a stale query parameter', async () => {
@@ -238,6 +256,21 @@ describe('CSRA rating controllers', () => {
         })
         expect(res.redirect).toHaveBeenCalledWith('/prisoner/A1234BC')
       }
+    })
+
+    it('joins the selected rating and referrers with & in the back link', async () => {
+      const req = request()
+      req.query.referrer = ['due-for-review', 'history']
+      const res = response()
+
+      await controller.requestHandler()(req, res, jest.fn())
+
+      expect(res.render).toHaveBeenCalledWith(
+        'pages/csraConfirmRating',
+        expect.objectContaining({
+          backLink: `${assessmentUrl}/select-rating?selectedRating=HIGH_GENERAL&referrer=due-for-review&referrer=history`,
+        }),
+      )
     })
 
     it('audits confirmation and provides a back link retaining the selected rating', async () => {

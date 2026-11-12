@@ -3,7 +3,7 @@ import { CsraApiClient } from '../data'
 import type {
   CsraAssessment,
   CsraAssessmentsInProgress,
-  CsraCurrentRating,
+  CsraDetailedRating,
   CsraHighRiskDueForReview,
   CsraPrisonPrisonerList,
   CsraPrisonRatingSummary,
@@ -45,7 +45,7 @@ describe('CsraService', () => {
 
   describe('getCurrentRating', () => {
     it('delegates to the client, passing the username and prisoner number', async () => {
-      const currentRating = { prisonerNumber: 'A1234BC', status: 'COMPLETE' } as CsraCurrentRating
+      const currentRating = { prisonerNumber: 'A1234BC', status: 'COMPLETE' } as CsraDetailedRating
       ;(csraApiClient.getCurrentCsraRating as unknown as jest.Mock).mockResolvedValue(currentRating)
 
       const result = await csraService.getCurrentRating('AUSER_GEN', 'A1234BC')
@@ -91,12 +91,13 @@ describe('CsraService', () => {
     })
 
     it('delegates detailed-rating reads with the acting username and assessment id', async () => {
-      const rating: CsraCurrentRating = {
+      const rating: CsraDetailedRating = {
         prisonerNumber: 'A1234BC',
         status: 'PROVISIONAL',
         provisional: true,
         riskTo: [],
         vulnerabilities: [],
+        stages: [],
       }
       csraApiClient.getDetailedRating.mockResolvedValue(rating)
 
@@ -290,7 +291,7 @@ describe('CsraService', () => {
 
   describe('cancelCsraAssessment', () => {
     it('delegates to the client, passing the username, prisoner number, assessment id and prison id', async () => {
-      const currentRating = { prisonerNumber: 'A1234BC', status: 'NO_RATING' } as CsraCurrentRating
+      const currentRating = { prisonerNumber: 'A1234BC', status: 'NO_RATING' } as CsraDetailedRating
       ;(csraApiClient.cancelCsraAssessment as unknown as jest.Mock).mockResolvedValue(currentRating)
 
       const result = await csraService.cancelCsraAssessment('AUSER_GEN', 'A1234BC', 'assessment-1', 'MDI')

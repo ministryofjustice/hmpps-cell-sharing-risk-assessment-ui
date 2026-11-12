@@ -1,164 +1,238 @@
-import { answeredQuestions, buildDpsReviewRows, buildLegacyReviewRows } from './csraReviewSummaryRows'
-import type { CsraLegacyReviewDetail, CsraReviewDetail } from '../data/csraApiTypes'
+import type { CsraAssessmentStageAnswers, CsraDetailedRating } from '../data/csraApiTypes'
+import { createLegacyQuestionsRows, createSummaryRows } from './csraReviewSummaryRows'
 
-const review = (overrides: Partial<CsraReviewDetail> = {}): CsraReviewDetail => ({
-  id: 'de91dfa7-821f-4552-a427-bf2f32eafeb0',
-  prisonerNumber: 'A1234BC',
-  prisonId: 'LEI',
-  prisonName: 'Leeds (HMP)',
-  assessmentDate: '2016-10-31',
-  type: 'REVIEW',
-  assessmentType: 'REVIEW',
-  createdAt: '2016-10-31T09:15:00',
-  createdBy: 'NQP56Y',
-  ...overrides,
-})
+describe('createSummaryRows', () => {
+  const detailedRating: CsraDetailedRating = {
+    prisonerNumber: 'A1234BC',
+    status: 'COMPLETE',
+    finalRating: 'HIGH_SPECIFIC',
+    provisional: false,
+    assessmentComment: 'Assessment note',
+    nextReviewDate: '2026-09-10',
+    finalCompletedBy: 'USER1',
+    riskTo: [],
+    vulnerabilities: [],
+    stages: [],
+  }
 
-const legacyReview = (legacy: Partial<CsraLegacyReviewDetail> = {}, overrides: Partial<CsraReviewDetail> = {}) =>
-  review({ ...overrides, legacy: { questions: [], ...legacy } })
+  it('creates rows from the current assessment stage', () => {
+    const assessmentAnswers: CsraAssessmentStageAnswers = {
+      stage: 'FINAL',
+      prisonId: 'MDI',
+      offenceEvidence: [],
+      riskTo: [{ category: 'OTHER', details: 'Specific detail' }],
+      vulnerabilities: [{ category: 'MENTAL_HEALTH', details: null }],
+      version: 1,
+    }
 
-const labels = (rows: { key: { text: string } }[]) => rows.map(row => row.key.text)
-const valueOf = (rows: { key: { text: string }; value: { text: string } }[], key: string) =>
-  rows.find(row => row.key.text === key)?.value.text
+    expect(
+      createSummaryRows({
+        assessmentAnswers,
+        detailedRating,
+        userDisplayNames: new Map([['USER1', 'Jane Doe']]),
+      }),
+    ).toEqual([
+      { key: { text: 'Rating' }, value: { text: 'High risk – specific' } },
+      { key: { text: 'Risk to' }, value: { html: '<p>Other - Specific detail</p>' } },
+      { key: { text: 'Vulnerable due to' }, value: { html: '<p>Mental health</p>' } },
+      { key: { text: 'Assessment comment' }, value: { text: 'Assessment note' } },
+      { key: { text: 'Next review due by' }, value: { text: 'Thursday 10 September 2026' } },
+      { key: { text: 'Completed by' }, value: { text: 'Jane Doe' } },
+    ])
+  })
 
-describe('buildLegacyReviewRows', () => {
-  it('shows the approval block first when a level was approved', () => {
-    const rows = buildLegacyReviewRows(
-      legacyReview({
+  it('escapes free-text details before including them in summary HTML', () => {
+    const assessmentAnswers: CsraAssessmentStageAnswers = {
+      stage: 'FINAL',
+      prisonId: 'MDI',
+      offenceEvidence: [],
+      riskTo: [{ category: 'OTHER', details: '<img src=x onerror="alert(\'x\')"> & more' }],
+      vulnerabilities: [{ category: 'OTHER', details: "<script>alert('x')</script>" }],
+      version: 1,
+    }
+
+    const rows = createSummaryRows({
+      assessmentAnswers,
+      detailedRating,
+      userDisplayNames: new Map(),
+    })
+
+    expect(rows.find(summaryRow => summaryRow.key.text === 'Risk to')?.value).toEqual({
+      html: '<p>Other - &lt;img src=x onerror=&quot;alert(&#39;x&#39;)&quot;&gt; &amp; more</p>',
+    })
+    expect(rows.find(summaryRow => summaryRow.key.text === 'Vulnerable due to')?.value).toEqual({
+      html: '<p>Other - &lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt;</p>',
+    })
+  })
+
+  it('creates summary rows for a legacy rating', () => {
+    const legacyRating: CsraDetailedRating = {
+      ...detailedRating,
+      prisonName: 'Moorland',
+      nextReviewDate: null,
+      startedBy: 'USER2',
+      legacy: {
+        level: 'HI',
+        approvalStatus: 'APPROVED',
+        calculatedResult: 'MED',
+        overrideResult: null,
         approvedResult: 'HI',
-        approvalCommitteeComment: 'Agreed at review board.',
-        approvalCommittee: { code: 'REVIEW', name: 'Review Board' },
-        approvalDate: '2016-11-02',
+        assessmentComment: 'Legacy assessment note',
+        approvalCommitteeComment: 'Approval note',
+        approvalComment: null,
+        approvalDate: '2026-09-07',
+        assessmentCommittee: { code: 'GOV', name: 'Assessment committee' },
+        approvalCommittee: { code: 'MED', name: 'Approval committee' },
+        nextReviewDate: null,
+        questions: [],
+      },
+    }
+
+    expect(
+      createSummaryRows({
+        detailedRating: legacyRating,
+        userDisplayNames: new Map([['USER2', 'Jane Doe']]),
       }),
-    )
-
-    expect(labels(rows).slice(0, 4)).toEqual(['Approved result', 'Approval comments', 'Approved by', 'Approval date'])
-    expect(valueOf(rows, 'Approved result')).toBe('High')
-    expect(valueOf(rows, 'Approval comments')).toBe('Agreed at review board.')
-    expect(valueOf(rows, 'Approved by')).toBe('Review Board')
-    expect(valueOf(rows, 'Approval date')).toBe('2 November 2016')
-  })
-
-  it('omits the whole approval block when nothing was approved', () => {
-    const rows = buildLegacyReviewRows(legacyReview({ approvalDate: '2016-11-02' }))
-
-    expect(labels(rows)).not.toContain('Approved result')
-    expect(labels(rows)).not.toContain('Approval comments')
-    expect(labels(rows)).not.toContain('Approved by')
-    expect(labels(rows)).not.toContain('Approval date')
-  })
-
-  it('falls back to the legacy wording for each empty approval field', () => {
-    const rows = buildLegacyReviewRows(legacyReview({ approvedResult: 'STANDARD' }))
-
-    expect(valueOf(rows, 'Approval comments')).toBe('No approval comments entered')
-    expect(valueOf(rows, 'Approved by')).toBe('Not entered')
-    expect(valueOf(rows, 'Approval date')).toBe('Not entered')
-  })
-
-  it('always shows the assessment rows, with fallbacks', () => {
-    const rows = buildLegacyReviewRows(legacyReview({}, { prisonName: null, prisonId: null }))
-
-    expect(valueOf(rows, 'Assessment comments')).toBe('No assessment comment entered')
-    expect(valueOf(rows, 'Calculated result')).toBe('Not entered')
-    expect(valueOf(rows, 'Location')).toBe('Not entered')
-    expect(valueOf(rows, 'Assessed by')).toBe('Not entered')
-    expect(valueOf(rows, 'Next review date')).toBe('Not entered')
-  })
-
-  it('labels the raw NOMIS levels, which the CSRA result labels cannot', () => {
-    const rows = buildLegacyReviewRows(legacyReview({ calculatedResult: 'LOW', approvedResult: 'MED' }))
-
-    expect(valueOf(rows, 'Calculated result')).toBe('Low')
-    expect(valueOf(rows, 'Approved result')).toBe('Medium')
-  })
-
-  it('falls back to the prison id when the name is unknown', () => {
-    expect(valueOf(buildLegacyReviewRows(legacyReview({}, { prisonName: null })), 'Location')).toBe('LEI')
-  })
-
-  it('reports a rejected approval, which the legacy screens cannot distinguish', () => {
-    expect(valueOf(buildLegacyReviewRows(legacyReview({ approvalStatus: 'NOT_APPROVED' })), 'Approval status')).toBe(
-      'Not approved',
-    )
-    expect(labels(buildLegacyReviewRows(legacyReview({ approvalStatus: 'APPROVED' })))).not.toContain('Approval status')
-    expect(labels(buildLegacyReviewRows(legacyReview()))).not.toContain('Approval status')
-  })
-
-  it('never offers override rows, which are not in the migration contract', () => {
-    const rows = buildLegacyReviewRows(legacyReview({ approvedResult: 'HI' }))
-
-    expect(labels(rows)).not.toContain('Override result')
-    expect(labels(rows)).not.toContain('Override reason')
-  })
-})
-
-describe('buildDpsReviewRows', () => {
-  it('shows the review fields the API does return', () => {
-    const rows = buildDpsReviewRows(
-      review({
-        type: 'CSRA_INITIAL_ASSESSMENT',
-        interimResult: 'STANDARD',
-        interimResultDate: '2026-08-03',
-        finalResult: 'HIGH_GENERAL',
-        finalResultDate: '2026-08-04',
-      }),
-    )
-
-    expect(valueOf(rows, 'Assessment date')).toBe('31 October 2016')
-    expect(valueOf(rows, 'Type')).toBe('CSRA initial assessment')
-    expect(valueOf(rows, 'Location')).toBe('Leeds (HMP)')
-    expect(valueOf(rows, 'Provisional result')).toBe('Standard')
-    expect(valueOf(rows, 'Provisional result date')).toBe('3 August 2026')
-    expect(valueOf(rows, 'Final result')).toBe('High risk – general')
-    expect(valueOf(rows, 'Final result date')).toBe('4 August 2026')
-    expect(valueOf(rows, 'Started by')).toBe('NQP56Y')
-    expect(valueOf(rows, 'Started')).toBe('31 October 2016 at 09:15')
-  })
-
-  it('omits a result block that has not been given yet', () => {
-    const rows = buildDpsReviewRows(review({ type: 'CSRA_INITIAL_ASSESSMENT' }))
-
-    expect(labels(rows)).not.toContain('Provisional result')
-    expect(labels(rows)).not.toContain('Final result')
-  })
-
-  it('only shows the last-updated rows once the review has been updated', () => {
-    expect(labels(buildDpsReviewRows(review()))).not.toContain('Last updated')
-
-    const rows = buildDpsReviewRows(review({ lastModifiedBy: 'ASMITH', lastModifiedAt: '2026-08-04T14:05:00' }))
-    expect(valueOf(rows, 'Last updated by')).toBe('ASMITH')
-    expect(valueOf(rows, 'Last updated')).toBe('4 August 2026 at 14:05')
-  })
-})
-
-describe('answeredQuestions', () => {
-  const question = (text: string, answer: string | null, additionalAnswers: string[] = []) => ({
-    question: text,
-    answer,
-    additionalAnswers,
-  })
-
-  it('returns nothing when there are no questions', () => {
-    expect(answeredQuestions([])).toEqual([])
-    expect(answeredQuestions(undefined)).toEqual([])
-  })
-
-  it('drops questions that were not answered', () => {
-    expect(answeredQuestions([question('Unanswered', null), question('Answered', 'Yes')])).toEqual([
-      { question: 'Answered', answers: ['Yes'] },
+    ).toEqual([
+      { key: { text: 'Approved result' }, value: { text: 'High' } },
+      { key: { text: 'Approval comments' }, value: { text: 'Approval note' } },
+      { key: { text: 'Approved by' }, value: { text: 'Approval committee' } },
+      { key: { text: 'Approval date' }, value: { text: '7 September 2026' } },
+      { key: { text: 'Assessment comments' }, value: { text: 'Legacy assessment note' } },
+      { key: { text: 'Calculated result' }, value: { text: 'Medium' } },
+      { key: { text: 'Location' }, value: { text: 'Moorland' } },
+      {
+        key: { text: 'Assessed by' },
+        value: { text: 'Assessment committee - Jane Doe' },
+      },
+      { key: { text: 'Next review date' }, value: { text: 'Not entered' } },
     ])
   })
 
-  it('keeps every answer to a question, unlike the legacy screen which shows only the first', () => {
-    expect(answeredQuestions([question('Risk to', 'Different ethnicity', ['Transgender', 'Old people'])])).toEqual([
-      { question: 'Risk to', answers: ['Different ethnicity', 'Transgender', 'Old people'] },
+  it('formats legacy override levels and omits the unsupported override reason', () => {
+    const legacyRating: CsraDetailedRating = {
+      ...detailedRating,
+      legacy: {
+        level: 'HI',
+        approvalStatus: 'APPROVED',
+        calculatedResult: 'MED',
+        overrideResult: 'LOW',
+        approvedResult: null,
+        assessmentComment: null,
+        approvalCommitteeComment: null,
+        approvalComment: null,
+        approvalDate: null,
+        assessmentCommittee: null,
+        approvalCommittee: null,
+        nextReviewDate: null,
+        questions: [],
+      },
+    }
+
+    const rows = createSummaryRows({
+      detailedRating: legacyRating,
+      userDisplayNames: new Map(),
+    })
+
+    expect(rows).toContainEqual({ key: { text: 'Approved result' }, value: { text: 'High' } })
+    expect(rows).toContainEqual({ key: { text: 'Calculated result' }, value: { text: 'Medium' } })
+    expect(rows).toContainEqual({ key: { text: 'Override result' }, value: { text: 'Low' } })
+    expect(rows.map(summaryRow => summaryRow.key.text)).not.toContain('Override reason')
+  })
+
+  it('excludes system accounts from legacy assessor name lookups', () => {
+    const legacyRating: CsraDetailedRating = {
+      ...detailedRating,
+      nextReviewDate: null,
+      startedBy: 'SYS',
+      legacy: {
+        level: null,
+        approvalStatus: 'NOT_APPROVED',
+        calculatedResult: null,
+        overrideResult: null,
+        approvedResult: null,
+        assessmentComment: null,
+        approvalCommitteeComment: null,
+        approvalComment: null,
+        approvalDate: null,
+        assessmentCommittee: null,
+        approvalCommittee: null,
+        nextReviewDate: null,
+        questions: [],
+      },
+    }
+
+    expect(
+      createSummaryRows({
+        detailedRating: legacyRating,
+        userDisplayNames: new Map(),
+      }),
+    ).toEqual([
+      { key: { text: 'Approval status' }, value: { text: 'Not approved' } },
+      { key: { text: 'Assessment comments' }, value: { text: 'No assessment comment entered' } },
+      { key: { text: 'Calculated result' }, value: { text: 'Not entered' } },
+      { key: { text: 'Location' }, value: { text: 'Not entered' } },
+      { key: { text: 'Assessed by' }, value: { text: 'Not entered' } },
+      { key: { text: 'Next review date' }, value: { text: 'Not entered' } },
     ])
   })
 
-  it('preserves the order the API supplied', () => {
-    const questions = [question('First', 'a'), question('Second', 'b'), question('Third', 'c')]
+  it('uses the values for the requested stage instead of falling back to provisional values', () => {
+    const provisionalAnswers: CsraAssessmentStageAnswers = {
+      stage: 'PROVISIONAL',
+      prisonId: 'MDI',
+      offenceEvidence: [],
+      riskTo: [],
+      vulnerabilities: [],
+      version: 1,
+    }
+    const rating: CsraDetailedRating = {
+      ...detailedRating,
+      provisionalRating: 'HIGH_GENERAL',
+      provisionalAssessmentComment: 'Provisional note',
+      provisionalCompletedBy: 'USER2',
+      assessmentComment: undefined,
+      finalCompletedBy: undefined,
+    }
 
-    expect(answeredQuestions(questions).map(q => q.question)).toEqual(['First', 'Second', 'Third'])
+    expect(
+      createSummaryRows({
+        assessmentAnswers: provisionalAnswers,
+        detailedRating: rating,
+        userDisplayNames: new Map([['USER2', 'Jane Doe']]),
+      }),
+    ).toEqual([
+      { key: { text: 'Rating' }, value: { text: 'High risk – general (provisional)' } },
+      { key: { text: 'Assessment comment' }, value: { text: 'Provisional note' } },
+      { key: { text: 'Completed by' }, value: { text: 'Jane Doe' } },
+    ])
+    expect(
+      createSummaryRows({
+        detailedRating: rating,
+        userDisplayNames: new Map(),
+      }),
+    ).toEqual([
+      { key: { text: 'Rating' }, value: { text: 'High risk – specific' } },
+      { key: { text: 'Assessment comment' }, value: { text: 'Not entered' } },
+      { key: { text: 'Next review due by' }, value: { text: 'Thursday 10 September 2026' } },
+      { key: { text: 'Completed by' }, value: { text: 'Unknown' } },
+    ])
+  })
+
+  it('includes additional answers in legacy question rows and excludes unanswered questions and the completion marker', () => {
+    expect(
+      createLegacyQuestionsRows({
+        questions: [
+          { question: 'Is the assessment complete', answer: 'Yes', additionalAnswers: [] },
+          { question: 'Question one', answer: 'No', additionalAnswers: ['Additional detail & <notes>'] },
+          { question: 'Question two', answer: null, additionalAnswers: [] },
+        ],
+      }),
+    ).toEqual([
+      {
+        key: { text: 'Question one' },
+        value: { html: '<p>No</p><p>Additional detail &amp; &lt;notes&gt;</p>' },
+      },
+    ])
   })
 })

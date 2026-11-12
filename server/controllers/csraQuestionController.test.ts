@@ -51,6 +51,7 @@ describe('csraQuestionController', () => {
       id: 'request-id-123',
       method,
       body,
+      query: {},
       params: {
         prisonerNumber: 'A1234BC',
         assessmentId: ASSESSMENT_ID,
@@ -105,6 +106,27 @@ describe('csraQuestionController', () => {
         }),
       }),
     )
+  })
+
+  it('keeps the referrers on the back and cancel links, and on the redirect to the next step', async () => {
+    const res = response()
+
+    await controller()({ ...request(), query: { referrer: ['due-for-review'] } }, res, jest.fn())
+    expect(res.render).toHaveBeenCalledWith(
+      'pages/csraQuestion',
+      expect.objectContaining({
+        backLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}?referrer=due-for-review`,
+        cancelLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}?referrer=due-for-review`,
+      }),
+    )
+
+    const postRes = response()
+    await controller()(
+      { ...request('POST', { officerSpokeToPrisoner: 'YES' }), query: { referrer: ['due-for-review'] } },
+      postRes,
+      jest.fn(),
+    )
+    expect(postRes.redirect).toHaveBeenCalledWith(`/prisoner/A1234BC/csra/${ASSESSMENT_ID}?referrer=due-for-review`)
   })
 
   it('passes provisional-rating state to the evidence sources question', async () => {
@@ -420,7 +442,10 @@ describe('csraQuestionController', () => {
     expect(res.redirect).toHaveBeenCalledWith(`/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/1`)
   })
 
-  it('renders the configured information step with back, continue and cancel links without saving', async () => {
+  it.each([
+    ['', []],
+    ['?referrer=due-for-review&referrer=history', ['due-for-review', 'history']],
+  ])('renders the information step preserving referrers %s without saving', async (query, referrers) => {
     csraService.getCsraAssessment.mockResolvedValue(
       makeAssessment({
         interimResult: 'HIGH_GENERAL',
@@ -429,21 +454,25 @@ describe('csraQuestionController', () => {
     )
     const res = response()
 
-    await controller()(request('GET', {}, '1', 'evidenceAndOffences'), res, jest.fn())
+    await controller()(
+      { ...request('GET', {}, '1', 'evidenceAndOffences'), query: { referrer: referrers } },
+      res,
+      jest.fn(),
+    )
 
     expect(csraService.updateCsraAssessment).not.toHaveBeenCalled()
     expect(res.render).toHaveBeenCalledWith(
       'pages/csraInformationStep',
       expect.objectContaining({
         title: 'Review offences after checking new evidence source',
-        backLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/0`,
-        continueLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/2`,
-        cancelLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}`,
+        backLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/0${query}`,
+        continueLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/2${query}`,
+        cancelLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}${query}`,
       }),
     )
   })
 
-  it('does not save when the configured information step is submitted', async () => {
+  it('saves the configured information step when it is submitted and continues to the next step', async () => {
     csraService.getCsraAssessment.mockResolvedValue(
       makeAssessment({
         interimResult: 'HIGH_GENERAL',
@@ -454,7 +483,7 @@ describe('csraQuestionController', () => {
 
     await controller()(request('POST', {}, '1', 'evidenceAndOffences'), res, jest.fn())
 
-    expect(csraService.updateCsraAssessment).not.toHaveBeenCalled()
+    expect(csraService.updateCsraAssessment).toHaveBeenCalled()
     expect(res.redirect).toHaveBeenCalledWith(`/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/2`)
   })
 
@@ -520,7 +549,7 @@ describe('csraQuestionController', () => {
     let assessment = makeAssessment({ interimResult: 'HIGH_GENERAL', stages: [provisional] })
     const { prisoner } = response().locals
     const status = () =>
-      getTaskListSections(assessment, getAnswersFromAssessment(assessment), prisoner).evidenceAndOffences.status
+      getTaskListSections(assessment, getAnswersFromAssessment(assessment), prisoner, []).evidenceAndOffences.status
     expect(status()).toBe('IN_PROGRESS')
 
     csraService.getCsraAssessment.mockImplementation(async () => assessment)
@@ -549,13 +578,14 @@ describe('csraQuestionController', () => {
           expect(csraService.updateCsraAssessment).toHaveBeenCalledTimes(savedPages)
         } else {
           await controller()(request('POST', {}, String(stepId), 'evidenceAndOffences'), response(), jest.fn())
+          savedPages += 1
           expect(csraService.updateCsraAssessment).toHaveBeenCalledTimes(savedPages)
         }
       }
     }
     /* eslint-enable no-await-in-loop */
 
-    expect(savedPages).toBe(offence ? 8 : 7)
+    expect(savedPages).toBe(offence ? 9 : 8)
     expect(status()).toBe('COMPLETE')
     expect(getAnswersFromAssessment(assessment).offenceEvidence).toEqual(offence ? provisional.offenceEvidence : [])
     expect(provisional).toEqual(original)

@@ -6,6 +6,7 @@
 {% from "moj/components/ticket-panel/macro.njk" import mojTicketPanel %}
 
 {% set prisonerName = (prisoner.firstName + " " + prisoner.lastName) | convertToTitleCase %}
+{% set currentRating = csra.finalRating or csra.provisionalRating %}
 
 {% if isProvisional %}
   {% set title = "Provisional CSRA rating" %}
@@ -29,6 +30,9 @@
       <div class="govuk-body">
         <form method="post" action>
           <input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+          {% for key in referrers %}
+            <input type="hidden" name="referrer" value="{{ key }}">
+          {% endfor %}
 
           {% if isHighGeneral or isProvisional %}
             {% set highGeneralValue = 'HIGH_GENERAL' %}
@@ -111,7 +115,7 @@
             {% endif %}
           {% else %}
             {{ govukInsetText({
-              html: "This prisoner does not have a current CSRA rating." if not csra or not csra.rating else "Their current CSRA rating is " + csra.rating | csraRatingLabel(csra.ratingStage) + ".",
+              html: "This prisoner does not have a current CSRA rating." if not csra or not currentRating else "Their current CSRA rating is " + currentRating | csraRatingLabel(csra.ratingStage) + ".",
               classes: 'govuk-!-margin-top-0'
             }) }}
 
