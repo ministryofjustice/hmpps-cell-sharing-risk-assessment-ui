@@ -111,7 +111,10 @@ export default function getTaskListSections(
     sections.reviewProvisional = getSectionForTaskList(
       'Review provisional assessment',
       reviewStatus,
-      `/prisoner/${prisoner.prisonerNumber}/csra/${assessment.assessmentId}/review-provisional`,
+      appendReferrers(
+        `/prisoner/${prisoner.prisonerNumber}/csra/${assessment.assessmentId}/review-provisional`,
+        referrers,
+      ),
     )
   }
 
