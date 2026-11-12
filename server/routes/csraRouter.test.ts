@@ -245,6 +245,36 @@ describe('csraRouter', () => {
       },
     )
 
+    it.each(['YES', 'NO', 'invalid'])(
+      'preserves worklist referrers through provisional review for %s',
+      async answer => {
+        const referrers = '?referrer=due-for-review&referrer=history'
+        const htmlReferrers = referrers.replace(/&/g, '&amp;')
+        const app = buildApp([Role.CSRA__ASSESSMENT_EDIT])
+        const taskList = await request(app).get(`${assessmentUrl}${referrers}`).expect(200)
+        expect(taskList.text).toContain(`href="${reviewUrl}${htmlReferrers}"`)
+
+        const response = await request(app).get(`${reviewUrl}${referrers}`).expect(200)
+        expect(response.text).toContain(`href="${assessmentUrl}${htmlReferrers}" class="govuk-back-link"`)
+        expect(response.text).toContain(`href="${assessmentUrl}${htmlReferrers}" class="govuk-link">Cancel</a>`)
+
+        const submitted = await request(app)
+          .post(`${reviewUrl}${referrers}`)
+          .type('form')
+          .send({ provisionalReviewed: answer })
+
+        if (answer === 'invalid') {
+          expect(submitted.status).toBe(200)
+          expect(submitted.text).toContain(`href="${assessmentUrl}${htmlReferrers}" class="govuk-back-link"`)
+          expect(submitted.text).toContain(`href="${assessmentUrl}${htmlReferrers}" class="govuk-link">Cancel</a>`)
+          expect(csraService.updateCsraAssessment).not.toHaveBeenCalled()
+        } else {
+          expect(submitted.status).toBe(302)
+          expect(submitted.headers.location).toBe(`${assessmentUrl}${referrers}`)
+        }
+      },
+    )
+
     it.each([true, false])('preselects the latest saved answer %s', async provisionalReviewed => {
       csraService.getCsraAssessment.mockResolvedValue(
         provisionallyRated(stageAnswers({ stage: 'FINAL', provisionalReviewed })),
