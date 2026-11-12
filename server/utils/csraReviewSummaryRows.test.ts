@@ -41,6 +41,30 @@ describe('createSummaryRows', () => {
     ])
   })
 
+  it('escapes free-text details before including them in summary HTML', () => {
+    const assessmentAnswers: CsraAssessmentStageAnswers = {
+      stage: 'FINAL',
+      prisonId: 'MDI',
+      offenceEvidence: [],
+      riskTo: [{ category: 'OTHER', details: '<img src=x onerror="alert(\'x\')"> & more' }],
+      vulnerabilities: [{ category: 'OTHER', details: "<script>alert('x')</script>" }],
+      version: 1,
+    }
+
+    const rows = createSummaryRows({
+      assessmentAnswers,
+      detailedRating,
+      userDisplayNames: new Map(),
+    })
+
+    expect(rows.find(summaryRow => summaryRow.key.text === 'Risk to')?.value).toEqual({
+      html: '<p>Other - &lt;img src=x onerror=&quot;alert(&#39;x&#39;)&quot;&gt; &amp; more</p>',
+    })
+    expect(rows.find(summaryRow => summaryRow.key.text === 'Vulnerable due to')?.value).toEqual({
+      html: '<p>Other - &lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt;</p>',
+    })
+  })
+
   it('creates summary rows for a legacy rating', () => {
     const legacyRating: CsraDetailedRating = {
       ...detailedRating,
