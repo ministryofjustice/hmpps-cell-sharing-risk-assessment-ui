@@ -6,7 +6,6 @@
 
   {% set prisoner = params.prisoner %}
   {% set cellSharingHistory = params.cellSharingHistory %}
-  {% set assessment = params.assessment %}
   {% set assessmentAnswers = params.assessmentAnswers %}
   {% set offenceEvidenceMap = params.offenceEvidenceMap %}
   {% set flowConfig = params.flowConfig %}
@@ -17,7 +16,7 @@
   {% set summaryRows = params.summaryRows %}
 
   {% set isProvisional = assessmentAnswers.stage === 'PROVISIONAL' %}
-  {% set rating = (assessment.interimResult if isProvisional else (assessment.finalResult or detailedRating.rating)) %}
+  {% set rating = detailedRating.provisionalRating if isProvisional else detailedRating.finalRating %}
   {% set ratingDate = (detailedRating.provisionalDate if isProvisional else detailedRating.finalDate) | formatDate %}
   {% set ratingTime = (detailedRating.provisionalTime if isProvisional else detailedRating.finalTime) | formatTime %}
   {% set completedBy = detailedRating.provisionalCompletedBy if isProvisional else detailedRating.finalCompletedBy %}
@@ -55,7 +54,6 @@
   {% if assessmentAnswers %}
     {{ csraAnswersSummary({
       prisoner: prisoner,
-      assessment: assessment,
       assessmentAnswers: assessmentAnswers,
       offenceEvidenceMap: offenceEvidenceMap,
       flowConfig: flowConfig,
