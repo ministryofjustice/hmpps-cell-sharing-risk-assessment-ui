@@ -1,3 +1,4 @@
+import { escape } from 'lodash-es'
 import type { CsraAssessmentStageAnswers, CsraDetailedRating, CsraReviewQuestion } from '../data/csraApiTypes'
 import { csraRiskToCategoryLabelMap, csraVulnerabilityCategoryLabelMap } from '../data/csraApiTypes'
 import { csraLevelLabel, csraRatingLabel, formatDate, formatDayMonthYear } from './utils'
@@ -110,14 +111,14 @@ export const createSummaryRows = ({
     assessmentAnswers?.riskTo
       ?.map(
         riskTo =>
-          `<p>${csraRiskToCategoryLabelMap[riskTo.category]}${riskTo.details ? ` - ${riskTo.details}` : ''}</p>`,
+          `<p>${csraRiskToCategoryLabelMap[riskTo.category]}${riskTo.details ? ` - ${escape(riskTo.details)}` : ''}</p>`,
       )
       .join('') ?? ''
   const vulnerabilitiesHtml =
     assessmentAnswers?.vulnerabilities
       ?.map(
         vulnerability =>
-          `<p>${csraVulnerabilityCategoryLabelMap[vulnerability.category]}${vulnerability.details ? ` - ${vulnerability.details}` : ''}</p>`,
+          `<p>${csraVulnerabilityCategoryLabelMap[vulnerability.category]}${vulnerability.details ? ` - ${escape(vulnerability.details)}` : ''}</p>`,
       )
       .join('') ?? ''
   const assessmentComment = isProvisional
