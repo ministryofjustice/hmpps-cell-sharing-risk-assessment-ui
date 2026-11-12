@@ -7,6 +7,7 @@ import flowConfig from '../lib/transactionFlow/config'
 import { getRemainingTasks } from '../utils/getAssessmentSubmitStatus'
 import getOffenceEvidenceMap from '../utils/getOffenceEvidenceMap'
 import renderCsraAssessmentSubmitted from '../utils/renderCsraAssessmentSubmitted'
+import { appendReferrers, referrerStack } from '../utils/breadcrumbOrigins'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService' | 'manageUsersService'>
 
@@ -32,7 +33,10 @@ export default function csraReviewProvisionalController({
       throw NotFound(`No provisional assessment found for ID: ${assessmentId}`)
     }
 
-    const assessmentUrl = `/prisoner/${prisonerNumber}/csra/${assessmentId}`
+    const assessmentUrl = appendReferrers(
+      `/prisoner/${prisonerNumber}/csra/${assessmentId}`,
+      referrerStack(req.query.referrer),
+    )
     const finalAnswers = getAnswersFromAssessment(assessment)
     let selectedAnswer: string | undefined
     if (typeof finalAnswers.provisionalReviewed === 'boolean') {
