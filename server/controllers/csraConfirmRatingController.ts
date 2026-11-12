@@ -257,6 +257,9 @@ export default class CsraConfirmRatingController extends CsraFormController<Csra
       ...res.locals.assessmentAnswers,
       rating,
       assessmentComment,
+      // Only HIGH_SPECIFIC ratings have riskTo and vulnerabilities, we must ensure that these fields are not sent for
+      // other ratings, as the API will reject them
+      ...(rating !== 'HIGH_SPECIFIC' ? { riskTo: [], vulnerabilities: [] } : {}),
     }
 
     if (rating === 'HIGH_SPECIFIC') {

@@ -123,12 +123,13 @@ describe('GET /prisoner/:prisonerNumber', () => {
     const csra: CsraDetailedRating = {
       prisonerNumber: 'A1234BC',
       status: 'COMPLETE',
-      rating: 'HIGH_SPECIFIC',
+      finalRating: 'HIGH_SPECIFIC',
       provisional: false,
       reviewId: 'de91dfa7-821f-4552-a427-bf2f32eafeb0',
       riskTo: [{ category: 'DIFFERENT_ETHNICITY', details: 'Racist towards other ethnicities.' }],
       vulnerabilities: [{ category: 'NEURODIVERSITY', details: null }],
       finalDate: '2026-07-01',
+      stages: [],
     }
     csraService.getCurrentRating.mockResolvedValue(csra)
 
@@ -163,13 +164,14 @@ describe('GET /prisoner/:prisonerNumber', () => {
       csraService.getCurrentRating.mockResolvedValue({
         prisonerNumber: 'A1234BC',
         status: 'COMPLETE',
-        rating: 'HIGH_GENERAL',
+        provisionalRating: 'HIGH_GENERAL',
         provisional: true,
         ratingStage: 'PROVISIONAL',
         inheritedAfterTransfer: true,
         assessmentType,
         riskTo: [],
         vulnerabilities: [],
+        stages: [],
       })
 
       return request(app)
@@ -185,13 +187,14 @@ describe('GET /prisoner/:prisonerNumber', () => {
     csraService.getCurrentRating.mockResolvedValue({
       prisonerNumber: 'A1234BC',
       status: 'COMPLETE',
-      rating: 'HIGH_GENERAL',
+      provisionalRating: 'HIGH_GENERAL',
       provisional: true,
       ratingStage: 'PROVISIONAL',
       inheritedAfterTransfer: false,
       assessmentType: 'ASSESSMENT',
       riskTo: [],
       vulnerabilities: [],
+      stages: [],
     })
 
     return request(app)
@@ -206,11 +209,12 @@ describe('GET /prisoner/:prisonerNumber', () => {
     csraService.getCurrentRating.mockResolvedValue({
       prisonerNumber: 'A1234BC',
       status: 'PROVISIONAL',
-      rating: 'HIGH_SPECIFIC',
+      provisionalRating: 'HIGH_SPECIFIC',
       provisional: true,
       ratingStage: 'PROVISIONAL',
       riskTo: [],
       vulnerabilities: [],
+      stages: [],
     })
 
     return request(app)
@@ -230,10 +234,12 @@ describe('GET /prisoner/:prisonerNumber', () => {
     csraService.getCurrentRating.mockResolvedValue({
       prisonerNumber: 'A1234BC',
       status: 'NO_RATING',
-      rating: null,
       provisional: false,
+      finalRating: null,
+      provisionalRating: null,
       riskTo: [],
       vulnerabilities: [],
+      stages: [],
     })
 
     return request(app)
@@ -465,10 +471,12 @@ describe('GET /prisoner/:prisonerNumber/history', () => {
     csraService.getCurrentRating.mockResolvedValue({
       prisonerNumber: 'A1234BC',
       status: 'NO_RATING',
-      rating: null,
       provisional: false,
+      finalRating: null,
+      provisionalRating: null,
       riskTo: [],
       vulnerabilities: [],
+      stages: [],
     })
     const current = await request(app).get('/prisoner/A1234BC').expect(200)
     const response = await request(app).get('/prisoner/A1234BC/history').expect(200)
@@ -948,10 +956,12 @@ describe('breadcrumbs', () => {
     csraService.getCurrentRating.mockResolvedValue({
       prisonerNumber: 'A1234BC',
       status: 'NO_RATING',
-      rating: null,
       provisional: false,
+      finalRating: null,
+      provisionalRating: null,
       riskTo: [],
       vulnerabilities: [],
+      stages: [],
     })
   })
 
@@ -1017,6 +1027,9 @@ describe('breadcrumbs', () => {
 
 describe('GET /prisoner/:prisonerNumber/csra/:assessmentId/view', () => {
   const assessmentId = 'de91dfa7-821f-4552-a427-bf2f32eafeb0'
+  const changeSomeonesCellService = {
+    getCellSharingHistory: jest.fn().mockResolvedValue({ cells: [] }),
+  }
 
   beforeEach(() => {
     // The view route is behind the edit_assessment permission, so sign in as a CSRA assessor at an active prison.
@@ -1024,6 +1037,7 @@ describe('GET /prisoner/:prisonerNumber/csra/:assessmentId/view', () => {
     app = appWithAllRoutes({
       services: {
         auditService,
+        changeSomeonesCellService: changeSomeonesCellService as never,
         csraService,
         prisonerSearchService,
         manageUsersService,
@@ -1040,15 +1054,14 @@ describe('GET /prisoner/:prisonerNumber/csra/:assessmentId/view', () => {
       dateOfBirth: '1972-02-03',
       prisonId: 'LEI',
     })
-    csraService.getCsraAssessment.mockRejectedValue({
-      responseStatus: 404,
-      data: { errorCode: 'CsraReviewNotFound' },
-    })
-    csraService.getDetailedCsraRating.mockResolvedValue({
+    csraService.getDetailedRating.mockResolvedValue({
       prisonerNumber: 'A1234BC',
       status: 'COMPLETE',
-      rating: 'HIGH_SPECIFIC',
+      finalRating: 'HIGH_SPECIFIC',
       provisional: false,
+      riskTo: [],
+      vulnerabilities: [],
+      stages: [],
     } as CsraDetailedRating)
   })
 
@@ -1075,6 +1088,7 @@ describe('GET /prisoner/:prisonerNumber/csra/:assessmentId/view', () => {
     app = appWithAllRoutes({
       services: {
         auditService,
+        changeSomeonesCellService: changeSomeonesCellService as never,
         csraService,
         prisonerSearchService,
         manageUsersService,
@@ -1093,11 +1107,14 @@ describe('GET /prisoner/:prisonerNumber/csra/:assessmentId/view', () => {
   })
 
   it('returns 404 when the rating belongs to a different prisoner', () => {
-    csraService.getDetailedCsraRating.mockResolvedValue({
+    csraService.getDetailedRating.mockResolvedValue({
       prisonerNumber: 'B9999ZZ',
       status: 'COMPLETE',
-      rating: 'HIGH_SPECIFIC',
+      finalRating: 'HIGH_SPECIFIC',
       provisional: false,
+      riskTo: [],
+      vulnerabilities: [],
+      stages: [],
     } as CsraDetailedRating)
 
     return request(app)

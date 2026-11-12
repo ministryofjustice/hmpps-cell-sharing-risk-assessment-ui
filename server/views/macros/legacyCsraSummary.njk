@@ -1,0 +1,113 @@
+{% macro legacyCsraSummary(params) %}
+  {% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+  {% from "govuk/components/table/macro.njk" import govukTable %}
+
+  {% from './csraAnswersSummary.njk' import csraAnswersSummary %}
+  {% from "../macros/riskBadge.njk" import riskBadge %}
+
+  {% set prisoner = params.prisoner %}
+  {% set review = params.review %}
+  {% set userDisplayNames = params.userDisplayNames %}
+
+  <p>
+    Assessed
+    {{- " at " + review.prisonName if review.prisonName }}
+    {{- " on " + ratingDate if ratingDate }}
+    {{- " at " + ratingTime if ratingTime }}.
+  </p>
+
+  <div class="csra-check-answers-section">
+    {{ govukSummaryList({
+      rows: [
+        {
+          key: {
+            text: "Approved result"
+          },
+          value: {
+            text: review.legacy.level
+          }
+        },
+        {
+          key: {
+            text: "Approval comment"
+          },
+          value: {
+            text: review.legacy.approvalComment or "Not provided"
+          }
+        },
+        {
+          key: {
+            text: "Approved by"
+          },
+          value: {
+            text: ""
+          }
+        },
+        {
+          key: {
+            text: "Approval date"
+          },
+          value: {
+            text: ""
+          }
+        },
+        {
+          key: {
+            text: "Assessment comments"
+          },
+          value: {
+            text: ""
+          }
+        },
+        {
+          key: {
+            text: "Calculated result"
+          },
+          value: {
+            text: ""
+          }
+        },
+        {
+          key: {
+            text: "Override result"
+          },
+          value: {
+            text: ""
+          }
+        },
+        {
+          key: {
+            text: "Override reason"
+          },
+          value: {
+            text: ""
+          }
+        },
+        {
+          key: {
+            text: "Location"
+          },
+          value: {
+            text: ""
+          }
+        },
+        {
+          key: {
+            text: "Assessed by"
+          },
+          value: {
+            text: ""
+          }
+        },
+        {
+          key: {
+            text: "Next review date"
+          },
+          value: {
+            text: ""
+          }
+        }
+      ]
+    }) }}
+  </div>
+{% endmacro %}

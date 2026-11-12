@@ -37,11 +37,12 @@ describe('CsraApiClient', () => {
       const currentRating: CsraDetailedRating = {
         prisonerNumber: 'A1234BC',
         status: 'COMPLETE',
-        rating: 'STANDARD',
+        finalRating: 'STANDARD',
         provisional: false,
         riskTo: [],
         vulnerabilities: [],
         finalDate: '2026-07-01',
+        stages: [],
       }
 
       nock(config.apis.csraApi.url)
@@ -59,10 +60,12 @@ describe('CsraApiClient', () => {
       const noRating: CsraDetailedRating = {
         prisonerNumber: 'A1234BC',
         status: 'NO_RATING',
-        rating: null,
         provisional: false,
+        finalRating: null,
+        provisionalRating: null,
         riskTo: [],
         vulnerabilities: [],
+        stages: [],
       }
 
       nock(config.apis.csraApi.url).get('/csra-review/prisoner/A1234BC/current-rating').reply(200, noRating)
@@ -70,7 +73,7 @@ describe('CsraApiClient', () => {
       const response = await csraApiClient.getCurrentCsraRating('AUSER_GEN', { prisonerNumber: 'A1234BC' })
 
       expect(response.status).toBe('NO_RATING')
-      expect(response.rating).toBeNull()
+      expect(response.finalRating).toBeNull()
     })
   })
 
@@ -107,11 +110,11 @@ describe('CsraApiClient', () => {
   })
 
   it('gets the selected assessment detailed rating with an acting-user system token', async () => {
-    const rating: CsraCurrentRating = {
+    const rating: CsraDetailedRating = {
       prisonerNumber: 'A1234BC',
       reviewId: 'assessment-123',
       status: 'PROVISIONAL',
-      rating: 'HIGH_SPECIFIC',
+      provisionalRating: 'HIGH_SPECIFIC',
       provisional: true,
       provisionalCompletedBy: 'ASSESSOR',
       provisionalDate: '2026-07-06',
@@ -119,6 +122,7 @@ describe('CsraApiClient', () => {
       provisionalAssessmentComment: 'Provisional notes',
       riskTo: [],
       vulnerabilities: [],
+      stages: [],
     }
     const scope = nock(config.apis.csraApi.url)
       .get('/csra-review/assessment-123/detailed-rating')

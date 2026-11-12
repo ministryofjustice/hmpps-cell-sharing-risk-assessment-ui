@@ -159,11 +159,6 @@ export default function csraQuestionController({ auditService, csraService }: De
       currentStep instanceof InformationStep ? findNextAvailableStep(assessmentAnswers, section, currentStepId) : null
     const continueLink = continueStep ? `${assessmentUrl}/section/${sectionId}/${continueStep.stepId}` : assessmentUrl
 
-    if (req.method === 'POST' && currentStep instanceof InformationStep) {
-      res.redirect(appendReferrers(continueLink, referrers))
-      return
-    }
-
     const validationErrors: Record<string, { text: string }> = {}
     if (req.method === 'POST') {
       // get values from step questions

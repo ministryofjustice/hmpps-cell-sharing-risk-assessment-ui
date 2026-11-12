@@ -166,6 +166,7 @@ export interface CsraLegacyDetail {
   assessmentComment?: string | null
   assessmentDate: string
   approvalStatus?: CsraApprovalStatus | null
+  levelChangedAtApproval?: boolean
   approvalComment?: string | null
   approvalCommitteeComment?: string | null
   approvalDate?: string | null
@@ -231,6 +232,52 @@ export interface CsraCommittee {
   name: string
 }
 
+/** A CSRA review with the detail needed to render its full record (mirrors dto.CsraReviewDetail). */
+export interface CsraReviewDetail {
+  id: string
+  prisonerNumber: string
+  prisonId: string | null
+  prisonName: string | null
+  assessmentDate: string
+  type: CsraReviewType
+  assessmentType: CsraAssessmentTypeBucket
+  interimResult: CsraResult | null
+  interimResultDate: string | null
+  finalResult: CsraResult | null
+  finalResultDate: string | null
+  nextReviewDate: string | null
+  createdAt: string
+  createdBy: string
+  lastModifiedAt: string | null
+  lastModifiedBy: string | null
+  legacy?: CsraLegacyReviewDetail | null
+}
+
+/** Full NOMIS detail for a migrated review, including the questions and answers. */
+export interface CsraLegacyReviewDetail {
+  level: CsraLevel | null
+  approvalStatus: CsraApprovalStatus | null
+  levelChangedAtApproval?: boolean
+  calculatedResult: CsraLevel | null
+  overrideResult: CsraLevel | null
+  approvedResult: CsraLevel | null
+  assessmentComment: string | null
+  approvalCommitteeComment: string | null
+  approvalComment: string | null
+  approvalDate: string | null
+  assessmentCommittee: CsraCommittee | null
+  approvalCommittee: CsraCommittee | null
+  nextReviewDate: string | null
+  questions: CsraReviewQuestion[]
+}
+
+/** A legacy NOMIS review question and its answers. */
+export interface CsraReviewQuestion {
+  question: string
+  answer: string | null
+  additionalAnswers: string[]
+}
+
 /** A CSRA review currently in progress for the prisoner. */
 export interface CsraInProgress {
   reviewId: string
@@ -259,7 +306,8 @@ export type CsraHistoryQuery = {
 export interface CsraDetailedRating {
   prisonerNumber: string
   status: CsraRatingStatus
-  rating?: CsraResult | null
+  provisionalRating?: CsraResult | null
+  finalRating?: CsraResult | null
   provisional: boolean
   type?: CsraReviewType | null
   assessmentType?: CsraAssessmentTypeBucket | null
@@ -284,10 +332,8 @@ export interface CsraDetailedRating {
   startedBy?: string | null
   startedAt?: string | null
   inProgress?: CsraInProgress | null
-  provisionalCompletedBy?: string | null
-  finalCompletedBy?: string | null
-  provisionalTime?: string | null
-  finalTime?: string | null
+  legacy?: CsraLegacyReviewDetail | null
+  stages: CsraAssessmentStageAnswers[]
 }
 
 /** A started assessment with no provisional/final rating entered yet. */

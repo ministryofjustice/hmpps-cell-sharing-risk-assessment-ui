@@ -63,10 +63,12 @@ describe('CSRA rating controllers', () => {
     csraService.getCurrentRating.mockResolvedValue({
       prisonerNumber: 'A1234BC',
       status: 'NO_RATING',
-      rating: null,
       provisional: false,
+      finalRating: null,
+      provisionalRating: null,
       riskTo: [],
       vulnerabilities: [],
+      stages: [],
     })
     submitStatus.mockReturnValue({
       submitType: AssessmentSubmitType.FINAL,

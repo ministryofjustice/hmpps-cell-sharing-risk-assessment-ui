@@ -1,0 +1,6 @@
+.govuk-tabs--borderless {
+  .govuk-tabs__panel {
+    border: 0;
+    padding: govuk-spacing(4) 0 0;
+  }
+}

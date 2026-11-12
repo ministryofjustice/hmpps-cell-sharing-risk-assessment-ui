@@ -13,7 +13,12 @@ import ratingConfirmedController from '../controllers/ratingConfirmedController'
 export default function prisonerRouter(
   services: Pick<
     Services,
-    'auditService' | 'csraService' | 'manageUsersService' | 'prisonApiService' | 'warrantsService'
+    | 'auditService'
+    | 'changeSomeonesCellService'
+    | 'csraService'
+    | 'manageUsersService'
+    | 'prisonApiService'
+    | 'warrantsService'
   >,
 ): Router {
   const router = Router({ mergeParams: true })

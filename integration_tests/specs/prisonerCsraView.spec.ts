@@ -6,6 +6,7 @@ import manageUsersApi from '../mockApis/manageUsersApi'
 import { login, resetStubs } from '../testUtils'
 import PrisonerCsraViewPage from '../pages/prisonerCsraViewPage'
 import PrisonerCsraHistoryPage from '../pages/prisonerCsraHistoryPage'
+import type { CsraDetailedRating } from '../../server/data/csraApiTypes'
 
 const prisoner = {
   prisonerNumber: 'A5197BD',
@@ -20,7 +21,7 @@ const prisoner = {
 
 const assessmentId = 'de91dfa7-821f-4552-a427-bf2f32eafeb0'
 
-const stubViewPage = async (page: Page, detailedRating: Parameters<typeof csraApi.stubGetDetailedRating>[1] = {}) => {
+const stubViewPage = async (page: Page, detailedRating: Partial<CsraDetailedRating> = {}) => {
   await login(page, {
     roles: ['ROLE_CSRA__ASSESSMENT_EDIT'],
     activeCaseLoad: { caseLoadId: prisoner.prisonId, description: prisoner.prisonName },
@@ -29,8 +30,11 @@ const stubViewPage = async (page: Page, detailedRating: Parameters<typeof csraAp
   await prisonerSearchApi.stubGetPrisoner(prisoner)
   await prisonApi.stubGetPrisonerImage(prisoner.prisonerNumber)
   await manageUsersApi.stubGetUserCaseloads(['LEI'])
-  await csraApi.stubGetAssessment(prisoner.prisonerNumber, assessmentId, {
+  await csraApi.stubGetDetailedRating(assessmentId, {
+    prisonerNumber: prisoner.prisonerNumber,
     status: 'COMPLETE',
+    finalRating: 'HIGH_SPECIFIC',
+    provisional: false,
     stages: [
       {
         stage: 'FINAL',
@@ -41,12 +45,6 @@ const stubViewPage = async (page: Page, detailedRating: Parameters<typeof csraAp
         vulnerabilities: [],
       },
     ],
-  })
-  await csraApi.stubGetDetailedRating(assessmentId, {
-    prisonerNumber: prisoner.prisonerNumber,
-    status: 'COMPLETE',
-    rating: 'HIGH_SPECIFIC',
-    provisional: false,
     ...detailedRating,
   })
 }

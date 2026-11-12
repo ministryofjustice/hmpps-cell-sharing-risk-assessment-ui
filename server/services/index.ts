@@ -7,12 +7,14 @@ import PrisonApiService from './prisonApiService'
 import ManageUsersService from './manageUsersService'
 import ActiveAgenciesService from './activeAgenciesService'
 import WarrantsService from './warrantsService'
+import ChangeSomeonesCellService from './changeSomeonesCellService'
 
 export const services = () => {
   const {
     applicationInfo,
     hmppsAuditClient,
     hmppsAuthClient,
+    changeSomeonesCellApiClient,
     csraApiClient,
     prisonerSearchApiClient,
     prisonApiClient,
@@ -27,6 +29,7 @@ export const services = () => {
     applicationInfo,
     auditService: new AuditService(hmppsAuditClient),
     csraService: new CsraService(csraApiClient),
+    changeSomeonesCellService: new ChangeSomeonesCellService(changeSomeonesCellApiClient),
     prisonerSearchService: new PrisonerSearchService(prisonerSearchApiClient),
     prisonApiService: new PrisonApiService(prisonApiClient, prisonApiSplashClient, prisonApiAgencySwitchClient),
     manageUsersService: new ManageUsersService(manageUsersApiClient),
