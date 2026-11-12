@@ -265,7 +265,7 @@ describe('csraViewController', () => {
     expect(changeSomeonesCellService.getCellSharingHistory).toHaveBeenCalledWith('user1', {
       prisonerNumber: 'A1234BC',
       from: '2026-09-07T10:30:00',
-      to: '',
+      to: expect.any(String), // The to date is the current date/time, so we can't assert the exact value
     })
     expect(res.render).toHaveBeenCalledWith(
       'pages/csraView',

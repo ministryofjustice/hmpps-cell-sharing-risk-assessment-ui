@@ -70,7 +70,7 @@ export default function csraViewController({
           await changeSomeonesCellService.getCellSharingHistory(username, {
             prisonerNumber: prisoner.prisonerNumber,
             from: `${detailedRating.provisionalDate}T${detailedRating.provisionalTime}`,
-            to: '',
+            to: toDate,
           })
         )?.cells?.flatMap(cell =>
           cell.sharedWith.map(sharedWith => [
