@@ -442,7 +442,10 @@ describe('csraQuestionController', () => {
     expect(res.redirect).toHaveBeenCalledWith(`/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/1`)
   })
 
-  it('renders the configured information step with back, continue and cancel links without saving', async () => {
+  it.each([
+    ['', []],
+    ['?referrer=due-for-review&referrer=history', ['due-for-review', 'history']],
+  ])('renders the information step preserving referrers %s without saving', async (query, referrers) => {
     csraService.getCsraAssessment.mockResolvedValue(
       makeAssessment({
         interimResult: 'HIGH_GENERAL',
@@ -451,16 +454,20 @@ describe('csraQuestionController', () => {
     )
     const res = response()
 
-    await controller()(request('GET', {}, '1', 'evidenceAndOffences'), res, jest.fn())
+    await controller()(
+      { ...request('GET', {}, '1', 'evidenceAndOffences'), query: { referrer: referrers } },
+      res,
+      jest.fn(),
+    )
 
     expect(csraService.updateCsraAssessment).not.toHaveBeenCalled()
     expect(res.render).toHaveBeenCalledWith(
       'pages/csraInformationStep',
       expect.objectContaining({
         title: 'Review offences after checking new evidence source',
-        backLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/0`,
-        continueLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/2`,
-        cancelLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}`,
+        backLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/0${query}`,
+        continueLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}/section/evidenceAndOffences/2${query}`,
+        cancelLink: `/prisoner/A1234BC/csra/${ASSESSMENT_ID}${query}`,
       }),
     )
   })
