@@ -1036,6 +1036,40 @@ describe('csraRouter', () => {
   })
 
   it.each([false, true])(
+    'does not set the review flag on the last provisional evidence page (last offence: %s)',
+    async offenceKidnapHostage => {
+      const answers = completeStageAnswers({
+        offenceKidnapHostage,
+        offenceEvidence: offenceKidnapHostage
+          ? [{ offence: 'KIDNAP_HOSTAGE', sources: ['PNC'], details: 'Recorded evidence' }]
+          : [],
+      })
+      delete answers.offenceEvidenceReviewed
+      const current = assessment({ stages: [answers] })
+      csraService.getCsraAssessment.mockResolvedValue(current)
+      csraService.updateCsraAssessment.mockResolvedValue(current)
+      const { steps } = flowConfig.evidenceAndOffences
+      const stepId = steps.findLastIndex(step => !step.removeIf(answers))
+
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(`${assessmentUrl}/section/evidenceAndOffences/${stepId}`)
+        .type('form')
+        .send(steps[stepId].getFormValues(answers))
+        .expect(302)
+        .expect('Location', assessmentUrl)
+
+      expect(csraService.updateCsraAssessment).toHaveBeenCalledWith(
+        'user1',
+        prisoner.prisonerNumber,
+        'assessment-123',
+        expect.objectContaining({ offenceKidnapHostage }),
+        'PROVISIONAL',
+      )
+      expect(csraService.updateCsraAssessment.mock.calls[0][3]).not.toHaveProperty('offenceEvidenceReviewed')
+    },
+  )
+
+  it.each([false, true])(
     'requires another evidence walkthrough after each added source (last offence: %s)',
     async offenceKidnapHostage => {
       const provisional = completeStageAnswers({

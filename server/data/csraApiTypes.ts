@@ -422,7 +422,7 @@ export interface CsraAssessmentStageAnswers {
   lastSavedAt?: string | null
   provisionalReviewed?: boolean | null
 
-  // Initial assessment only: null = not started, false = incomplete (sources added without resubmitting questions),
+  // FINAL stage only: null = not started, false = incomplete (sources added without resubmitting questions),
   // true = complete (all offence evidence questions resubmitted after sources changed)
   offenceEvidenceReviewed?: boolean | null
 

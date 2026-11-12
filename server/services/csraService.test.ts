@@ -56,6 +56,20 @@ describe('CsraService', () => {
   })
 
   describe('updateCsraAssessment', () => {
+    it.each([undefined, null, false, true])(
+      'omits offenceEvidenceReviewed (%s) from provisional updates but preserves it for final updates',
+      async offenceEvidenceReviewed => {
+        const answers = { prisonId: 'MDI', version: 1, offenceEvidenceReviewed }
+        await csraService.updateCsraAssessment('AUSER_GEN', 'A1234BC', 'assessment-1', answers, 'PROVISIONAL')
+        expect(csraApiClient.updateCsraAssessment.mock.calls[0][2]).toEqual({ prisonId: 'MDI', version: 1 })
+        expect(csraApiClient.updateCsraAssessment.mock.calls[0][2]).not.toHaveProperty('offenceEvidenceReviewed')
+
+        await csraService.updateCsraAssessment('AUSER_GEN', 'A1234BC', 'assessment-1', answers, 'FINAL')
+        expect(csraApiClient.updateCsraAssessment.mock.calls[1][2]).toEqual(answers)
+        expect(answers).toHaveProperty('offenceEvidenceReviewed', offenceEvidenceReviewed)
+      },
+    )
+
     it.each(['PROVISIONAL', 'FINAL'] as const)('passes the %s stage to the API client', async stage => {
       const answers: Partial<CsraAssessmentStageAnswers> = {
         stage,
@@ -291,6 +305,25 @@ describe('CsraService', () => {
   })
 
   describe('submitProvisionalRating', () => {
+    it.each([undefined, null, false, true])(
+      'omits offenceEvidenceReviewed (%s) from provisional rating submissions',
+      async offenceEvidenceReviewed => {
+        const payload: Parameters<CsraApiClient['submitProvisionalRating']>[2] = {
+          prisonId: 'MDI',
+          rating: 'HIGH_GENERAL',
+          assessmentComment: 'Awaiting remaining sources',
+          offenceEvidence: [],
+          riskTo: [],
+          vulnerabilities: [],
+        }
+        const answers = { ...payload, offenceEvidenceReviewed }
+        await csraService.submitProvisionalRating('AUSER_GEN', 'A1234BC', 'assessment-1', answers)
+        expect(csraApiClient.submitProvisionalRating.mock.calls[0][2]).toEqual(payload)
+        expect(csraApiClient.submitProvisionalRating.mock.calls[0][2]).not.toHaveProperty('offenceEvidenceReviewed')
+        expect(answers).toHaveProperty('offenceEvidenceReviewed', offenceEvidenceReviewed)
+      },
+    )
+
     it('delegates to the client, passing the username, assessment id and provisional rating payload', async () => {
       const stageAnswers: CsraAssessmentStageAnswers = {
         stage: 'PROVISIONAL',
@@ -327,6 +360,7 @@ describe('CsraService', () => {
 
   describe('submitFinalRating', () => {
     const payload: CsraAssessmentFinalStageRequest = {
+      offenceEvidenceReviewed: true,
       rating: 'HIGH_GENERAL',
       assessmentComment: 'Assessment complete',
       nextReviewDate: '2099-05-17',

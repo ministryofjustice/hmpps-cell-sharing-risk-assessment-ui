@@ -236,6 +236,7 @@ export default function csraQuestionController({ auditService, csraService }: De
         }
 
         if (
+          assessment.interimResult &&
           sectionId === 'evidenceAndOffences' &&
           !findNextAvailableStep(mutatedAssessmentAnswers, section, currentStepId)
         ) {
