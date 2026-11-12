@@ -233,7 +233,7 @@ export default {
               lastName: 'Havers',
               assessedOn: '2026-07-06',
               assessedBy: 'MSTANLEY',
-              provisionalRating: 'HIGH_SPECIFIC',
+              rating: 'HIGH_SPECIFIC',
             },
           ],
           ...assessmentsInProgress,
