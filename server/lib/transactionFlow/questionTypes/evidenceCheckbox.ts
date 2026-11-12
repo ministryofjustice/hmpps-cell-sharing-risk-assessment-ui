@@ -64,6 +64,7 @@ export default class EvidenceCheckboxQuestion extends CheckboxQuestion {
     context?: QuestionContext,
   ): CsraAssessmentStageAnswers {
     let mutatedAssessmentAnswers = { ...assessmentAnswers }
+    let newSourcesAdded = false
 
     this.items.forEach(item => {
       if (context?.provisionalRatingEntered && context.provisionalAnswers?.[item.value]) {
@@ -72,12 +73,24 @@ export default class EvidenceCheckboxQuestion extends CheckboxQuestion {
       }
 
       const checked = !!(formValues[this.id] as string[])?.includes(item.value)
+
+      // Track if we're adding a NEW source during final assessment
+      // (was not checked in provisional but is being checked now)
+      if (checked && !assessmentAnswers[item.value] && context?.provisionalRatingEntered) {
+        newSourcesAdded = true
+      }
+
       mutatedAssessmentAnswers[item.value] = checked
 
       if (checked && item.conditional) {
         mutatedAssessmentAnswers = item.conditional.mutateAssessmentAnswers(mutatedAssessmentAnswers, formValues)
       }
     })
+
+    // If new sources were just added during final assessment, mark evidence as needing resubmission
+    if (newSourcesAdded) {
+      mutatedAssessmentAnswers.offenceEvidenceReviewed = false
+    }
 
     return mutatedAssessmentAnswers
   }

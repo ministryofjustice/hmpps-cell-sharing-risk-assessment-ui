@@ -37,6 +37,7 @@ const makeAssessment = (overrides: Partial<CsraAssessment> = {}): CsraAssessment
       dpsChecked: true,
       perChecked: true,
       warrantChecked: true,
+      offenceEvidenceReviewed: true,
       seenByHealthcare: true,
       healthcareIncreasedRisk: false,
       officerSpokeToPrisoner: true,

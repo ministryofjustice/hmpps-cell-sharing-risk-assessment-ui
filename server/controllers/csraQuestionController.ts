@@ -235,6 +235,14 @@ export default function csraQuestionController({ auditService, csraService }: De
           }
         }
 
+        if (
+          assessment.interimResult &&
+          sectionId === 'evidenceAndOffences' &&
+          !findNextAvailableStep(mutatedAssessmentAnswers, section, currentStepId)
+        ) {
+          mutatedAssessmentAnswers.offenceEvidenceReviewed = true
+        }
+
         const newAssessment = await csraService.updateCsraAssessment(
           username,
           res.locals.prisoner.prisonerNumber,

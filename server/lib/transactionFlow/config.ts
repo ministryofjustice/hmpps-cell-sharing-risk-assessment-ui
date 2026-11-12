@@ -175,6 +175,8 @@ const evidenceAndOffences: Section = {
     ...new YesNoOffenceSteps([{ question: questions.offenceArson, offenceType: 'ARSON' }]).getSteps(),
     ...new YesNoOffenceSteps([{ question: questions.offenceKidnapHostage, offenceType: 'KIDNAP_HOSTAGE' }]).getSteps(),
   ],
+  // Only an explicit false requires a new walkthrough; otherwise use the configured step checks.
+  isCompleteForSection: assessmentAnswers => assessmentAnswers.offenceEvidenceReviewed !== false,
 }
 
 const conversationAndVulnerability: Section = {

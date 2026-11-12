@@ -130,7 +130,11 @@ export default class CsraService {
     answers: Partial<CsraAssessmentStageAnswers>,
     stage: CsraAssessmentStage,
   ) {
-    return this.csraApiClient.updateCsraAssessment(username, { prisonerNumber, assessmentId, stage }, answers)
+    const payload = { ...answers }
+    if (stage === 'PROVISIONAL') {
+      delete payload.offenceEvidenceReviewed
+    }
+    return this.csraApiClient.updateCsraAssessment(username, { prisonerNumber, assessmentId, stage }, payload)
   }
 
   startCsraAssessment(username: string, prisonerNumber: string, prisonId: string) {
@@ -152,7 +156,9 @@ export default class CsraService {
     assessmentId: string,
     rating: Parameters<CsraApiClient['submitProvisionalRating']>[2],
   ) {
-    return this.csraApiClient.submitProvisionalRating(username, { prisonerNumber, assessmentId }, rating)
+    const payload = { ...rating }
+    delete payload.offenceEvidenceReviewed
+    return this.csraApiClient.submitProvisionalRating(username, { prisonerNumber, assessmentId }, payload)
   }
 
   async submitFinalRating(

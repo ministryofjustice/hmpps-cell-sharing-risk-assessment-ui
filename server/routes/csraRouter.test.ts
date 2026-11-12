@@ -8,6 +8,7 @@ import flowConfig from '../lib/transactionFlow/config'
 import config from '../config'
 import getAnswersFromAssessment from '../controllers/getAnswersFromAssessment'
 import { Page } from '../services/auditService'
+import InformationStep from '../lib/transactionFlow/informationStep'
 
 const prisoner: Prisoner = {
   prisonerNumber: 'A1234BC',
@@ -27,6 +28,7 @@ const stageAnswers = (overrides: Partial<CsraAssessmentStageAnswers> = {}): Csra
   riskTo: [],
   vulnerabilities: [],
   version: 1,
+  offenceEvidenceReviewed: null,
   ...overrides,
 })
 
@@ -43,6 +45,7 @@ const completeStageAnswers = (overrides: Partial<CsraAssessmentStageAnswers> = {
     offencePrejudiceMotivated: false,
     offenceArson: false,
     offenceKidnapHostage: false,
+    offenceEvidenceReviewed: true,
     officerSpokeToPrisoner: true,
     likelyToHarmCellmate: false,
     significantlyVulnerable: false,
@@ -1032,6 +1035,144 @@ describe('csraRouter', () => {
     )
   })
 
+  it.each([false, true])(
+    'does not set the review flag on the last provisional evidence page (last offence: %s)',
+    async offenceKidnapHostage => {
+      const answers = completeStageAnswers({
+        offenceKidnapHostage,
+        offenceEvidence: offenceKidnapHostage
+          ? [{ offence: 'KIDNAP_HOSTAGE', sources: ['PNC'], details: 'Recorded evidence' }]
+          : [],
+      })
+      delete answers.offenceEvidenceReviewed
+      const current = assessment({ stages: [answers] })
+      csraService.getCsraAssessment.mockResolvedValue(current)
+      csraService.updateCsraAssessment.mockResolvedValue(current)
+      const { steps } = flowConfig.evidenceAndOffences
+      const stepId = steps.findLastIndex(step => !step.removeIf(answers))
+
+      await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .post(`${assessmentUrl}/section/evidenceAndOffences/${stepId}`)
+        .type('form')
+        .send(steps[stepId].getFormValues(answers))
+        .expect(302)
+        .expect('Location', assessmentUrl)
+
+      expect(csraService.updateCsraAssessment).toHaveBeenCalledWith(
+        'user1',
+        prisoner.prisonerNumber,
+        'assessment-123',
+        expect.objectContaining({ offenceKidnapHostage }),
+        'PROVISIONAL',
+      )
+      expect(csraService.updateCsraAssessment.mock.calls[0][3]).not.toHaveProperty('offenceEvidenceReviewed')
+    },
+  )
+
+  it.each([false, true])(
+    'requires another evidence walkthrough after each added source (last offence: %s)',
+    async offenceKidnapHostage => {
+      const provisional = completeStageAnswers({
+        warrantChecked: false,
+        perChecked: false,
+        offenceKidnapHostage,
+        offenceEvidence: offenceKidnapHostage
+          ? [{ offence: 'KIDNAP_HOSTAGE', sources: ['PNC'], details: 'Provisional evidence' }]
+          : [],
+      })
+      const original = structuredClone(provisional)
+      let current = assessment({
+        interimResult: 'HIGH_GENERAL',
+        stages: [provisional, { ...structuredClone(provisional), stage: 'FINAL', provisionalReviewed: true }],
+      })
+      csraService.getCsraAssessment.mockImplementation(async () => current)
+      csraService.updateCsraAssessment.mockImplementation(
+        async (_username, _prisonerNumber, _assessmentId, answers: CsraAssessmentStageAnswers) => {
+          current = { ...current, stages: [provisional, { ...answers, version: answers.version + 1 }] }
+          return current
+        },
+      )
+      const app = buildApp([Role.CSRA__ASSESSMENT_EDIT])
+      const sectionUrl = `${assessmentUrl}/section/evidenceAndOffences`
+      const { steps } = flowConfig.evidenceAndOffences
+      const expectTaskStatus = async (status: string) => {
+        const page = await request(app).get(assessmentUrl).expect(200)
+        const task = page.text
+          .match(/<li class="govuk-task-list__item[\s\S]*?<\/li>/g)
+          .find(item => item.includes('Evidence sources and offences'))
+        expect(task).toContain(status)
+      }
+
+      /* eslint-disable no-await-in-loop -- Follow redirects using the answers persisted by each submission. */
+      for (const sources of [['warrantChecked'], ['warrantChecked', 'perChecked']]) {
+        const previousAnswers = structuredClone(getAnswersFromAssessment(current))
+        const saved = await request(app)
+          .post(`${sectionUrl}/0`)
+          .type('form')
+          .send({ evidenceSources: sources })
+          .expect(302)
+
+        expect(getAnswersFromAssessment(current)).toEqual({
+          ...previousAnswers,
+          warrantChecked: true,
+          perChecked: sources.includes('perChecked'),
+          offenceEvidenceReviewed: false,
+          version: previousAnswers.version + 1,
+        })
+
+        // Visiting the next page and cancelling must not count as a submission.
+        const calls = csraService.updateCsraAssessment.mock.calls.length
+        const review = await request(app).get(saved.headers.location).expect(200)
+        expect(review.text).toContain(`href="${assessmentUrl}"`)
+        await expectTaskStatus('Incomplete')
+        await request(app).get(`${assessmentUrl}/check-answers`).expect(302).expect('Location', assessmentUrl)
+        expect(csraService.updateCsraAssessment).toHaveBeenCalledTimes(calls)
+
+        const restart = await request(app)
+          .post(`${sectionUrl}/0`)
+          .type('form')
+          .send({ evidenceSources: sources })
+          .expect(302)
+        let nextUrl = restart.headers.location
+        let submittedQuestions = 0
+        while (nextUrl !== assessmentUrl) {
+          const stepId = Number(nextUrl.split('/').at(-1))
+          const step = steps[stepId]
+          const answers = getAnswersFromAssessment(current)
+          expect(answers.offenceEvidenceReviewed).toBe(false)
+          const page = await request(app).get(nextUrl).expect(200)
+          const values = step.getFormValues(answers)
+          for (const [field, value] of Object.entries(values)) {
+            if (value === 'YES' || value === 'NO') {
+              expect(page.text).toMatch(new RegExp(`name="${field}"[^>]*value="${value}"[^>]*checked`))
+            }
+          }
+          if (step === steps.at(-1) && offenceKidnapHostage) {
+            expect(page.text).toContain(answers.offenceEvidence[0].details)
+            await request(app).post(nextUrl).type('form').send({}).expect(200)
+            expect(getAnswersFromAssessment(current).offenceEvidenceReviewed).toBe(false)
+            // The second walkthrough must show the details saved during the first.
+            if (sources.length === 1) {
+              const detailsId = step.questions[1].id
+              values[detailsId] = 'Updated final evidence'
+            } else {
+              expect(page.text).toContain('Updated final evidence')
+            }
+          }
+          const result = await request(app).post(nextUrl).type('form').send(values).expect(302)
+          nextUrl = result.headers.location
+          if (!(step instanceof InformationStep)) submittedQuestions += 1
+          expect(getAnswersFromAssessment(current).offenceEvidenceReviewed).toBe(nextUrl === assessmentUrl)
+        }
+        expect(submittedQuestions).toBe(offenceKidnapHostage ? 7 : 6)
+        await expectTaskStatus(sources.length === 2 ? 'Complete' : 'Incomplete')
+      }
+      /* eslint-enable no-await-in-loop */
+      await request(app).get(`${assessmentUrl}/check-answers`).expect(200)
+      expect(provisional).toEqual(original)
+    },
+  )
+
   it('shows checked and remaining evidence sources separately after a provisional rating', async () => {
     csraService.getCsraAssessment.mockResolvedValue(
       assessment({
@@ -1065,6 +1206,9 @@ describe('csraRouter', () => {
         stages: [
           stageAnswers({
             pncChecked: true,
+            dpsChecked: true,
+            perChecked: true,
+            warrantChecked: true,
             offenceMurderManslaughter: false,
             offenceAssistingSuicide: false,
             offenceSexualAssault: false,
@@ -1109,7 +1253,7 @@ describe('csraRouter', () => {
     for (const source of ['DPS', 'PER', 'Warrant', 'PNC']) {
       const row = rows.find(item => new RegExp(`govuk-summary-list__key">\\s*${source}\\s*</dt>`).test(item))
       expect(row).toContain(`href="${assessmentUrl}/section/evidenceAndOffences/0"`)
-      expect(row).toContain(source === 'PNC' ? 'Checked' : 'Not checked')
+      expect(row).toContain('Checked')
     }
   })
 
@@ -1121,6 +1265,9 @@ describe('csraRouter', () => {
         stages: [
           stageAnswers({
             pncChecked: true,
+            dpsChecked: true,
+            perChecked: true,
+            warrantChecked: true,
             offenceMurderManslaughter: false,
             offenceAssistingSuicide: false,
             offenceSexualAssault: false,
