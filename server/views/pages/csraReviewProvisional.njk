@@ -21,14 +21,16 @@
         Assessed at {{ rating.prisonName or "Not entered" }} on {{ (rating.provisionalDate | formatDate) or "Not entered" }} at {{ rating.provisionalTime.slice(0, 5) if rating.provisionalTime else "Not entered" }}
       </p>
 
-      <h2 class="govuk-heading-m">Rating and comment</h2>
-      {{ govukSummaryList({
-        rows: [
-          { key: { text: "Rating" }, value: { text: assessment.interimResult | csraRatingLabel('PROVISIONAL') } },
-          { key: { text: "Provisional assessment comment" }, value: { text: rating.provisionalAssessmentComment or "Not entered" } },
-          { key: { text: "Completed by" }, value: { text: (completedBy | convertToTitleCase) or "Not entered" } }
-        ]
-      }) }}
+      <div class="csra-rating-and-comment">
+        <h2 class="govuk-heading-m">Rating and comment</h2>
+        {{ govukSummaryList({
+          rows: [
+            { key: { text: "Rating" }, value: { text: assessment.interimResult | csraRatingLabel('PROVISIONAL') } },
+            { key: { text: "Provisional assessment comment" }, value: { text: rating.provisionalAssessmentComment or "Not entered" } },
+            { key: { text: "Completed by" }, value: { text: (completedBy | convertToTitleCase) or "Not entered" } }
+          ]
+        }) }}
+      </div>
 
       {{ csraAnswersSummary({
         prisoner: prisoner,
