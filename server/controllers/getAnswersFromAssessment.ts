@@ -1,12 +1,20 @@
-import { CsraAssessment, CsraAssessmentStageAnswers } from '../data/csraApiTypes'
+import { CsraAssessment, CsraAssessmentStageAnswers, CsraDetailedRating } from '../data/csraApiTypes'
 import flowConfig from '../lib/transactionFlow/config'
 
+/** Get the answers from a specific stage of the assessment, or null if that stage is not present. */
+export function getAnswersFromAssessmentStage(
+  assessment: CsraAssessment | CsraDetailedRating,
+  stage: 'PROVISIONAL' | 'FINAL',
+): CsraAssessmentStageAnswers | null {
+  return assessment.stages.find(s => s.stage === stage)
+}
+
+/** Get the answers from the assessment, preferring the final stage if present, otherwise the provisional stage. If neither is present, return a default provisional answer set. */
 export default function getAnswersFromAssessment(assessment: CsraAssessment): CsraAssessmentStageAnswers {
-  const provisionalAnswers = assessment.stages.find(s => s.stage === 'PROVISIONAL')
+  const provisionalAnswers = getAnswersFromAssessmentStage(assessment, 'PROVISIONAL')
 
   if (assessment.interimResult) {
-    const finalAnswers = assessment.stages.find(s => s.stage === 'FINAL')
-
+    const finalAnswers = getAnswersFromAssessmentStage(assessment, 'FINAL')
     if (finalAnswers) {
       return finalAnswers
     }

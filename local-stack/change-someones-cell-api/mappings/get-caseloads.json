@@ -1,0 +1,35 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/cell-movements/prisoner/[^/]+/cell-sharing"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "prisonerNumber": "A1234AA",
+      "from": "2026-07-06T21:07:00",
+      "to": "2026-07-09T10:15:00",
+      "cells": [
+        {
+          "prisonId": "LEI",
+          "locationKey": "LEI-A-1-015",
+          "pathHierarchy": "A-1-015",
+          "dpsLocationId": "2475f250-434a-4257-afe7-b911f1773a4d",
+          "nomisLocationId": 2326301,
+          "movedIn": "2026-07-06T21:10:00",
+          "movedOut": "2026-07-08T14:00:00",
+          "sharedWith": [
+            {
+              "prisonerNumber": "A1245XY",
+              "firstName": "James",
+              "lastName": "Clive",
+              "sharedFrom": "2026-07-06T21:10:00",
+              "sharedTo": "2026-07-08T14:00:00"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -5,6 +5,7 @@ import { Page } from '../services/auditService'
 import { AssessmentSubmitType } from '../utils/getAssessmentSubmitStatus'
 import CsraFormController, { CsraFormParamType } from './csraFormController'
 import required from '../lib/transactionFlow/validations/required'
+import { appendReferrers } from '../utils/breadcrumbOrigins'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
 
@@ -43,12 +44,15 @@ export default class CsraSelectRatingController extends CsraFormController<CsraF
       assessmentAnswers.offenceSexualAssault,
     )
     locals.selectedRating = req.body?.selectedRating || req.query?.selectedRating || null
-    locals.backLink = `${locals.cancelLink}/check-answers`
+    locals.backLink = appendReferrers(`${locals.assessmentUrl}/check-answers`, locals.referrers)
     return true
   }
 
   protected override getNextLink(req: Request<CsraFormParamType>, res: Response): string {
-    return `${res.locals.assessmentUrl}/confirm-rating/${res.locals.selectedRating}`
+    return appendReferrers(
+      `${res.locals.assessmentUrl}/confirm-rating/${res.locals.selectedRating}`,
+      res.locals.referrers,
+    )
   }
 
   protected override validate(req: Request<CsraFormParamType>, res: Response): boolean {

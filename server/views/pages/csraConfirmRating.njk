@@ -29,6 +29,9 @@
       <div class="govuk-body">
         <form method="post" action>
           <input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+          {% for key in referrers %}
+            <input type="hidden" name="referrer" value="{{ key }}">
+          {% endfor %}
 
           {{ mojTicketPanel({
             classes: 'govuk-!-margin-top-4 govuk-!-margin-bottom-8',

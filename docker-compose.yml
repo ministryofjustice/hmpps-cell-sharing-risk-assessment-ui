@@ -146,6 +146,26 @@ services:
       retries: 10
       start_period: 10s
 
+  change-someones-cell-api:
+    # WireMock stub for hmpps-manage-users-api (signed-in user's caseloads); seed data in
+    # local-stack/manage-users-api. The seeded caseload (MDI) matches the prisoner-search stub so
+    # the prisoner CSRA access guard allows any looked-up prisoner.
+    image: wiremock/wiremock:latest
+    networks:
+      - hmpps
+    container_name: change-someones-cell-api
+    command: ["--disable-banner"]
+    ports:
+      - "9091:8080"
+    volumes:
+      - ./local-stack/change-someones-cell-api:/home/wiremock:ro
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 15s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
   component-api:
     # WireMock stub for the DPS frontend-components API (shared header/footer); seed data in
     # local-stack/component-api. The UI falls back to a local header/footer if this is unavailable.

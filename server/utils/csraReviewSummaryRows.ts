@@ -1,10 +1,12 @@
-import type { CsraReviewDetail, CsraReviewQuestion } from '../data/csraApiTypes'
-import { csraLevelLabel, csraRatingLabel, csraTypeLabel, formatDate, formatDateTime } from './utils'
+import { escape } from 'lodash-es'
+import type { CsraAssessmentStageAnswers, CsraDetailedRating, CsraReviewQuestion } from '../data/csraApiTypes'
+import { csraRiskToCategoryLabelMap, csraVulnerabilityCategoryLabelMap } from '../data/csraApiTypes'
+import { csraLevelLabel, csraRatingLabel, formatDate, formatDayMonthYear } from './utils'
 
-/** A row in a govukSummaryList. Values are always text, never html, so free text cannot inject markup. */
+/** A row in a govukSummaryList. */
 export interface SummaryRow {
   key: { text: string }
-  value: { text: string }
+  value: { text: string } | { html: string }
 }
 
 /** A legacy question with every answer given to it, the first and any additional ones together. */
@@ -15,10 +17,23 @@ export interface AnsweredQuestion {
 
 const NOT_ENTERED = 'Not entered'
 
+/** NOMIS accounts that stand for a process rather than a person, so they have no name to show. */
+const SYSTEM_ACCOUNTS = ['SYS', 'XTAG']
+
+/** The username to look a legacy assessor's name up with, or undefined where it is not a person. */
+export const legacyAssessorUsername = (detailedRating: CsraDetailedRating): string | undefined =>
+  detailedRating.legacy && !SYSTEM_ACCOUNTS.includes(detailedRating.startedBy) ? detailedRating.startedBy : undefined
+
+/** Follows the profile page's "committee - name" format, without doubling up where neither is known. */
+const assessedBy = (committee?: string, assessorName?: string): string =>
+  committee || assessorName ? `${committee || NOT_ENTERED} - ${assessorName || NOT_ENTERED}` : NOT_ENTERED
+
 const row = (key: string, value: string): SummaryRow => ({ key: { text: key }, value: { text: value } })
 
+const htmlRow = (key: string, value: string): SummaryRow => ({ key: { text: key }, value: { html: value } })
+
 /**
- * The summary rows for a migrated NOMIS review.
+ * The first four populated summary rows for a migrated NOMIS review.
  *
  * Order and fallback wording follow the existing DPS prisoner profile page
  * (hmpps-prisoner-profile/server/mappers/csraReviewToSummaryListMapper.ts) so the two screens read the
@@ -27,14 +42,17 @@ const row = (key: string, value: string): SummaryRow => ({ key: { text: key }, v
  * "Override result" and "Override reason" are on that page but deliberately absent here: NOMIS's
  * OVERRIDED_SUP_LEVEL_TYPE and its reason are not in the migration contract, so we never receive them.
  */
-export const buildLegacyReviewRows = (detail: CsraReviewDetail): SummaryRow[] => {
-  const legacy = detail.legacy!
+export const buildLegacyReviewRows = (
+  detailedRating: CsraDetailedRating,
+  userDisplayNames: Map<string, string>,
+): SummaryRow[] => {
+  const { legacy } = detailedRating
   const rows: SummaryRow[] = []
 
   // NOMIS shows the whole approval block or none of it, keyed off whether a level was approved at all.
-  if (legacy.approvedResult) {
+  if (legacy?.approvalStatus === 'APPROVED') {
     rows.push(
-      row('Approved result', csraLevelLabel(legacy.approvedResult)),
+      row('Approved result', csraLevelLabel(legacy.level)),
       row('Approval comments', legacy.approvalCommitteeComment || 'No approval comments entered'),
       row('Approved by', legacy.approvalCommittee?.name || NOT_ENTERED),
       row('Approval date', formatDate(legacy.approvalDate) || NOT_ENTERED),
@@ -47,56 +65,81 @@ export const buildLegacyReviewRows = (detail: CsraReviewDetail): SummaryRow[] =>
     rows.push(row('Approval status', 'Not approved'))
   }
 
+  const assessorUsername = legacyAssessorUsername(detailedRating)
   rows.push(
     row('Assessment comments', legacy.assessmentComment || 'No assessment comment entered'),
     row('Calculated result', csraLevelLabel(legacy.calculatedResult) || NOT_ENTERED),
-    row('Type', csraTypeLabel(detail.type)),
-    row('Location', detail.prisonName || detail.prisonId || NOT_ENTERED),
-    row('Assessed by', legacy.assessmentCommittee?.name || NOT_ENTERED),
-    row('Next review date', formatDate(legacy.nextReviewDate) || NOT_ENTERED),
+  )
+
+  if (legacy.overrideResult) {
+    rows.push(row('Override result', csraLevelLabel(legacy.overrideResult)))
+    // TODO: add Override reason when the API contract is updated to include it. The profile page has it, but we don't get it from the migration API. See MAPA-500
+  }
+
+  rows.push(
+    row('Location', detailedRating.prisonName || detailedRating.prisonId || NOT_ENTERED),
+    row(
+      'Assessed by',
+      assessedBy(legacy.assessmentCommittee?.name, userDisplayNames.get(assessorUsername) || assessorUsername),
+    ),
+    row('Next review date', formatDate(detailedRating.nextReviewDate) || NOT_ENTERED),
   )
 
   return rows
 }
 
-/**
- * The summary rows for a review created in this service.
- *
- * Only the review's own fields: the answers captured during the assessment (evidence sources, offence
- * flags, the conversation and vulnerability questions, healthcare) are held per stage and are not
- * readable over the API yet, so the page says so rather than pretending they do not exist.
- */
-export const buildDpsReviewRows = (detail: CsraReviewDetail): SummaryRow[] => {
-  const rows: SummaryRow[] = [
-    row('Assessment date', formatDate(detail.assessmentDate) || NOT_ENTERED),
-    row('Type', csraTypeLabel(detail.type)),
-    row('Location', detail.prisonName || detail.prisonId || NOT_ENTERED),
-  ]
+type SummaryRowsInput = {
+  assessmentAnswers?: CsraAssessmentStageAnswers
+  detailedRating: CsraDetailedRating
+  userDisplayNames: Map<string, string>
+}
 
-  if (detail.interimResult) {
-    rows.push(
-      row('Provisional result', csraRatingLabel(detail.interimResult)),
-      row('Provisional result date', formatDate(detail.interimResultDate) || NOT_ENTERED),
-    )
+export const createLegacyQuestionsRows = ({ questions }: { questions: CsraReviewQuestion[] }): SummaryRow[] =>
+  answeredQuestions(questions)
+    .filter(q => q.question !== 'Is the assessment complete')
+    .map(q => htmlRow(q.question, q.answers.map(a => `<p>${escape(a)}</p>`).join('')))
+
+/** The summary rows for a current assessment stage, or a migrated legacy review. */
+export const createSummaryRows = ({
+  assessmentAnswers,
+  detailedRating,
+  userDisplayNames,
+}: SummaryRowsInput): SummaryRow[] => {
+  if (detailedRating.legacy) {
+    return buildLegacyReviewRows(detailedRating, userDisplayNames)
   }
 
-  if (detail.finalResult) {
-    rows.push(
-      row('Final result', csraRatingLabel(detail.finalResult)),
-      row('Final result date', formatDate(detail.finalResultDate) || NOT_ENTERED),
-    )
-  }
+  const isProvisional = assessmentAnswers?.stage === 'PROVISIONAL'
+  const riskToHtml =
+    assessmentAnswers?.riskTo
+      ?.map(
+        riskTo =>
+          `<p>${csraRiskToCategoryLabelMap[riskTo.category]}${riskTo.details ? ` - ${escape(riskTo.details)}` : ''}</p>`,
+      )
+      .join('') ?? ''
+  const vulnerabilitiesHtml =
+    assessmentAnswers?.vulnerabilities
+      ?.map(
+        vulnerability =>
+          `<p>${csraVulnerabilityCategoryLabelMap[vulnerability.category]}${vulnerability.details ? ` - ${escape(vulnerability.details)}` : ''}</p>`,
+      )
+      .join('') ?? ''
+  const assessmentComment = isProvisional
+    ? detailedRating.provisionalAssessmentComment
+    : detailedRating.assessmentComment
+  const completedBy = isProvisional ? detailedRating.provisionalCompletedBy : detailedRating.finalCompletedBy
+  const rating = isProvisional ? detailedRating.provisionalRating : detailedRating.finalRating
 
-  rows.push(row('Started by', detail.createdBy), row('Started', formatDateTime(detail.createdAt) || NOT_ENTERED))
-
-  if (detail.lastModifiedAt || detail.lastModifiedBy) {
-    rows.push(
-      row('Last updated by', detail.lastModifiedBy || NOT_ENTERED),
-      row('Last updated', formatDateTime(detail.lastModifiedAt) || NOT_ENTERED),
-    )
-  }
-
-  return rows
+  return [
+    row('Rating', csraRatingLabel(rating, isProvisional ? 'PROVISIONAL' : null)),
+    assessmentAnswers?.riskTo?.length ? htmlRow('Risk to', riskToHtml) : null,
+    assessmentAnswers?.vulnerabilities?.length ? htmlRow('Vulnerable due to', vulnerabilitiesHtml) : null,
+    row('Assessment comment', assessmentComment || NOT_ENTERED),
+    !isProvisional && detailedRating.nextReviewDate
+      ? row('Next review due by', formatDayMonthYear(detailedRating.nextReviewDate) || NOT_ENTERED)
+      : null,
+    row('Completed by', (completedBy && userDisplayNames.get(completedBy)) || 'Unknown'),
+  ].filter((summaryRow): summaryRow is SummaryRow => summaryRow !== null)
 }
 
 /**

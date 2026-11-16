@@ -84,7 +84,7 @@
       </div>
 
       {% if not isInterimReview %}
-        <a class="govuk-link" href="/prisoner/{{ prisonerNumber }}/history/{{ review.id }}{{ fromQuery }}"
+        <a class="govuk-link" href="{{ appendReferrers('/prisoner/' + prisonerNumber + '/csra/' + review.id + '/view', (referrers or []).concat(['history'])) }}"
            data-qa="view-full-link">
           View
 
@@ -268,15 +268,15 @@
     <div class="govuk-grid-row">
       <div class="govuk-grid-column-one-quarter">
         <form method="get" action="/prisoner/{{ prisonerNumber }}/history" novalidate data-qa="csra-filters">
-          {% if fromQuery %}
-            <input type="hidden" name="from" value="{{ fromKey }}">
-          {% endif %}
+          {% for key in referrers or [] %}
+            <input type="hidden" name="referrer" value="{{ key }}">
+          {% endfor %}
           {{ mojFilter({
             attributes: { "data-qa": "csra-filter-panel" },
             selectedFilters: { heading: { text: "Filter" } },
             optionsHtml: optionsHtml,
             submit: { attributes: { "data-qa": "apply-filters" } },
-            clearFiltersUrl: "/prisoner/" + prisonerNumber + "/history" + (fromQuery or "")
+            clearFiltersUrl: appendReferrers("/prisoner/" + prisonerNumber + "/history", referrers)
           }) }}
         </form>
       </div>

@@ -4,11 +4,10 @@ import type {
   AgencyStatus,
   CsraAssessment,
   CsraAssessmentsInProgress,
-  CsraCurrentRating,
+  CsraDetailedRating,
   CsraHighRiskDueForReview,
   CsraPrisonPrisonerList,
   CsraRecentArrivals,
-  CsraReviewDetail,
   CsraReviewHistory,
   CsraReviewsInProgress,
 } from '../../server/data/csraApiTypes'
@@ -27,7 +26,7 @@ export default {
       },
     }),
 
-  stubGetCurrentRating: (prisonerNumber: string, currentRating: Partial<CsraCurrentRating> = {}): SuperAgentRequest =>
+  stubGetCurrentRating: (prisonerNumber: string, currentRating: Partial<CsraDetailedRating> = {}): SuperAgentRequest =>
     stubFor({
       request: {
         method: 'GET',
@@ -39,10 +38,12 @@ export default {
         jsonBody: {
           prisonerNumber,
           status: 'COMPLETE',
-          rating: 'STANDARD',
-          provisional: false,
+          finalRating: currentRating.provisionalRating ? null : 'STANDARD',
+          provisionalRating: currentRating.provisionalRating,
+          provisional: !!currentRating.provisionalRating,
           riskTo: [],
           vulnerabilities: [],
+          stages: [],
           ...currentRating,
         },
       },
@@ -62,31 +63,44 @@ export default {
     }),
 
   stubGetDetailedRating: (
-    prisonerNumber: string,
-    assessmentId: string,
-    rating: Partial<CsraCurrentRating> = {},
-  ): SuperAgentRequest =>
-    stubFor({
+    prisonerNumberOrAssessmentId: string,
+    detailedRatingOrAssessmentId: Partial<CsraDetailedRating> | string = {},
+    ratingOrHttpStatus?: Partial<CsraDetailedRating> | number,
+  ): SuperAgentRequest => {
+    const usesPrisonerNumber = typeof detailedRatingOrAssessmentId === 'string'
+    const prisonerNumber = usesPrisonerNumber ? prisonerNumberOrAssessmentId : 'A5197BD'
+    const assessmentId = usesPrisonerNumber ? detailedRatingOrAssessmentId : prisonerNumberOrAssessmentId
+    let detailedRating: Partial<CsraDetailedRating>
+    if (usesPrisonerNumber) {
+      detailedRating = typeof ratingOrHttpStatus === 'object' && ratingOrHttpStatus !== null ? ratingOrHttpStatus : {}
+    } else {
+      detailedRating = typeof detailedRatingOrAssessmentId === 'string' ? {} : detailedRatingOrAssessmentId
+    }
+    const httpStatus = typeof ratingOrHttpStatus === 'number' ? ratingOrHttpStatus : 200
+
+    return stubFor({
       request: {
         method: 'GET',
         urlPattern: `/csra-api/csra-review/${assessmentId}/detailed-rating`,
       },
       response: {
-        status: 200,
+        status: httpStatus,
         headers: { 'Content-Type': 'application/json;charset=UTF-8' },
         jsonBody: {
           prisonerNumber,
           reviewId: assessmentId,
-          status: 'PROVISIONAL',
-          rating: 'HIGH_SPECIFIC',
-          provisional: true,
-          ratingStage: 'PROVISIONAL',
+          status: 'COMPLETE',
+          finalRating: detailedRating.provisionalRating ? null : 'STANDARD',
+          provisionalRating: detailedRating.provisionalRating,
+          provisional: !!detailedRating.provisionalRating,
           riskTo: [],
           vulnerabilities: [],
-          ...rating,
+          stages: [],
+          ...detailedRating,
         },
       },
-    }),
+    })
+  },
 
   stubGetAssessment: (
     prisonerNumber: string,
@@ -185,42 +199,6 @@ export default {
           totalPages: 0,
           ...history,
         },
-      },
-    }),
-
-  stubGetCsraReview: (reviewId: string, review: Partial<CsraReviewDetail> = {}): SuperAgentRequest =>
-    stubFor({
-      request: {
-        method: 'GET',
-        urlPattern: `/csra-api/csra-review/${reviewId}`,
-      },
-      response: {
-        status: 200,
-        headers: { 'Content-Type': 'application/json;charset=UTF-8' },
-        jsonBody: {
-          id: reviewId,
-          prisonerNumber: 'A5197BD',
-          prisonId: 'LEI',
-          prisonName: 'Leeds (HMP)',
-          assessmentDate: '2016-10-31',
-          type: 'REVIEW',
-          createdAt: '2016-10-31T09:15:00',
-          createdBy: 'NQP56Y',
-          ...review,
-        },
-      },
-    }),
-
-  stubGetCsraReviewNotFound: (reviewId: string): SuperAgentRequest =>
-    stubFor({
-      request: {
-        method: 'GET',
-        urlPattern: `/csra-api/csra-review/${reviewId}`,
-      },
-      response: {
-        status: 404,
-        headers: { 'Content-Type': 'application/json;charset=UTF-8' },
-        jsonBody: { status: 404, userMessage: 'CSRA review not found' },
       },
     }),
 

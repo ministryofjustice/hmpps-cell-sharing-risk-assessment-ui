@@ -1,8 +1,9 @@
-import { CsraAssessmentStageAnswers } from '../data/csraApiTypes'
-import { getSectionStatus, TaskListSectionStatus } from './getTaskListSections'
+import { CsraAssessment, CsraAssessmentStageAnswers } from '../data/csraApiTypes'
+import getTaskListSections, { getSectionStatus, TaskListSectionStatus } from './getTaskListSections'
 import flowConfig from '../lib/transactionFlow/config'
 import Step from '../lib/transactionFlow/step'
 import YesNoQuestion from '../lib/transactionFlow/questionTypes/yesNo'
+import { Prisoner } from '../data/prisonerSearchApiTypes'
 
 const makeStageAnswers = (overrides: Partial<CsraAssessmentStageAnswers> = {}): CsraAssessmentStageAnswers => ({
   stage: 'FINAL',
@@ -88,5 +89,29 @@ describe('getSectionStatus', () => {
         section,
       ),
     ).toBe('NOT_STARTED')
+  })
+})
+
+describe('getTaskListSections', () => {
+  it('preserves the worklist context on the provisional review link', () => {
+    const assessment: CsraAssessment = {
+      assessmentId: 'assessment-123',
+      prisonerNumber: 'A1234BC',
+      status: 'IN_PROGRESS',
+      startedBy: 'USER1',
+      startedAt: '2026-09-07T10:00:00Z',
+      interimResult: 'HIGH_GENERAL',
+      stages: [],
+    }
+    const assessmentAnswers = makeStageAnswers()
+    const prisoner = { prisonerNumber: 'A1234BC' } as Prisoner
+
+    const sections = getTaskListSections(assessment, assessmentAnswers, prisoner, ['due-for-review'])
+
+    expect(sections.reviewProvisional).toEqual({
+      title: 'Review provisional assessment',
+      status: 'NOT_STARTED',
+      href: '/prisoner/A1234BC/csra/assessment-123/review-provisional?referrer=due-for-review',
+    })
   })
 })

@@ -128,7 +128,7 @@ test.describe('Prisoner CSRA history', () => {
     await prisonerSearchApi.stubGetPrisoner(prisoner)
     await prisonApi.stubGetPrisonerImage('A5197BD')
     await manageUsersApi.stubGetUserCaseloads(['LEI'])
-    await csraApi.stubGetCurrentRating('A5197BD', { status: 'COMPLETE', rating: 'STANDARD' })
+    await csraApi.stubGetCurrentRating('A5197BD', { status: 'COMPLETE', finalRating: 'STANDARD' })
     await csraApi.stubGetCsraHistory('A5197BD', history)
 
     await page.goto('/prisoner/A5197BD')

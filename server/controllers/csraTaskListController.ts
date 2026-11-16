@@ -7,6 +7,7 @@ import config from '../config'
 import { Page } from '../services/auditService'
 import getTaskListSections, { getSectionForTaskList } from '../utils/getTaskListSections'
 import { getAssessmentSubmitStatus } from '../utils/getAssessmentSubmitStatus'
+import { appendReferrers, referrerStack } from '../utils/breadcrumbOrigins'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService' | 'warrantsService'>
 
@@ -27,6 +28,7 @@ export default function csraTaskListController({
       throw NotFound(`No CSRA assessment found for ID: ${assessmentId}`)
     }
 
+    const referrers = referrerStack(req.query.referrer)
     const assessmentAnswers = getAnswersFromAssessment(assessment)
     const {
       evidenceAndOffences,
@@ -35,7 +37,7 @@ export default function csraTaskListController({
       otherRisks,
       healthcare,
       reviewProvisional,
-    } = getTaskListSections(assessment, assessmentAnswers, prisoner)
+    } = getTaskListSections(assessment, assessmentAnswers, prisoner, referrers)
 
     const taskLists = [
       ...(reviewProvisional
@@ -56,7 +58,7 @@ export default function csraTaskListController({
       },
     ]
 
-    const submitStatus = getAssessmentSubmitStatus(assessment, assessmentAnswers, prisoner)
+    const submitStatus = getAssessmentSubmitStatus(assessment, assessmentAnswers, prisoner, referrers)
 
     taskLists.push({
       title: 'Rating',
@@ -64,7 +66,10 @@ export default function csraTaskListController({
         getSectionForTaskList(
           'Check answers and confirm rating',
           submitStatus.submitType === 'NONE' ? 'LOCKED' : 'IN_PROGRESS',
-          `/prisoner/${prisoner.prisonerNumber}/csra/${assessment.assessmentId}/check-answers`,
+          appendReferrers(
+            `/prisoner/${prisoner.prisonerNumber}/csra/${assessment.assessmentId}/check-answers`,
+            referrers,
+          ),
           assessment.interimResult ? 'You must complete all sections to enter a final rating.' : undefined,
         ),
       ],
@@ -86,6 +91,11 @@ export default function csraTaskListController({
       config.warrants.enabled && (await warrantsService.hasRecentWarrants(username, prisoner.prisonerNumber))
 
     res.render('pages/csraTaskList', {
+      cancelLink: appendReferrers(
+        `/prisoner/${prisoner.prisonerNumber}/csra/${assessment.assessmentId}/cancel`,
+        referrers,
+      ),
+      submitStatus,
       prisoner,
       assessment,
       taskLists,

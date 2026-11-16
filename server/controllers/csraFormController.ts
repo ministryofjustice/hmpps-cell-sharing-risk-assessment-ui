@@ -5,6 +5,7 @@ import type { Services } from '../services'
 import getAnswersFromAssessment from './getAnswersFromAssessment'
 import { Page } from '../services/auditService'
 import { AssessmentSubmitType, getAssessmentSubmitStatus } from '../utils/getAssessmentSubmitStatus'
+import { appendReferrers, referrerStack } from '../utils/breadcrumbOrigins'
 import FormController, { FormControllerOptions } from './formController'
 import renderCsraAssessmentSubmitted from '../utils/renderCsraAssessmentSubmitted'
 
@@ -24,7 +25,7 @@ export default abstract class CsraFormController<
 > extends FormController<ParamType> {
   protected auditPage: Page
 
-  constructor(options: CsraFormControllerOptions, { auditService, csraService }: Dependencies) {
+  protected constructor(options: CsraFormControllerOptions, { auditService, csraService }: Dependencies) {
     super(options)
     this.auditPage = options.auditPage
     this.auditService = auditService
@@ -59,13 +60,15 @@ export default abstract class CsraFormController<
 
     locals.prisonerLink = `/prisoner/${prisoner.prisonerNumber}`
     locals.assessmentUrl = `${locals.prisonerLink}/csra/${assessmentId}`
-    locals.cancelLink = locals.assessmentUrl
+    locals.referrers = referrerStack(req.query.referrer)
+    locals.cancelLink = appendReferrers(locals.assessmentUrl, locals.referrers)
     locals.assessmentAnswers = getAnswersFromAssessment(locals.assessment)
 
     const { submitType, allowedRatings } = getAssessmentSubmitStatus(
       locals.assessment,
       locals.assessmentAnswers,
       prisoner,
+      locals.referrers,
     )
     if (submitType === AssessmentSubmitType.NONE) {
       res.redirect(locals.cancelLink)

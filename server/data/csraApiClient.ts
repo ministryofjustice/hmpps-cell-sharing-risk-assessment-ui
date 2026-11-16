@@ -5,7 +5,7 @@ import { RedisClient } from './redisClient'
 import type {
   CsraAssessmentsInProgress,
   AgencyStatus,
-  CsraCurrentRating,
+  CsraDetailedRating,
   CsraHighRiskDueForReview,
   CsraHighRiskDueForReviewQuery,
   CsraHistoryQuery,
@@ -35,13 +35,19 @@ export default class CsraApiClient extends BaseApiClient {
    * grants the ROLE_CSRA_REVIEW__R role to the system client. This endpoint never 404s: when the
    * prisoner has no assessment it returns a rating with `status: 'NO_RATING'`.
    */
-  getCurrentCsraRating = this.apiCall<CsraCurrentRating, { prisonerNumber: string }>({
+  getCurrentCsraRating = this.apiCall<CsraDetailedRating, { prisonerNumber: string }>({
     path: '/csra-review/prisoner/:prisonerNumber/current-rating',
     requestType: 'get',
     options: { asSystem: true },
   })
 
-  getDetailedRating = this.apiCall<CsraCurrentRating, { id: string }>({
+  getCsraReview = this.apiCall<CsraReviewDetail, { assessmentId: string }>({
+    path: '/csra-review/:assessmentId',
+    requestType: 'get',
+    options: { asSystem: true },
+  })
+
+  getDetailedRating = this.apiCall<CsraDetailedRating, { id: string }>({
     path: '/csra-review/:id/detailed-rating',
     requestType: 'get',
     options: { asSystem: true },
@@ -78,20 +84,6 @@ export default class CsraApiClient extends BaseApiClient {
     path: '/csra-review/prisoner/:prisonerNumber/history',
     requestType: 'get',
     queryParams: ['page', 'size', 'ratings', 'establishments', 'fromDate', 'toDate'],
-    options: { asSystem: true },
-  })
-
-  /**
-   * Get a single CSRA review by its id, with the full legacy NOMIS record where the review came from
-   * NOMIS.
-   *
-   * Called `asSystem` (see getCurrentCsraRating). Unlike the other reads this one **404s** when the id
-   * is unknown, and it is **not prisoner-scoped** — the prisoner is not in the path, so a caller
-   * showing this under a prisoner's URL must check the returned `prisonerNumber` matches.
-   */
-  getCsraReview = this.apiCall<CsraReviewDetail, { id: string }>({
-    path: '/csra-review/:id',
-    requestType: 'get',
     options: { asSystem: true },
   })
 
@@ -193,7 +185,7 @@ export default class CsraApiClient extends BaseApiClient {
    * double-submit is safe. 409s once a rating has been submitted or a prisoner movement closed it.
    */
   cancelCsraAssessment = this.apiCall<
-    CsraCurrentRating,
+    CsraDetailedRating,
     { prisonerNumber: string; assessmentId: string },
     { prisonId: string }
   >({

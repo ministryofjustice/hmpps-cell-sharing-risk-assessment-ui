@@ -7,6 +7,7 @@ import getAnswersFromAssessment from './getAnswersFromAssessment'
 import flowConfig from '../lib/transactionFlow/config'
 import { Page } from '../services/auditService'
 import getOffenceEvidenceMap from '../utils/getOffenceEvidenceMap'
+import { appendReferrers, referrerStack } from '../utils/breadcrumbOrigins'
 
 type Dependencies = Pick<Services, 'auditService' | 'csraService'>
 type Params = { prisonerNumber: string; assessmentId: string }
@@ -41,7 +42,8 @@ export default function csraCancelAssessmentController({ auditService, csraServi
     })
 
     const assessmentAnswers = getAnswersFromAssessment(assessment)
-    const assessmentUrl = `/prisoner/${prisonerNumber}/csra/${assessmentId}`
+    const referrers = referrerStack(req.query.referrer)
+    const assessmentUrl = appendReferrers(`/prisoner/${prisonerNumber}/csra/${assessmentId}`, referrers)
 
     res.render('pages/csraCancelAssessment', {
       prisoner,
@@ -60,17 +62,18 @@ export default function csraCancelAssessmentController({ auditService, csraServi
     const {
       user: { username },
     } = res.locals
-    const assessmentUrl = `/prisoner/${prisonerNumber}/csra/${assessmentId}`
+    const referrers = referrerStack(req.query.referrer)
+    const assessmentPath = `/prisoner/${prisonerNumber}/csra/${assessmentId}`
     const { confirmCancel } = req.body ?? {}
 
     if (confirmCancel === 'no') {
-      res.redirect(assessmentUrl)
+      res.redirect(appendReferrers(assessmentPath, referrers))
       return
     }
 
     if (confirmCancel !== 'yes') {
       req.flash(CONFIRM_CANCEL_ERROR_FLASH, 'Select yes if you want to cancel this assessment')
-      res.redirect(`${assessmentUrl}/cancel`)
+      res.redirect(appendReferrers(`${assessmentPath}/cancel`, referrers))
       return
     }
 
@@ -89,11 +92,12 @@ export default function csraCancelAssessmentController({ auditService, csraServi
       throw error
     }
 
-    res.redirect(`${assessmentUrl}/cancelled`)
+    res.redirect(appendReferrers(`${assessmentPath}/cancelled`, referrers))
   }
 
   const cancelled: RequestHandler<Params> = async (req, res, _next) => {
     const { prisoner, user } = res.locals
+    const referrers = referrerStack(req.query.referrer)
 
     await auditService.logPageView(Page.PRISONER_CSRA_ASSESSMENT_CANCELLED, {
       who: user.username,
@@ -102,7 +106,10 @@ export default function csraCancelAssessmentController({ auditService, csraServi
       correlationId: req.id,
     })
 
-    res.render('pages/csraAssessmentCancelled', { prisoner })
+    res.render('pages/csraAssessmentCancelled', {
+      prisoner,
+      finishLink: appendReferrers(`/prisoner/${prisoner.prisonerNumber}`, referrers),
+    })
   }
 
   return { get, post, cancelled }
