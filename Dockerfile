@@ -15,6 +15,8 @@ ENV BUILD_NUMBER=${BUILD_NUMBER}
 ENV GIT_REF=${GIT_REF}
 ENV GIT_BRANCH=${GIT_BRANCH}
 
+RUN npm install -g npm@12
+
 # Stage: build assets
 FROM base AS build
 
@@ -32,7 +34,7 @@ RUN npm run build
 RUN npm prune --no-audit --no-fund --omit=dev
 
 # Stage: copy production assets and dependencies
-FROM base
+FROM ghcr.io/ministryofjustice/hmpps-node:24-alpine-runtime
 
 COPY --from=build --chown=appuser:appgroup \
         /app/package.json \
