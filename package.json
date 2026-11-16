@@ -25,11 +25,11 @@
     "int-test-init:ci": "npx playwright install",
     "clean": "rm -rf dist test_results",
     "rebuild": "npm run clean && npm run setup && npm run build",
-    "setup": "npm ci && hmpps-npm-script-run-allowlist"
+    "setup": "npm ci"
   },
   "engines": {
     "node": "^24",
-    "npm": "^11 || ^12"
+    "npm": "^12"
   },
   "dependencies": {
     "@aws-sdk/client-sqs": "3.1161.0",
