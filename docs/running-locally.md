@@ -25,6 +25,46 @@ The dockerised `hmpps-auth` is seeded with the CSRA OAuth clients (see
 prison-register) are served by WireMock stubs. The stubbed prison is **`MDI`** with a roll of
 five prisoners: `A1234BC`, `A2345CD`, `A3456DE`, `A4567EF`, `A5678FG`.
 
+## Local court documents with dev APIs
+
+You can keep using dev for auth, CSRA and prisoner data while using local court documents.
+Start only the two document-related WireMock services (no local auth or database needed):
+
+```bash
+docker compose --env-file .env.local.example up -d court-data-api document-api
+```
+
+The explicit Compose env file avoids reading your dev credentials from `.env`; the mocks
+do not need them. Set these two URLs in your `.env`, leaving the other dev API URLs unchanged,
+then restart `npm run start:dev`:
+
+```dotenv
+COURT_DATA_INGESTION_API_URL=http://localhost:8088
+DOCUMENT_API_URL=http://localhost:8089
+```
+
+Every prisoner number returns the same synthetic hearings: a recent remand warrant and
+sentencing warrant, a prison court register, a Common Platform document, and an older remand
+warrant. Dates are relative to today, so the two recent warrants always fall within the
+UI's 30-day window. The other document types and the 45-day-old warrant are intentionally
+filtered out by the UI.
+
+The document mock returns metadata for every UUID in `POST /documents` and serves the same
+one-page PDF for every `GET /documents/{documentUuid}/file`, including `?inline=true`.
+The PDF is clearly marked as local development data, not a real warrant. No credentials
+or real prisoner data are stored by these fixtures.
+
+Fixtures live in `local-stack/court-data-api/` and `local-stack/document-api/`. If replacing
+`dummy-court-document.pdf`, update `fileSize` in `documents.json` to its size in bytes.
+Both services are also wired into the full Docker stack and `.env.local.example`.
+
+To switch back to dev court documents, restore the two dev API URLs in `.env`, restart
+the frontend, and stop the mocks with:
+
+```bash
+docker compose --env-file .env.local.example stop court-data-api document-api
+```
+
 ## Seeding example CSRA data
 
 The CSRA database starts empty, so every prisoner shows as **No rating** until you create some

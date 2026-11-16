@@ -1,0 +1,12 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/court-hearings/prisoner/[A-Za-z0-9]+"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "bodyFileName": "court-hearings.json",
+    "transformers": ["response-template"]
+  }
+}

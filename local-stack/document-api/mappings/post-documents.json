@@ -1,0 +1,12 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/documents"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "bodyFileName": "documents.json",
+    "transformers": ["response-template"]
+  }
+}

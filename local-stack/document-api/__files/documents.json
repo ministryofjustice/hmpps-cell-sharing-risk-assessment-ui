@@ -1,0 +1,11 @@
+[
+  {{#each (jsonPath request.body '$')}}
+  {
+    "documentUuid": "{{this}}",
+    "documentFilename": "dummy-court-document.pdf",
+    "fileExtension": "pdf",
+    "fileSize": 731,
+    "mimeType": "application/pdf"
+  }{{#unless @last}},{{/unless}}
+  {{/each}}
+]
