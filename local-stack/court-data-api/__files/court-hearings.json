@@ -1,0 +1,60 @@
+[
+  {
+    "hearingId": "10000000-0000-4000-8000-000000000001",
+    "courtName": "Example Magistrates' Court",
+    "courtId": "20000000-0000-4000-8000-000000000001",
+    "courtCode": "EXAMPLE",
+    "hearingDate": "{{now offset='-7 days' format='yyyy-MM-dd'}}",
+    "caseReferences": ["LOCAL-001"],
+    "hearingType": "First hearing",
+    "documents": [
+      {
+        "documentType": "REMAND_WARRANT",
+        "documentId": "30000000-0000-4000-8000-000000000001",
+        "ingestionAt": "{{now offset='-7 days' format='yyyy-MM-dd'}}T10:00:00Z"
+      },
+      {
+        "documentType": "PRISON_COURT_REGISTER",
+        "documentId": "30000000-0000-4000-8000-000000000002",
+        "ingestionAt": "{{now offset='-7 days' format='yyyy-MM-dd'}}T10:30:00Z"
+      }
+    ]
+  },
+  {
+    "hearingId": "10000000-0000-4000-8000-000000000002",
+    "courtName": "Example Crown Court",
+    "courtId": "20000000-0000-4000-8000-000000000002",
+    "courtCode": null,
+    "hearingDate": "{{now offset='-1 days' format='yyyy-MM-dd'}}",
+    "caseReferences": ["LOCAL-001", "LOCAL-002"],
+    "hearingType": "Sentence",
+    "documents": [
+      {
+        "documentType": "SENTENCING_WARRANT",
+        "documentId": "30000000-0000-4000-8000-000000000003",
+        "ingestionAt": "{{now offset='-1 days' format='yyyy-MM-dd'}}T14:00:00Z"
+      },
+      {
+        "documentType": "COMMON_PLATFORM_DOCUMENT",
+        "documentId": "30000000-0000-4000-8000-000000000004",
+        "ingestionAt": "{{now offset='-1 days' format='yyyy-MM-dd'}}T14:30:00Z"
+      }
+    ]
+  },
+  {
+    "hearingId": "10000000-0000-4000-8000-000000000003",
+    "courtName": "Example Magistrates' Court",
+    "courtId": "20000000-0000-4000-8000-000000000001",
+    "courtCode": "EXAMPLE",
+    "hearingDate": "{{now offset='-45 days' format='yyyy-MM-dd'}}",
+    "caseReferences": ["LOCAL-003"],
+    "hearingType": "Remand",
+    "documents": [
+      {
+        "documentType": "REMAND_WARRANT",
+        "documentId": "30000000-0000-4000-8000-000000000005",
+        "ingestionAt": "{{now offset='-45 days' format='yyyy-MM-dd'}}T09:00:00Z"
+      }
+    ]
+  }
+]

@@ -175,8 +175,14 @@ the sample data.
 | `component-api` | 8085 | DPS frontend-components | `GET /components` (shared header/footer), `GET /ping` |
 | `prison-api` | 8086 | prison-api | `GET /api/bookings/offenderNo/{prisonerNumber}/image/data` (the prisoner photo), `GET /api/movements/{prisonId}/in` (recent arrivals, dated relative to today), `GET /health/ping` |
 | `prison-register` | 8087 | prison-register | `GET /prisons` (prison id → name reference data), `GET /health/ping` |
+| `court-data-api` | 8088 | court-data-ingestion-api | `GET /court-hearings/prisoner/{prisonerNumber}` (sample hearings and documents for any prisoner), `GET /health/ping` |
+| `document-api` | 8089 | document-management-api | `POST /documents` (metadata for any requested UUIDs), `GET /documents/{documentUuid}/file` (the same dummy PDF for every document), `GET /health/ping` |
+| `change-someones-cell-api` | 8091 | change-someones-cell-api | `GET /cell-movements/prisoner/{prisonerNumber}/cell-sharing` (sample cell-sharing history), `GET /health/ping` |
 
 `redis` (port 6379) backs the session store and token cache (`REDIS_ENABLED=true`).
+
+To use just the court document mocks alongside the real dev APIs, see
+[Local court documents with dev APIs](./docs/running-locally.md#local-court-documents-with-dev-apis).
 
 #### OAuth clients and CSRA data
 

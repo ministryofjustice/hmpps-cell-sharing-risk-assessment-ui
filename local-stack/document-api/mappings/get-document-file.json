@@ -1,0 +1,14 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/documents/[^/]+/file"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": "inline; filename=\"dummy-court-document.pdf\""
+    },
+    "bodyFileName": "dummy-court-document.pdf"
+  }
+}

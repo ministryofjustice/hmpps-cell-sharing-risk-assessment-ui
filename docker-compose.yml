@@ -126,6 +126,41 @@ services:
       retries: 10
       start_period: 10s
 
+  court-data-api:
+    image: wiremock/wiremock:latest
+    networks:
+      - hmpps
+    container_name: court-data-api
+    command: ["--disable-banner"]
+    ports:
+      - "8088:8080"
+    volumes:
+      - ./local-stack/court-data-api:/home/wiremock:ro
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 15s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  document-api:
+    image: wiremock/wiremock:latest
+    networks:
+      - hmpps
+    container_name: document-api
+    # Template only the metadata mapping, leaving the PDF bytes untouched.
+    command: ["--disable-banner"]
+    ports:
+      - "8089:8080"
+    volumes:
+      - ./local-stack/document-api:/home/wiremock:ro
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 15s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
   manage-users-api:
     # WireMock stub for hmpps-manage-users-api (signed-in user's caseloads); seed data in
     # local-stack/manage-users-api. The seeded caseload (MDI) matches the prisoner-search stub so
@@ -156,7 +191,7 @@ services:
     container_name: change-someones-cell-api
     command: ["--disable-banner"]
     ports:
-      - "9091:8080"
+      - "8091:8080"
     volumes:
       - ./local-stack/change-someones-cell-api:/home/wiremock:ro
     healthcheck:
@@ -261,7 +296,13 @@ services:
         condition: service_healthy
       manage-users-api:
         condition: service_healthy
+      change-someones-cell-api:
+        condition: service_healthy
       component-api:
+        condition: service_healthy
+      court-data-api:
+        condition: service_healthy
+      document-api:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -292,7 +333,10 @@ services:
       - PRISONER_SEARCH_API_URL=http://prisoner-search:8080
       - PRISON_API_URL=http://prison-api:8080
       - MANAGE_USERS_API_URL=http://manage-users-api:8080
+      - CHANGE_SOMEONES_CELL_API_URL=http://change-someones-cell-api:8080
       - COMPONENT_API_URL=http://component-api:8080
+      - COURT_DATA_INGESTION_API_URL=http://court-data-api:8080
+      - DOCUMENT_API_URL=http://document-api:8080
 
 networks:
   hmpps:
