@@ -133,6 +133,90 @@ describe('csraRouter', () => {
     flashProvider.mockReturnValue([])
   })
 
+  describe.each(['/check-answers', '/review-provisional'])('remaining tasks on %s', path => {
+    const speakTask = 'speak to the prisoner about sharing a cell'
+    const harmTask = 'record if there is reason to believe the prisoner may harm someone they share a cell with'
+    const vulnerabilityTask = 'record if the prisoner is significantly vulnerable to assault by others'
+
+    it.each<{
+      description: string
+      answers: Partial<CsraAssessmentStageAnswers>
+      expectedTasks: string[]
+    }>([
+      {
+        description: 'conversation unanswered (undefined)',
+        answers: {
+          officerSpokeToPrisoner: undefined,
+          likelyToHarmCellmate: undefined,
+          significantlyVulnerable: undefined,
+        },
+        expectedTasks: [speakTask],
+      },
+      {
+        description: 'conversation unanswered (null)',
+        answers: { officerSpokeToPrisoner: null, likelyToHarmCellmate: null, significantlyVulnerable: null },
+        expectedTasks: [speakTask],
+      },
+      {
+        description: 'no conversation',
+        answers: { officerSpokeToPrisoner: false, likelyToHarmCellmate: null, significantlyVulnerable: null },
+        expectedTasks: [speakTask],
+      },
+      {
+        description: 'vulnerability unanswered (undefined)',
+        answers: { significantlyVulnerable: undefined },
+        expectedTasks: [vulnerabilityTask],
+      },
+      {
+        description: 'vulnerability unanswered (null)',
+        answers: { significantlyVulnerable: null },
+        expectedTasks: [vulnerabilityTask],
+      },
+      {
+        description: 'both follow-ups unanswered',
+        answers: { likelyToHarmCellmate: null, significantlyVulnerable: null },
+        expectedTasks: [harmTask, vulnerabilityTask],
+      },
+      {
+        description: 'harm unanswered only',
+        answers: { likelyToHarmCellmate: undefined },
+        expectedTasks: [harmTask],
+      },
+      {
+        description: 'both follow-ups answered no',
+        answers: {},
+        expectedTasks: [],
+      },
+      {
+        description: 'both follow-ups answered yes',
+        answers: {
+          likelyToHarmCellmate: true,
+          likelyToHarmCellmateDetail: 'Harm detail',
+          significantlyVulnerable: true,
+          significantlyVulnerableDetail: 'Vulnerability detail',
+        },
+        expectedTasks: [],
+      },
+    ])('shows the correct panel tasks when $description', async ({ answers, expectedTasks }) => {
+      csraService.getCsraAssessment.mockResolvedValue(
+        assessment({
+          interimResult: path === '/review-provisional' ? 'HIGH_SPECIFIC' : undefined,
+          stages: [completeStageAnswers({ ...answers, seenByHealthcare: false })],
+        }),
+      )
+
+      const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .get(`${assessmentUrl}${path}`)
+        .expect(200)
+      const panel = response.text.match(
+        /<h2 class="govuk-heading-m">Remaining tasks to complete<\/h2>[\s\S]*?<\/ul>/,
+      )?.[0]
+      const tasks = panel?.match(/<li>[^<]*<\/li>/g)?.map(item => item.replace(/<\/?li>/g, ''))
+
+      expect(tasks).toEqual([...expectedTasks, 'ensure the prisoner has been seen by healthcare'])
+    })
+  })
+
   describe('review provisional assessment', () => {
     const reviewUrl = `${assessmentUrl}/review-provisional`
     const provisional = () =>
