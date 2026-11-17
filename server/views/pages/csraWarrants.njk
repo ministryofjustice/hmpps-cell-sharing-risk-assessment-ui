@@ -1,4 +1,5 @@
 {% extends "../partials/layout.njk" %}
+{% from "govuk/components/pagination/macro.njk" import govukPagination %}
 
 {% set prisonerName = (prisoner.firstName + " " + prisoner.lastName) | convertToTitleCase %}
 {% set title = "Warrants available in DPS" %}
@@ -49,11 +50,15 @@
       </div>
       <div class="govuk-grid-column-one-half govuk-!-text-align-right">
         <p class="govuk-body govuk-!-margin-bottom-0" data-qa="warrants-count">
-          Showing <strong>1</strong> to <strong>{{ warrants.length }}</strong>
-          of <strong>{{ warrants.length }}</strong> warrant{{ "s" if warrants.length != 1 }}
+          Showing <strong>{{ results.from }}</strong> to <strong>{{ results.to }}</strong>
+          of <strong>{{ results.count }}</strong> warrant{{ "s" if results.count != 1 }}
         </p>
       </div>
     </div>
+
+    {% if pagination %}
+      {{ govukPagination(pagination) }}
+    {% endif %}
 
     <div class="csra-warrants">
       {% for warrant in warrants %}
@@ -90,6 +95,10 @@
         </div>
       {% endfor %}
     </div>
+
+    {% if pagination %}
+      {{ govukPagination(pagination) }}
+    {% endif %}
   {% else %}
     <p class="govuk-body" data-qa="warrants-empty">
       Warrant not available in DPS. Check if a paper copy is available.

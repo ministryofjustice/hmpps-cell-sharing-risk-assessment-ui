@@ -62,6 +62,22 @@ const hearings = (): CourtHearing[] => [
   },
 ]
 
+const warrantDocumentId = (index: number) => `40000000-0000-4000-8000-${String(index).padStart(12, '0')}`
+
+const hearingsWithWarrants = (count: number): CourtHearing[] =>
+  Array.from({ length: count }, (_, index) => ({
+    ...hearings()[0],
+    hearingId: `hearing-${index}`,
+    hearingDate: daysAgo(index / 2 + 1),
+    documents: [
+      {
+        documentType: 'REMAND_WARRANT',
+        documentId: warrantDocumentId(index),
+        ingestionAt: daysAgo(index / 2 + 1),
+      },
+    ],
+  }))
+
 const stubCommonPageData = async () => {
   await prisonerSearchApi.stubGetPrisoner(prisoner)
   await prisonApi.stubGetPrisonerImage('A1234BC')
@@ -102,6 +118,7 @@ test.describe('CSRA court warrants', () => {
     // Only the two warrants; the prison court register is filtered out.
     await expect(warrantsPage.warrants).toHaveCount(2)
     await expect(warrantsPage.count).toContainText('Showing 1 to 2 of 2 warrants')
+    await expect(warrantsPage.pagination).toHaveCount(0)
 
     const firstWarrant = warrantsPage.warrants.first()
     await expect(firstWarrant.getByTestId('warrant-link')).toHaveText('Sentencing warrant')
@@ -125,6 +142,75 @@ test.describe('CSRA court warrants', () => {
     expect(await warrantsPage.warrantTitles()).toEqual(['Remand warrant', 'Sentencing warrant'])
   })
 
+  for (const count of [20, 21]) {
+    test(`shows pagination only above twenty results (${count} warrants)`, async ({ page }) => {
+      await loginAtMoorland(page, EDIT_ROLES)
+      await stubCommonPageData()
+      await courtDataApi.stubGetCourtHearings('A1234BC', hearingsWithWarrants(count))
+      await documentApi.stubGetDocumentsMetadata([])
+
+      await page.goto(WARRANTS_URL)
+
+      const warrantsPage = await CsraWarrantsPage.verifyOnPage(page)
+      await expect(warrantsPage.warrants).toHaveCount(20)
+      await expect(warrantsPage.count).toHaveText(`Showing 1 to 20 of ${count} warrants`)
+      await expect(warrantsPage.pagination).toHaveCount(count > 20 ? 2 : 0)
+    })
+  }
+
+  for (const warrantsUrl of [WARRANTS_URL, STANDALONE_URL]) {
+    test(`paginates warrants and preserves sorting at ${warrantsUrl}`, async ({ page }) => {
+      await loginAtMoorland(page, ADMIN_ROLES)
+      await stubCommonPageData()
+      await courtDataApi.stubGetCourtHearings('A1234BC', hearingsWithWarrants(45))
+      await documentApi.stubGetDocumentsMetadata([])
+
+      await page.goto(warrantsUrl)
+
+      const warrantsPage = await CsraWarrantsPage.verifyOnPage(page)
+      const topPagination = warrantsPage.pagination.first()
+      const bottomPagination = warrantsPage.pagination.last()
+      const warrantLinks = warrantsPage.warrants.getByTestId('warrant-link')
+      const expectWarrantIds = async (indices: number[]) => {
+        await expect(warrantsPage.warrants).toHaveCount(indices.length)
+        expect(await warrantLinks.evaluateAll(links => links.map(link => link.getAttribute('href')))).toEqual(
+          indices.map(index => `${warrantsUrl}/${warrantDocumentId(index)}/file`),
+        )
+      }
+
+      await expect(warrantsPage.pagination).toHaveCount(2)
+      await expect(page.locator('.govuk-grid-row:has([data-qa="warrants-sort"]) + .govuk-pagination')).toHaveCount(1)
+      await expect(page.locator('.csra-warrants + .govuk-pagination')).toHaveCount(1)
+      await expect(warrantsPage.count).toHaveText('Showing 1 to 20 of 45 warrants')
+      await expectWarrantIds(Array.from({ length: 20 }, (_, i) => i))
+      await expect(topPagination.getByRole('link', { name: 'Previous page', exact: true })).toHaveCount(0)
+
+      await topPagination.getByRole('link', { name: 'Next page', exact: true }).click()
+      await expect(page).toHaveURL(`${warrantsUrl}?sort=recent&page=2`)
+      await expect(warrantsPage.count).toHaveText('Showing 21 to 40 of 45 warrants')
+      await expectWarrantIds(Array.from({ length: 20 }, (_, i) => i + 20))
+      await expect(topPagination.locator('[aria-current="page"]')).toHaveText('2')
+      await expect(bottomPagination.locator('[aria-current="page"]')).toHaveText('2')
+
+      await warrantsPage.sort.getByRole('link', { name: 'Earliest', exact: true }).click()
+      await expect(page).toHaveURL(`${warrantsUrl}?sort=earliest`)
+      await expect(warrantsPage.count).toHaveText('Showing 1 to 20 of 45 warrants')
+      await expectWarrantIds(Array.from({ length: 20 }, (_, i) => 44 - i))
+
+      await bottomPagination.getByRole('link', { name: 'Page 3', exact: true }).click()
+      await expect(page).toHaveURL(`${warrantsUrl}?sort=earliest&page=3`)
+      await expect(warrantsPage.count).toHaveText('Showing 41 to 45 of 45 warrants')
+      await expectWarrantIds([4, 3, 2, 1, 0])
+      await expect(topPagination.getByRole('link', { name: 'Next page', exact: true })).toHaveCount(0)
+      await expect(bottomPagination.getByRole('link', { name: 'Next page', exact: true })).toHaveCount(0)
+
+      await bottomPagination.getByRole('link', { name: 'Previous page', exact: true }).click()
+      await expect(page).toHaveURL(`${warrantsUrl}?sort=earliest&page=2`)
+      await expect(warrantsPage.count).toHaveText('Showing 21 to 40 of 45 warrants')
+      await expectWarrantIds(Array.from({ length: 20 }, (_, i) => 24 - i))
+    })
+  }
+
   test('still lists the warrants when document metadata cannot be fetched, just without sizes', async ({ page }) => {
     await loginAtMoorland(page, EDIT_ROLES)
     await stubCommonPageData()
@@ -147,6 +233,7 @@ test.describe('CSRA court warrants', () => {
 
     const warrantsPage = await CsraWarrantsPage.verifyOnPage(page)
     await expect(warrantsPage.warrants).toHaveCount(0)
+    await expect(warrantsPage.pagination).toHaveCount(0)
     await expect(warrantsPage.emptyMessage).toContainText(
       'Warrant not available in DPS. Check if a paper copy is available.',
     )

@@ -604,7 +604,7 @@ export interface Pagination {
 }
 
 /**
- * Build a pagination view model for the history list. `page` is 1-based; `baseQuery` is the current
+ * Build a pagination view model for a list. `currentPage` is 1-based; `baseQuery` is the current
  * query string without the page param (each item appends its own page). Mirrors the shape used by the
  * MOJ pagination component, with a condensed window of page links around the current page.
  */

@@ -79,6 +79,58 @@ describe('csraWarrantsController', () => {
       expect(res.render).toHaveBeenCalledWith('pages/csraWarrants', expect.objectContaining({ sort: 'earliest' }))
     })
 
+    it.each([
+      [0, null, { from: 0, to: 0, count: 0 }],
+      [1, null, { from: 1, to: 1, count: 1 }],
+      [20, null, { from: 1, to: 20, count: 20 }],
+      [21, expect.objectContaining({ next: { href: '?sort=recent&page=2' } }), { from: 1, to: 20, count: 21 }],
+    ])('paginates %i warrants only when there are more than twenty', async (count, pagination, results) => {
+      const warrants = Array.from({ length: count }, (_, i) => makeWarrant({ documentId: `doc-${i}` }))
+      warrantsService.getRecentWarrants.mockResolvedValue(warrants)
+      const res = response()
+
+      await controller()(request(), res, jest.fn())
+
+      expect(res.render).toHaveBeenCalledWith(
+        'pages/csraWarrants',
+        expect.objectContaining({ warrants: warrants.slice(0, 20), pagination, results }),
+      )
+    })
+
+    it.each([
+      ['1', 0, 20],
+      ['2', 20, 40],
+      ['3', 40, 45],
+      ['99', 40, 45],
+      ['invalid', 0, 20],
+      ['0', 0, 20],
+      ['-1', 0, 20],
+      ['1.5', 0, 20],
+      ['Infinity', 0, 20],
+    ])('selects the correct warrants and result range for page %s', async (page, start, end) => {
+      const warrants = Array.from({ length: 45 }, (_, i) => makeWarrant({ documentId: `doc-${i}` }))
+      warrantsService.getRecentWarrants.mockResolvedValue(warrants)
+      const res = response()
+
+      await controller()(request({ page, sort: 'earliest' }), res, jest.fn())
+
+      expect(warrantsService.getRecentWarrants).toHaveBeenCalledWith('user1', 'A1234BC', 'earliest')
+      expect(res.render).toHaveBeenCalledWith(
+        'pages/csraWarrants',
+        expect.objectContaining({
+          warrants: warrants.slice(start, end),
+          results: { from: start + 1, to: end, count: 45 },
+          pagination: expect.objectContaining({
+            items: [1, 2, 3].map(number => ({
+              number,
+              href: `?sort=earliest&page=${number}`,
+              current: number === start / 20 + 1,
+            })),
+          }),
+        }),
+      )
+    })
+
     it('falls back to the default sort for an unrecognised value', async () => {
       await controller()(request({ sort: 'sideways' }), response(), jest.fn())
 

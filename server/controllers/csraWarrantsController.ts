@@ -6,8 +6,11 @@ import { Page } from '../services/auditService'
 import config from '../config'
 import { WARRANT_WINDOW_DAYS, type WarrantSort } from '../services/warrantsService'
 import logger from '../../logger'
+import { buildPagination } from '../utils/utils'
 
 type Dependencies = Pick<Services, 'auditService' | 'warrantsService'>
+
+const WARRANTS_PAGE_SIZE = 20
 
 const parseSort = (value: unknown): WarrantSort => (value === 'earliest' ? 'earliest' : 'recent')
 
@@ -39,6 +42,15 @@ export default function csraWarrantsController({
 
     const sort = parseSort(req.query.sort)
     const warrants = await warrantsService.getRecentWarrants(username, prisoner.prisonerNumber, sort)
+    const totalPages = Math.ceil(warrants.length / WARRANTS_PAGE_SIZE)
+    const requestedPage =
+      req.query.page === undefined ? 1 : Number(typeof req.query.page === 'string' ? req.query.page : NaN)
+    const validPage = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1
+    const page = Math.min(validPage, Math.max(1, totalPages))
+    if (page !== requestedPage) {
+      logger.warn('Warrants page number is invalid or out of range; using page %s', page)
+    }
+    const pagination = buildPagination(page, totalPages, warrants.length, WARRANTS_PAGE_SIZE, `sort=${sort}`)
 
     await auditService.logPageView(Page.PRISONER_CSRA_WARRANTS, {
       who: username,
@@ -59,7 +71,10 @@ export default function csraWarrantsController({
 
     res.render('pages/csraWarrants', {
       prisoner,
-      warrants,
+      // The court API is unpaged, so slice only after all warrants have been filtered and sorted.
+      warrants: warrants.slice((page - 1) * WARRANTS_PAGE_SIZE, page * WARRANTS_PAGE_SIZE),
+      pagination: totalPages > 1 ? pagination : null,
+      results: pagination.results,
       sort,
       windowDays: WARRANT_WINDOW_DAYS,
       basePath,
