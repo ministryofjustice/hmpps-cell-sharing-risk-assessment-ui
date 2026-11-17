@@ -339,14 +339,39 @@ test.describe('Review provisional assessment', () => {
     })
   }
 
-  test('changing saved Yes to No makes the review incomplete and locks final rating again', async ({ page }) => {
-    const initialFinal = completeAnswers({ stage: 'FINAL', provisionalReviewed: true, version: 5 })
+  test('changes final check answers through the evidence and provisional review links, locking rating when review becomes No', async ({
+    page,
+  }) => {
+    const initialFinal = completeAnswers({
+      stage: 'FINAL',
+      provisionalReviewed: true,
+      offenceEvidenceReviewed: true,
+      version: 5,
+    })
     const savedNo = { ...initialFinal, provisionalReviewed: false }
     await stubReviewSaves(assessment([provisionalAnswers, initialFinal]), [savedNo, initialFinal])
     await page.reload()
     await expect(reviewTask(page)).toContainText('Completed')
     await expect(page.getByRole('link', { name: 'Check answers and confirm rating', exact: true })).toBeVisible()
-    await page.getByRole('link', { name: REVIEW_LINK, exact: true }).click()
+    await page.getByRole('link', { name: 'Check answers and confirm rating', exact: true }).click()
+    await expect(page.locator('.csra-check-answers-section h2').first()).toHaveText('Provisional assessment')
+    const provisionalSummary = summarySection(page, 'Provisional assessment')
+    await expect(provisionalSummary.locator('.govuk-summary-list__value')).toHaveText(['Yes'])
+
+    const evidenceSummary = summarySection(page, 'Evidence sources')
+    await expect(evidenceSummary.getByRole('link')).toHaveText(['Change Warrant', 'Change PNC'])
+    await evidenceSummary.getByRole('link', { name: 'Change PNC', exact: true }).click()
+    await expect(page).toHaveURL(`${TASK_LIST_URL}/section/evidenceAndOffences/0`)
+    await expect(page.getByRole('checkbox')).toHaveCount(2)
+    await expect(page.getByRole('checkbox', { name: /^PNC/ })).toBeChecked()
+    await expect(page.getByRole('checkbox', { name: /^Warrant/ })).toBeChecked()
+    await page.getByRole('link', { name: 'Cancel', exact: true }).click()
+    await page.getByRole('link', { name: 'Check answers and confirm rating', exact: true }).click()
+
+    await provisionalSummary
+      .getByRole('link', { name: 'Change Have you reviewed the provisional assessment?', exact: true })
+      .click()
+    await expect(page).toHaveURL(REVIEW_URL)
     await expect(page.getByRole('radio', { name: YES, exact: true })).toBeChecked()
     await page.getByRole('radio', { name: NO, exact: true }).check()
     await page.getByRole('button', { name: 'Save and return', exact: true }).click()
