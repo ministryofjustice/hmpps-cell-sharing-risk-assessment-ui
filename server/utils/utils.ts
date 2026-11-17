@@ -439,6 +439,12 @@ export const HISTORY_PAGE_SIZE = 10
 const firstValue = (value: ParsedQs[string]): string | undefined =>
   (Array.isArray(value) ? value[0] : value)?.toString().trim() || undefined
 
+/** Parse a 1-based page number, using the first query value and defaulting to page 1. */
+export const parsePageNumber = (value: ParsedQs[string]): number => {
+  const page = Number.parseInt(firstValue(value) ?? '1', 10)
+  return Number.isFinite(page) && page > 0 ? page : 1
+}
+
 const toArray = (value: ParsedQs[string]): string[] =>
   (Array.isArray(value) ? value : [value])
     .map(item => item?.toString().trim())
@@ -564,8 +570,7 @@ export const parseCsraHistoryQuery = (reqQuery: ParsedQs, size = HISTORY_PAGE_SI
   const toDateRaw = firstValue(reqQuery.toDate)
   const fromDate = parseUkDate(fromDateRaw)
   const toDate = parseUkDate(toDateRaw)
-  const parsedPage = Number.parseInt(firstValue(reqQuery.page) ?? '1', 10)
-  const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1
+  const page = parsePageNumber(reqQuery.page)
 
   const apiQuery: CsraHistoryQuery = {
     page: String(page - 1), // API pages are zero-based
