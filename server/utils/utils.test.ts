@@ -24,6 +24,7 @@ import {
   isPrisonerNumber,
   csraRatingPanelClass,
   parseCsraHistoryQuery,
+  parsePageNumber,
   parseUkDate,
   validateUkDate,
   taskListStatus,
@@ -459,6 +460,26 @@ describe('validateUkDate', () => {
     ['leap day in leap year', '29/2/2024', null],
   ])('%s validateUkDate(%s) === %s', (_: string, input: string, expected: string | null) => {
     expect(validateUkDate(input)).toEqual(expected)
+  })
+})
+
+describe('parsePageNumber', () => {
+  it.each([
+    { value: undefined, expected: 1 },
+    { value: '', expected: 1 },
+    { value: '0', expected: 1 },
+    { value: '-2', expected: 1 },
+    { value: 'abc', expected: 1 },
+    { value: 'Infinity', expected: 1 },
+    { value: ' 3 ', expected: 3 },
+    { value: '2.5', expected: 2 },
+    { value: '2abc', expected: 2 },
+    { value: ['3', '2'], expected: 3 },
+  ])('parses $value as page $expected consistently with history', ({ value, expected }) => {
+    expect(parsePageNumber(value)).toBe(expected)
+    const historyQuery = parseCsraHistoryQuery({ page: value })
+    expect(historyQuery.page).toBe(expected)
+    expect(historyQuery.apiQuery.page).toBe(String(expected - 1))
   })
 })
 

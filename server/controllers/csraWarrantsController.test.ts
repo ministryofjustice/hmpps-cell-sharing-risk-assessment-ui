@@ -106,6 +106,8 @@ describe('csraWarrantsController', () => {
       ['0', 0, 20],
       ['-1', 0, 20],
       ['1.5', 0, 20],
+      ['2.5', 20, 40],
+      ['2abc', 20, 40],
       ['Infinity', 0, 20],
     ])('selects the correct warrants and result range for page %s', async (page, start, end) => {
       const warrants = Array.from({ length: 45 }, (_, i) => makeWarrant({ documentId: `doc-${i}` }))

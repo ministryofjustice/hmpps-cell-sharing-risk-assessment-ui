@@ -168,8 +168,8 @@ test.describe('CSRA court warrants', () => {
       await page.goto(warrantsUrl)
 
       const warrantsPage = await CsraWarrantsPage.verifyOnPage(page)
-      const topPagination = warrantsPage.pagination.first()
-      const bottomPagination = warrantsPage.pagination.last()
+      const topPagination = page.getByRole('navigation', { name: 'Warrants pagination above results', exact: true })
+      const bottomPagination = page.getByRole('navigation', { name: 'Warrants pagination below results', exact: true })
       const warrantLinks = warrantsPage.warrants.getByTestId('warrant-link')
       const expectWarrantIds = async (indices: number[]) => {
         await expect(warrantsPage.warrants).toHaveCount(indices.length)
@@ -179,6 +179,8 @@ test.describe('CSRA court warrants', () => {
       }
 
       await expect(warrantsPage.pagination).toHaveCount(2)
+      await expect(topPagination).toBeVisible()
+      await expect(bottomPagination).toBeVisible()
       await expect(page.locator('.govuk-grid-row:has([data-qa="warrants-sort"]) + .govuk-pagination')).toHaveCount(1)
       await expect(page.locator('.csra-warrants + .govuk-pagination')).toHaveCount(1)
       await expect(warrantsPage.count).toHaveText('Showing 1 to 20 of 45 warrants')

@@ -57,7 +57,12 @@
     </div>
 
     {% if pagination %}
-      {{ govukPagination(pagination) }}
+      {{ govukPagination({
+        landmarkLabel: "Warrants pagination above results",
+        items: pagination.items,
+        previous: pagination.previous,
+        next: pagination.next
+      }) }}
     {% endif %}
 
     <div class="csra-warrants">
@@ -97,7 +102,12 @@
     </div>
 
     {% if pagination %}
-      {{ govukPagination(pagination) }}
+      {{ govukPagination({
+        landmarkLabel: "Warrants pagination below results",
+        items: pagination.items,
+        previous: pagination.previous,
+        next: pagination.next
+      }) }}
     {% endif %}
   {% else %}
     <p class="govuk-body" data-qa="warrants-empty">
