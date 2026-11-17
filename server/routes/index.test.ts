@@ -18,6 +18,8 @@ import {
   NomisSwitchSetNationallyError,
 } from '../utils/nomisSplash'
 import type { SplashScreenCondition } from '../data/prisonApiTypes'
+import WarrantsService, { type Warrant } from '../services/warrantsService'
+import config from '../config'
 
 jest.mock('../services/auditService')
 jest.mock('../services/csraService')
@@ -25,6 +27,7 @@ jest.mock('../services/prisonerSearchService')
 jest.mock('../services/manageUsersService')
 jest.mock('../services/prisonApiService')
 jest.mock('../services/activeAgenciesService')
+jest.mock('../services/warrantsService')
 
 const auditService = new AuditService(null) as jest.Mocked<AuditService>
 const csraService = new CsraService(null) as jest.Mocked<CsraService>
@@ -85,6 +88,98 @@ const adminApp = () =>
 afterEach(() => {
   jest.resetAllMocks()
 })
+
+describe.each(['/prisoner/A1234BC/warrants', '/prisoner/A1234BC/csra/assessment-123/warrants'])(
+  'GET %s pagination',
+  warrantsPath => {
+    const warrantsService = new WarrantsService(null, null) as jest.Mocked<WarrantsService>
+    const warrants: Warrant[] = Array.from({ length: 45 }, (_, i) => ({
+      documentId: `doc-${i + 1}`,
+      documentType: 'REMAND_WARRANT',
+      courtName: 'Leeds Crown Court',
+      hearingType: 'Remand',
+      ingestionAt: '2026-11-16T12:00:00',
+    }))
+    const originallyEnabled = config.warrants.enabled
+
+    beforeEach(() => {
+      config.warrants.enabled = true
+      activeAgenciesService.isPrisonActive.mockResolvedValue(true)
+      prisonerSearchService.getPrisoner.mockResolvedValue({
+        prisonerNumber: 'A1234BC',
+        firstName: 'JOHN',
+        lastName: 'SMITH',
+        prisonId: 'LEI',
+      })
+      app = appWithAllRoutes({
+        services: {
+          auditService,
+          csraService,
+          prisonerSearchService,
+          manageUsersService,
+          prisonApiService,
+          activeAgenciesService,
+          warrantsService,
+        },
+        userSupplier: () => ({ ...user, userRoles: [Role.CSRA__ADMIN, Role.CSRA__ASSESSMENT_EDIT] }),
+      })
+    })
+
+    afterEach(() => {
+      config.warrants.enabled = originallyEnabled
+    })
+
+    it.each([0, 1, 20, 21])('shows pagination only above twenty results (%i warrants)', async count => {
+      warrantsService.getRecentWarrants.mockResolvedValue(warrants.slice(0, count))
+
+      const response = await request(app).get(warrantsPath).expect(200)
+      const html = response.text.replace(/\s+/g, ' ')
+
+      expect(html.match(/data-qa="warrant"/g) ?? []).toHaveLength(Math.min(count, 20))
+      expect(html.match(/class="govuk-pagination"/g) ?? []).toHaveLength(count > 20 ? 2 : 0)
+      if (count) {
+        expect(html).toContain(
+          `Showing <strong>1</strong> to <strong>${Math.min(count, 20)}</strong> of <strong>${count}</strong> warrant${count === 1 ? '' : 's'}`,
+        )
+      } else {
+        expect(html).toContain('Warrant not available in DPS.')
+        expect(html).not.toContain('data-qa="warrants-count"')
+      }
+    })
+
+    it('places controls around the list and preserves sorting when navigating', async () => {
+      warrantsService.getRecentWarrants.mockResolvedValue(warrants)
+
+      const response = await request(app).get(`${warrantsPath}?sort=earliest&page=2`).expect(200)
+      const html = response.text.replace(/\s+/g, ' ')
+
+      expect(html.match(/data-qa="warrant"/g)).toHaveLength(20)
+      expect(html).toContain('Showing <strong>21</strong> to <strong>40</strong> of <strong>45</strong> warrants')
+      expect(html).toContain(`href="${warrantsPath}/doc-21/file"`)
+      expect(html).toContain(`href="${warrantsPath}/doc-40/file"`)
+      expect(html).not.toContain(`href="${warrantsPath}/doc-41/file"`)
+      expect(html.match(/aria-current="page"/g)).toHaveLength(2)
+      expect(html).toContain(`href="${warrantsPath}?sort=recent"`)
+      expect(html.indexOf('data-qa="warrants-count"')).toBeLessThan(html.indexOf('class="govuk-pagination"'))
+      expect(html.indexOf('class="govuk-pagination"')).toBeLessThan(html.indexOf('class="csra-warrants"'))
+      expect(html.lastIndexOf('data-qa="warrant"')).toBeLessThan(html.lastIndexOf('class="govuk-pagination"'))
+
+      const nextHref = html.match(/href="([^"]+)" rel="next"/)?.[1].replace(/&amp;/g, '&')
+      expect(nextHref).toBe('?sort=earliest&page=3')
+      const last = await request(app).get(`${warrantsPath}${nextHref}`).expect(200)
+      expect(last.text.match(/data-qa="warrant"/g)).toHaveLength(5)
+      expect(last.text.replace(/\s+/g, ' ')).toContain(
+        'Showing <strong>41</strong> to <strong>45</strong> of <strong>45</strong> warrants',
+      )
+      expect(last.text).not.toContain('rel="next"')
+      const previousHref = last.text.match(/href="([^"]+)" rel="prev"/)?.[1].replace(/&amp;/g, '&')
+      expect(previousHref).toBe('?sort=earliest&page=2')
+      const previous = await request(app).get(`${warrantsPath}${previousHref}`).expect(200)
+      expect(previous.text).toBe(response.text)
+      expect(warrantsService.getRecentWarrants).toHaveBeenLastCalledWith('user1', 'A1234BC', 'earliest')
+    })
+  },
+)
 
 describe('GET /', () => {
   it('should render index page', () => {

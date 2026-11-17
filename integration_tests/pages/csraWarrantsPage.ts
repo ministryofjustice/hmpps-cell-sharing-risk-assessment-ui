@@ -14,6 +14,8 @@ export default class CsraWarrantsPage extends AbstractPage {
 
   readonly warrants: Locator
 
+  readonly pagination: Locator
+
   readonly emptyMessage: Locator
 
   readonly returnLink: Locator
@@ -26,6 +28,7 @@ export default class CsraWarrantsPage extends AbstractPage {
     this.sort = page.getByTestId('warrants-sort')
     this.count = page.getByTestId('warrants-count')
     this.warrants = page.getByTestId('warrant')
+    this.pagination = page.locator('.govuk-pagination')
     this.emptyMessage = page.getByTestId('warrants-empty')
     this.returnLink = page.getByTestId('return-link')
   }
