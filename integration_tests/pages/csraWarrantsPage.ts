@@ -32,7 +32,7 @@ export default class CsraWarrantsPage extends AbstractPage {
 
   static async verifyOnPage(page: Page): Promise<CsraWarrantsPage> {
     const warrantsPage = new CsraWarrantsPage(page)
-    await expect(warrantsPage.heading).toHaveText('Warrants from the last 30 days')
+    await expect(warrantsPage.heading).toHaveText('Warrants available in DPS')
     return warrantsPage
   }
 

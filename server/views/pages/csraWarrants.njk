@@ -1,7 +1,7 @@
 {% extends "../partials/layout.njk" %}
 
 {% set prisonerName = (prisoner.firstName + " " + prisoner.lastName) | convertToTitleCase %}
-{% set title = "Warrants from the last " + windowDays + " days" %}
+{% set title = "Warrants available in DPS" %}
 {% set pageTitle = applicationName + " - " + title %}
 {% set mainClasses = "govuk-body" %}
 
@@ -18,9 +18,14 @@
 {% block content %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
-      <p class="govuk-body" data-qa="warrants-intro">
-        These warrants were found by searching the prisoner&rsquo;s details on the court system.
-      </p>
+      <div class="warrants-intro" data-qa="warrants-intro">
+        <p class="govuk-body">
+          These are warrants that have been added to DPS from the court system.
+        </p>
+        <p class="govuk-body">
+          If you cannot find the warrant you are looking for, check to see if a paper copy is available.
+        </p>
+      </div>
     </div>
   </div>
 
@@ -50,42 +55,44 @@
       </div>
     </div>
 
-    {% for warrant in warrants %}
-      <div class="csra-warrant" data-qa="warrant">
-        <h2 class="govuk-heading-s govuk-!-margin-bottom-2">
-          {# Opens in the browser's own PDF viewer: the proxy route responds Content-Disposition: inline. #}
-          {# Text kept tight against the tags: whitespace inside the anchor gets underlined too. #}
-          <a class="govuk-link" href="{{ basePath }}/warrants/{{ warrant.documentId }}/file" target="_blank" data-qa="warrant-link">{{ warrant.documentType | enumLabel }}</a>
-          {% if warrant.fileSize %}
-            <span class="govuk-body govuk-!-font-weight-regular" data-qa="warrant-size">PDF {{ warrant.fileSize | formatFileSize }}</span>
-          {% endif %}
-        </h2>
+    <div class="csra-warrants">
+      {% for warrant in warrants %}
+        <div class="csra-warrant" data-qa="warrant">
+          <h2 class="govuk-heading-s govuk-!-margin-bottom-3 warrant-title">
+            {# Opens in the browser's own PDF viewer: the proxy route responds Content-Disposition: inline. #}
+            {# Text kept tight against the tags: whitespace inside the anchor gets underlined too. #}
+            <a class="govuk-link warrant-link" href="{{ basePath }}/warrants/{{ warrant.documentId }}/file" target="_blank" data-qa="warrant-link">{{ warrant.documentType | enumLabel }}</a>
+            {% if warrant.fileSize %}
+              <span class="govuk-body govuk-!-font-weight-regular warrant-size" data-qa="warrant-size">&nbsp;PDF {{ warrant.fileSize | formatFileSize }}</span>
+            {% endif %}
+          </h2>
 
-        <dl class="csra-warrant__details">
-          <div class="csra-warrant__detail">
-            <dt class="govuk-!-font-weight-bold">Court name</dt>
-            <dd data-qa="warrant-court">{{ warrant.courtName }}</dd>
-          </div>
-          <div class="csra-warrant__detail">
-            <dt class="govuk-!-font-weight-bold">Hearing type</dt>
-            <dd data-qa="warrant-hearing-type">{{ warrant.hearingType }}</dd>
-          </div>
-          <div class="csra-warrant__detail">
-            <dt class="govuk-!-font-weight-bold">Date added</dt>
-            <dd data-qa="warrant-date-added">{{ warrant.ingestionAt | formatLocalDate }}</dd>
-          </div>
-          <div class="csra-warrant__detail">
-            <dt class="govuk-!-font-weight-bold">Source</dt>
-            {# Hardcoded: neither the court API nor document-api returns a usable source field.
-               Flagged on MAPA-361 as needing a real field before any production build. #}
-            <dd data-qa="warrant-source">Common platform</dd>
-          </div>
-        </dl>
-      </div>
-    {% endfor %}
+          <dl class="csra-warrant__details">
+            <div class="csra-warrant__detail">
+              <dt class="govuk-!-font-weight-bold">Court name</dt>
+              <dd data-qa="warrant-court">{{ warrant.courtName }}</dd>
+            </div>
+            <div class="csra-warrant__detail">
+              <dt class="govuk-!-font-weight-bold">Hearing type</dt>
+              <dd data-qa="warrant-hearing-type">{{ warrant.hearingType }}</dd>
+            </div>
+            <div class="csra-warrant__detail">
+              <dt class="govuk-!-font-weight-bold">Date added</dt>
+              <dd data-qa="warrant-date-added">{{ warrant.ingestionAt | formatLocalDate }}</dd>
+            </div>
+            <div class="csra-warrant__detail">
+              <dt class="govuk-!-font-weight-bold">Source</dt>
+              {# Hardcoded: neither the court API nor document-api returns a usable source field.
+                 Flagged on MAPA-361 as needing a real field before any production build. #}
+              <dd data-qa="warrant-source">Common platform</dd>
+            </div>
+          </dl>
+        </div>
+      {% endfor %}
+    </div>
   {% else %}
     <p class="govuk-body" data-qa="warrants-empty">
-      No warrant information could be found for {{ prisonerName }}.
+      Warrant not available in DPS. Check if a paper copy is available.
     </p>
   {% endif %}
 

@@ -92,7 +92,12 @@ test.describe('CSRA court warrants', () => {
 
     const warrantsPage = await CsraWarrantsPage.verifyOnPage(page)
     await expect(warrantsPage.prisonerBanner).toContainText('A1234BC')
-    await expect(warrantsPage.intro).toContainText('found by searching the prisoner’s details on the court system')
+    await expect(warrantsPage.intro).toContainText(
+      'These are warrants that have been added to DPS from the court system',
+    )
+    await expect(warrantsPage.intro).toContainText(
+      'If you cannot find the warrant you are looking for, check to see if a paper copy is available.',
+    )
 
     // Only the two warrants; the prison court register is filtered out.
     await expect(warrantsPage.warrants).toHaveCount(2)
@@ -142,7 +147,9 @@ test.describe('CSRA court warrants', () => {
 
     const warrantsPage = await CsraWarrantsPage.verifyOnPage(page)
     await expect(warrantsPage.warrants).toHaveCount(0)
-    await expect(warrantsPage.emptyMessage).toContainText('No warrant information could be found for Daniel Havers')
+    await expect(warrantsPage.emptyMessage).toContainText(
+      'Warrant not available in DPS. Check if a paper copy is available.',
+    )
   })
 
   test('serves the warrant PDF inline so the browser renders it rather than downloading it', async ({ page }) => {
@@ -182,7 +189,7 @@ test.describe('CSRA court warrants', () => {
 
     // Asserted explicitly: the link has been repointed at a route that does not exist before now,
     // and checking the href names the wrong URL rather than just 404ing on the click.
-    const warrantsLink = page.getByRole('link', { name: 'View warrants from the last 30 days' })
+    const warrantsLink = page.getByRole('link', { name: 'View warrants' })
     await expect(warrantsLink).toHaveAttribute('href', WARRANTS_URL)
 
     await warrantsLink.click()
@@ -282,6 +289,6 @@ test.describe('CSRA court warrants', () => {
 
     // The task list is the primary journey: a court API outage must not break it.
     await expect(page.locator('h1')).toContainText('CSRA for Daniel Havers')
-    await expect(page.getByText('No warrant information could be found for Daniel Havers')).toBeVisible()
+    await expect(page.getByText('Warrant not available in DPS. Check if a paper copy is available.')).toBeVisible()
   })
 })

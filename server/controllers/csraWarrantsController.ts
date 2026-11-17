@@ -22,7 +22,7 @@ function assertEnabled() {
 }
 
 /**
- * "Warrants from the last 30 days": the prisoner's recent court warrants, each linking to its PDF.
+ * "Warrants available in DPS": the prisoner's recent court warrants, each linking to its PDF.
  */
 export default function csraWarrantsController({
   auditService,

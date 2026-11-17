@@ -1,15 +1,19 @@
 // Court warrants list (MAPA-349). Each warrant is a rule-separated block with its metadata laid out
 // in four columns, collapsing to two and then one on narrow viewports.
+.csra-warrants {
+  border-top: 1px solid $csra-divider-colour;
+}
+
 .csra-warrant {
-  border-top: 1px solid $govuk-border-colour;
-  padding-top: govuk-spacing(4);
-  margin-bottom: govuk-spacing(4);
+  border-bottom: 1px solid $csra-divider-colour;
+  padding: govuk-spacing(3) 0 govuk-spacing(5) 0;
 
   &__details {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: govuk-spacing(3);
     margin: 0;
+    @include govuk-font($size: 19);
 
     @include govuk-media-query($until: tablet) {
       grid-template-columns: repeat(2, 1fr);
@@ -22,11 +26,26 @@
 
   &__detail {
     dt {
-      margin-bottom: govuk-spacing(1);
+      margin-bottom: 0;
     }
 
     dd {
       margin-left: 0;
     }
+  }
+
+  .warrant-link {
+    @include govuk-font($size: 24, $weight: 'bold');
+    text-decoration-thickness: 2px;
+  }
+
+  .warrant-size {
+    color: $govuk-secondary-text-colour;
+  }
+}
+
+.warrants-intro {
+  p {
+    margin-bottom: govuk-spacing(6);
   }
 }

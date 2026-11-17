@@ -36,9 +36,9 @@
           <strong>Warrant</strong> - Current charge or offence.
           <br>
           {% if hasWarrants %}
-            <a href="{{ warrantsUrl }}" class="govuk-link">View warrants from the last 30 days</a>
+            <a href="{{ warrantsUrl }}" class="govuk-link">View warrants</a>
           {% else %}
-            No warrant information could be found for {{ prisonerName }}.
+            Warrant not available in DPS. Check if a paper copy is available.
           {% endif %}
         </p>
 
