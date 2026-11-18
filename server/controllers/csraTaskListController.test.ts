@@ -34,7 +34,7 @@ describe('csraTaskListController', () => {
   }
 
   const warrantsService = {
-    hasRecentWarrants: jest.fn().mockResolvedValue(false),
+    hasWarrants: jest.fn().mockResolvedValue(false),
   }
 
   const controller = () => csraTaskListController({ auditService, csraService, warrantsService } as never)
@@ -54,7 +54,7 @@ describe('csraTaskListController', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     csraService.getCsraAssessment.mockResolvedValue(makeAssessment())
-    warrantsService.hasRecentWarrants.mockResolvedValue(false)
+    warrantsService.hasWarrants.mockResolvedValue(false)
     config.warrants.enabled = false
   })
 
@@ -81,13 +81,13 @@ describe('csraTaskListController', () => {
 
       await controller()(request(), res, jest.fn())
 
-      expect(warrantsService.hasRecentWarrants).not.toHaveBeenCalled()
+      expect(warrantsService.hasWarrants).not.toHaveBeenCalled()
       expect(res.render).toHaveBeenCalledWith('pages/csraTaskList', expect.objectContaining({ hasWarrants: false }))
     })
 
-    it('offers the warrants link when the prisoner has recent warrants', async () => {
+    it('offers the warrants link when the prisoner has warrants', async () => {
       config.warrants.enabled = true
-      warrantsService.hasRecentWarrants.mockResolvedValue(true)
+      warrantsService.hasWarrants.mockResolvedValue(true)
       const res = response()
 
       await controller()(request(), res, jest.fn())
@@ -103,8 +103,8 @@ describe('csraTaskListController', () => {
 
     it('falls back to no warrants when the court API cannot be reached', async () => {
       config.warrants.enabled = true
-      // hasRecentWarrants swallows its own failures; the task list must still render.
-      warrantsService.hasRecentWarrants.mockResolvedValue(false)
+      // hasWarrants swallows its own failures; the task list must still render.
+      warrantsService.hasWarrants.mockResolvedValue(false)
       const res = response()
 
       await controller()(request(), res, jest.fn())

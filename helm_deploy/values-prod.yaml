@@ -20,8 +20,7 @@ generic-service:
     PRISON_API_URL: 'https://prison-api.prison.service.justice.gov.uk'
     COURT_DATA_INGESTION_API_URL: 'https://court-data-ingestion-api.hmpps.service.justice.gov.uk'
     DOCUMENT_API_URL: 'https://document-api.hmpps.service.justice.gov.uk'
-    # Court warrants proof of concept (MAPA-349). On in prod so the spike can be tested against
-    # real court data. Flip back to 'false' to switch it off without a code change.
+    # Set to 'false' to disable court warrants without a code change.
     WARRANTS_ENABLED: 'true'
     AUDIT_ENABLED: "false"
     NOMIS_CSRA_MODULES: "OCDNOQUE,OIDCAPPR"

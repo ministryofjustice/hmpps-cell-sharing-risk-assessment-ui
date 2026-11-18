@@ -17,7 +17,7 @@ const makeWarrant = (overrides = {}) => ({
 
 describe('csraWarrantsController', () => {
   const warrantsService = {
-    getRecentWarrants: jest.fn(),
+    getWarrants: jest.fn(),
     getWarrantFile: jest.fn(),
   }
   const auditService = { logPageView: jest.fn().mockResolvedValue(null) }
@@ -40,7 +40,7 @@ describe('csraWarrantsController', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     config.warrants.enabled = true
-    warrantsService.getRecentWarrants.mockResolvedValue([makeWarrant()])
+    warrantsService.getWarrants.mockResolvedValue([makeWarrant()])
   })
 
   afterAll(() => {
@@ -50,18 +50,17 @@ describe('csraWarrantsController', () => {
   describe('the warrants page', () => {
     const controller = () => csraWarrantsController({ auditService, warrantsService } as never)
 
-    it('renders the prisoner’s recent warrants', async () => {
+    it('renders the prisoner’s warrants', async () => {
       const res = response()
 
       await controller()(request(), res, jest.fn())
 
-      expect(warrantsService.getRecentWarrants).toHaveBeenCalledWith('user1', 'A1234BC', 'recent')
+      expect(warrantsService.getWarrants).toHaveBeenCalledWith('user1', 'A1234BC', 'recent')
       expect(res.render).toHaveBeenCalledWith(
         'pages/csraWarrants',
         expect.objectContaining({
           warrants: [makeWarrant()],
           sort: 'recent',
-          windowDays: 30,
           basePath: BASE_PATH,
           // The design offers a back link rather than a breadcrumb trail.
           backLink: BASE_PATH,
@@ -75,7 +74,7 @@ describe('csraWarrantsController', () => {
 
       await controller()(request({ sort: 'earliest' }), res, jest.fn())
 
-      expect(warrantsService.getRecentWarrants).toHaveBeenCalledWith('user1', 'A1234BC', 'earliest')
+      expect(warrantsService.getWarrants).toHaveBeenCalledWith('user1', 'A1234BC', 'earliest')
       expect(res.render).toHaveBeenCalledWith('pages/csraWarrants', expect.objectContaining({ sort: 'earliest' }))
     })
 
@@ -86,7 +85,7 @@ describe('csraWarrantsController', () => {
       [21, expect.objectContaining({ next: { href: '?sort=recent&page=2' } }), { from: 1, to: 20, count: 21 }],
     ])('paginates %i warrants only when there are more than twenty', async (count, pagination, results) => {
       const warrants = Array.from({ length: count }, (_, i) => makeWarrant({ documentId: `doc-${i}` }))
-      warrantsService.getRecentWarrants.mockResolvedValue(warrants)
+      warrantsService.getWarrants.mockResolvedValue(warrants)
       const res = response()
 
       await controller()(request(), res, jest.fn())
@@ -111,12 +110,12 @@ describe('csraWarrantsController', () => {
       ['Infinity', 0, 20],
     ])('selects the correct warrants and result range for page %s', async (page, start, end) => {
       const warrants = Array.from({ length: 45 }, (_, i) => makeWarrant({ documentId: `doc-${i}` }))
-      warrantsService.getRecentWarrants.mockResolvedValue(warrants)
+      warrantsService.getWarrants.mockResolvedValue(warrants)
       const res = response()
 
       await controller()(request({ page, sort: 'earliest' }), res, jest.fn())
 
-      expect(warrantsService.getRecentWarrants).toHaveBeenCalledWith('user1', 'A1234BC', 'earliest')
+      expect(warrantsService.getWarrants).toHaveBeenCalledWith('user1', 'A1234BC', 'earliest')
       expect(res.render).toHaveBeenCalledWith(
         'pages/csraWarrants',
         expect.objectContaining({
@@ -136,11 +135,11 @@ describe('csraWarrantsController', () => {
     it('falls back to the default sort for an unrecognised value', async () => {
       await controller()(request({ sort: 'sideways' }), response(), jest.fn())
 
-      expect(warrantsService.getRecentWarrants).toHaveBeenCalledWith('user1', 'A1234BC', 'recent')
+      expect(warrantsService.getWarrants).toHaveBeenCalledWith('user1', 'A1234BC', 'recent')
     })
 
     it('renders with no warrants rather than erroring when there are none', async () => {
-      warrantsService.getRecentWarrants.mockResolvedValue([])
+      warrantsService.getWarrants.mockResolvedValue([])
       const res = response()
 
       await controller()(request(), res, jest.fn())
@@ -161,7 +160,7 @@ describe('csraWarrantsController', () => {
       config.warrants.enabled = false
 
       await expect(controller()(request(), response(), jest.fn())).rejects.toMatchObject({ status: 404 })
-      expect(warrantsService.getRecentWarrants).not.toHaveBeenCalled()
+      expect(warrantsService.getWarrants).not.toHaveBeenCalled()
     })
 
     describe('reached without an assessment id', () => {
@@ -202,7 +201,7 @@ describe('csraWarrantsController', () => {
       it('still looks the warrants up by prison number', async () => {
         await controller()(requestWithoutAssessment(), response(), jest.fn())
 
-        expect(warrantsService.getRecentWarrants).toHaveBeenCalledWith('user1', 'A1234BC', 'recent')
+        expect(warrantsService.getWarrants).toHaveBeenCalledWith('user1', 'A1234BC', 'recent')
       })
 
       it('still 404s when the feature flag is off', async () => {

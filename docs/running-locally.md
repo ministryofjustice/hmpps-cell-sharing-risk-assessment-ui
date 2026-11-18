@@ -45,9 +45,8 @@ DOCUMENT_API_URL=http://localhost:8089
 
 Every prisoner number returns the same synthetic hearings: a recent remand warrant and
 sentencing warrant, a prison court register, a Common Platform document, and an older remand
-warrant. Dates are relative to today, so the two recent warrants always fall within the
-UI's 30-day window. The other document types and the 45-day-old warrant are intentionally
-filtered out by the UI.
+warrant. Dates are relative to today. The UI shows all three warrants, including the
+45-day-old warrant, and filters out the other document types.
 
 The document mock returns metadata for every UUID in `POST /documents` and serves the same
 one-page PDF for every `GET /documents/{documentUuid}/file`, including `?inline=true`.

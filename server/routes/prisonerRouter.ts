@@ -5,7 +5,6 @@ import PrisonerCsraHistoryController from '../controllers/prisonerCsraHistoryCon
 import PrisonerImageController from '../controllers/prisonerImageController'
 import csraWarrantsController, { csraWarrantFileController } from '../controllers/csraWarrantsController'
 import csraBreadcrumbs from '../middleware/csraBreadcrumbs'
-import requireAdminRole from '../middleware/requireAdminRole'
 import type { Services } from '../services'
 import csraRouter from './csraRouter'
 import ratingConfirmedController from '../controllers/ratingConfirmedController'
@@ -36,12 +35,10 @@ export default function prisonerRouter(
   // renders.
   router.get('/image', imageController.index)
 
-  // Court warrants reachable without an assessment id, so the MAPA-349 spike can be tested before any
-  // assessments exist. Admin-gated because it is a proof of concept rather than a journey for
-  // officers - the task list route in csraRouter is the real one and stays open to any user.
+  // Court warrants are reachable before any assessment exists.
   // Caseload rules already apply: this router is mounted behind requirePrisonerAccess.
-  router.get('/warrants', requireAdminRole, csraWarrantsController(services))
-  router.get('/warrants/:documentId/file', requireAdminRole, csraWarrantFileController(services))
+  router.get('/warrants', csraWarrantsController(services))
+  router.get('/warrants/:documentId/file', csraWarrantFileController(services))
 
   router.use('/csra', csraRouter(services))
   router.get('/rating-confirmed', ratingConfirmedController(services))
