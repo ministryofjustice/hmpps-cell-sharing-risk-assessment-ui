@@ -224,9 +224,7 @@ function summarisePrisoner(prisoner, hearings) {
   const documents = hearings.flatMap(hearing => hearing.documents.map(document => ({ ...document, hearing })))
   const warrants = documents.filter(document => WARRANT_TYPES.has(document.documentType))
 
-  // The design shows warrants from the last 30 days, so measure that window specifically
-  // as well as "matched at all" — they are different questions and only one of them is
-  // what an officer would actually see on the screen.
+  // Measure recent warrant availability separately from matching; the UI shows warrants of any age.
   const now = Date.now()
   const warrantsInWindow = warrants.filter(w => (now - Date.parse(w.ingestionAt)) / 86_400_000 <= 30)
 

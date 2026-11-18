@@ -170,9 +170,7 @@ export default {
     ttlMs: Number(get('ACTIVE_AGENCIES_TTL_MS', 5 * 60 * 1000)),
   },
   /**
-   * Court warrants (MAPA-349 spike). Off by default: this is a proof of concept sitting behind a
-   * flag rather than a role, so it can be switched on per environment and removed cleanly if the
-   * spike does not lead to a build.
+   * Court warrants are off by default and can be enabled per environment.
    */
   warrants: {
     enabled: get('WARRANTS_ENABLED', 'false') === 'true',

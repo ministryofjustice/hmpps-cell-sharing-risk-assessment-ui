@@ -84,11 +84,10 @@ export default function csraTaskListController({
 
     const { serviceUrls } = config
 
-    // Court warrants are a proof of concept behind a flag (MAPA-349). hasRecentWarrants swallows its
-    // own failures, so the evidence panel falls back to "no warrant information" and the task list
-    // itself — the primary journey — is never held up by a downstream spike integration.
+    // hasWarrants handles downstream failures so the evidence panel falls back to
+    // "no warrant information" without preventing access to the task list.
     const hasWarrants =
-      config.warrants.enabled && (await warrantsService.hasRecentWarrants(username, prisoner.prisonerNumber))
+      config.warrants.enabled && (await warrantsService.hasWarrants(username, prisoner.prisonerNumber))
 
     res.render('pages/csraTaskList', {
       cancelLink: appendReferrers(

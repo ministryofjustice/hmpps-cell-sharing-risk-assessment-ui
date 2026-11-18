@@ -16,7 +16,7 @@ export default class CourtDataApiClient extends BaseApiClient {
    * grants ROLE_COURT_DATA_INGESTION__COURT_DATA_RO to the system client, not to end users.
    *
    * The endpoint takes no query parameters — no date range, no paging, no document-type filter — and
-   * its underlying query has no ORDER BY, so the 30-day window, the warrant-only filter and the sort
+   * its underlying query has no ORDER BY, so the warrant-only filter and the sort
    * are all applied by WarrantsService rather than upstream.
    *
    * Returns an empty array for a prisoner the court service cannot match, which is an expected

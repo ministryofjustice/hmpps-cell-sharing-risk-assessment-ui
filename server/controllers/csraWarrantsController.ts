@@ -4,7 +4,7 @@ import { NotFound } from 'http-errors'
 import type { Services } from '../services'
 import { Page } from '../services/auditService'
 import config from '../config'
-import { WARRANT_WINDOW_DAYS, type WarrantSort } from '../services/warrantsService'
+import type { WarrantSort } from '../services/warrantsService'
 import logger from '../../logger'
 import { buildPagination, parsePageNumber } from '../utils/utils'
 
@@ -15,8 +15,7 @@ const WARRANTS_PAGE_SIZE = 20
 const parseSort = (value: unknown): WarrantSort => (value === 'earliest' ? 'earliest' : 'recent')
 
 /**
- * The warrants pages are a proof of concept (MAPA-349) behind a config flag, so both routes 404
- * outright when it is off rather than rendering something half-wired.
+ * Both warrants routes return 404 when the feature flag is off.
  */
 function assertEnabled() {
   if (!config.warrants.enabled) {
@@ -25,7 +24,7 @@ function assertEnabled() {
 }
 
 /**
- * "Warrants available in DPS": the prisoner's recent court warrants, each linking to its PDF.
+ * "Warrants available in DPS": all of the prisoner's court warrants, each linking to its PDF.
  */
 export default function csraWarrantsController({
   auditService,
@@ -41,7 +40,7 @@ export default function csraWarrantsController({
     } = res.locals
 
     const sort = parseSort(req.query.sort)
-    const warrants = await warrantsService.getRecentWarrants(username, prisoner.prisonerNumber, sort)
+    const warrants = await warrantsService.getWarrants(username, prisoner.prisonerNumber, sort)
     const totalPages = Math.ceil(warrants.length / WARRANTS_PAGE_SIZE)
     const requestedPage = parsePageNumber(req.query.page)
     const page = Math.min(requestedPage, Math.max(1, totalPages))
@@ -74,7 +73,6 @@ export default function csraWarrantsController({
       pagination: totalPages > 1 ? pagination : null,
       results: pagination.results,
       sort,
-      windowDays: WARRANT_WINDOW_DAYS,
       basePath,
       backLink: basePath,
       returnLinkText: assessmentId ? 'Return to assessment' : 'Return to CSRA',
@@ -85,7 +83,7 @@ export default function csraWarrantsController({
 /**
  * Proxy a single warrant PDF through the app, so the browser never needs a backend token.
  *
- * The service only returns a file when the UUID is one of this prisoner's own recent warrants;
+ * The service only returns a file when the UUID is one of this prisoner's own warrants;
  * anything else is a 404. `inline` is set on our response as well as being asked of document-api,
  * since ours is the one the browser actually sees.
  */

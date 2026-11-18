@@ -1,4 +1,4 @@
-import WarrantsService, { WARRANT_WINDOW_DAYS } from './warrantsService'
+import WarrantsService from './warrantsService'
 import type CourtDataApiClient from '../data/courtDataApiClient'
 import type DocumentApiClient from '../data/documentApiClient'
 import type { CourtHearing, CourtDocumentType } from '../data/courtDataApiTypes'
@@ -38,7 +38,7 @@ describe('WarrantsService', () => {
     service = new WarrantsService(courtDataApiClient, documentApiClient)
   })
 
-  describe('getRecentWarrants', () => {
+  describe('getWarrants', () => {
     it('keeps only warrant document types, dropping registers and generic documents', async () => {
       getCourtHearings.mockResolvedValue([
         makeHearing([
@@ -49,7 +49,7 @@ describe('WarrantsService', () => {
         ]),
       ])
 
-      const warrants = await service.getRecentWarrants('user1', 'A1234BC')
+      const warrants = await service.getWarrants('user1', 'A1234BC')
 
       expect(warrants.map(warrant => warrant.documentId)).toEqual(['doc-1', 'doc-2'])
     })
@@ -62,42 +62,47 @@ describe('WarrantsService', () => {
         }),
       ])
 
-      const [warrant] = await service.getRecentWarrants('user1', 'A1234BC')
+      const [warrant] = await service.getWarrants('user1', 'A1234BC')
 
       expect(warrant).toMatchObject({ courtName: 'Burnley Crown Court', hearingType: 'Remand' })
     })
 
-    it('excludes warrants ingested outside the window but keeps ones on its edge', async () => {
+    it('includes warrants regardless of how long ago they were ingested', async () => {
       getCourtHearings.mockResolvedValue([
         makeHearing([
           {
             documentType: 'SENTENCING_WARRANT',
-            documentId: 'just-inside',
-            ingestionAt: daysAgo(WARRANT_WINDOW_DAYS - 1),
+            documentId: 'recent',
+            ingestionAt: daysAgo(1),
           },
           {
             documentType: 'SENTENCING_WARRANT',
-            documentId: 'just-outside',
-            ingestionAt: daysAgo(WARRANT_WINDOW_DAYS + 1),
+            documentId: 'older',
+            ingestionAt: daysAgo(31),
+          },
+          {
+            documentType: 'REMAND_WARRANT',
+            documentId: 'oldest',
+            ingestionAt: daysAgo(3650),
           },
         ]),
       ])
 
-      const warrants = await service.getRecentWarrants('user1', 'A1234BC')
+      const warrants = await service.getWarrants('user1', 'A1234BC')
 
-      expect(warrants.map(warrant => warrant.documentId)).toEqual(['just-inside'])
+      expect(warrants.map(warrant => warrant.documentId)).toEqual(['recent', 'older', 'oldest'])
     })
 
     it('sorts newest first by default, and oldest first when asked for earliest', async () => {
       getCourtHearings.mockResolvedValue([
         makeHearing([
-          { documentType: 'SENTENCING_WARRANT', documentId: 'older', ingestionAt: daysAgo(10) },
+          { documentType: 'SENTENCING_WARRANT', documentId: 'older', ingestionAt: daysAgo(365) },
           { documentType: 'REMAND_WARRANT', documentId: 'newer', ingestionAt: daysAgo(1) },
         ]),
       ])
 
-      expect((await service.getRecentWarrants('user1', 'A1234BC')).map(w => w.documentId)).toEqual(['newer', 'older'])
-      expect((await service.getRecentWarrants('user1', 'A1234BC', 'earliest')).map(w => w.documentId)).toEqual([
+      expect((await service.getWarrants('user1', 'A1234BC')).map(w => w.documentId)).toEqual(['newer', 'older'])
+      expect((await service.getWarrants('user1', 'A1234BC', 'earliest')).map(w => w.documentId)).toEqual([
         'older',
         'newer',
       ])
@@ -113,13 +118,13 @@ describe('WarrantsService', () => {
         }),
       ])
 
-      expect(await service.getRecentWarrants('user1', 'A1234BC')).toHaveLength(2)
+      expect(await service.getWarrants('user1', 'A1234BC')).toHaveLength(2)
     })
 
     it('returns an empty list for a prisoner the court service could not match', async () => {
       getCourtHearings.mockResolvedValue([])
 
-      expect(await service.getRecentWarrants('user1', 'A1234BC')).toEqual([])
+      expect(await service.getWarrants('user1', 'A1234BC')).toEqual([])
       // No warrants means nothing to look up, so document-api is never called.
       expect(getDocumentsMetadata).not.toHaveBeenCalled()
     })
@@ -136,7 +141,7 @@ describe('WarrantsService', () => {
         { documentUuid: 'doc-2', fileSize: 66765 },
       ])
 
-      const warrants = await service.getRecentWarrants('user1', 'A1234BC')
+      const warrants = await service.getWarrants('user1', 'A1234BC')
 
       expect(getDocumentsMetadata).toHaveBeenCalledTimes(1)
       expect(getDocumentsMetadata).toHaveBeenCalledWith('user1', ['doc-1', 'doc-2'])
@@ -149,20 +154,20 @@ describe('WarrantsService', () => {
       ])
       getDocumentsMetadata.mockRejectedValue(new Error('document-api down'))
 
-      const warrants = await service.getRecentWarrants('user1', 'A1234BC')
+      const warrants = await service.getWarrants('user1', 'A1234BC')
 
       expect(warrants).toHaveLength(1)
       expect(warrants[0].fileSize).toBeUndefined()
     })
   })
 
-  describe('hasRecentWarrants', () => {
-    it('is true when there is at least one warrant in the window', async () => {
+  describe('hasWarrants', () => {
+    it.each([1, 31, 3650])('is true when the only warrant was ingested %i days ago', async days => {
       getCourtHearings.mockResolvedValue([
-        makeHearing([{ documentType: 'SENTENCING_WARRANT', documentId: 'doc-1', ingestionAt: daysAgo(1) }]),
+        makeHearing([{ documentType: 'SENTENCING_WARRANT', documentId: 'doc-1', ingestionAt: daysAgo(days) }]),
       ])
 
-      expect(await service.hasRecentWarrants('user1', 'A1234BC')).toBe(true)
+      expect(await service.hasWarrants('user1', 'A1234BC')).toBe(true)
     })
 
     it('does not call document-api, since it only needs to know whether any warrant exists', async () => {
@@ -170,7 +175,7 @@ describe('WarrantsService', () => {
         makeHearing([{ documentType: 'SENTENCING_WARRANT', documentId: 'doc-1', ingestionAt: daysAgo(1) }]),
       ])
 
-      await service.hasRecentWarrants('user1', 'A1234BC')
+      await service.hasWarrants('user1', 'A1234BC')
 
       expect(getDocumentsMetadata).not.toHaveBeenCalled()
     })
@@ -180,13 +185,13 @@ describe('WarrantsService', () => {
         makeHearing([{ documentType: 'PRISON_COURT_REGISTER', documentId: 'doc-1', ingestionAt: daysAgo(1) }]),
       ])
 
-      expect(await service.hasRecentWarrants('user1', 'A1234BC')).toBe(false)
+      expect(await service.hasWarrants('user1', 'A1234BC')).toBe(false)
     })
 
     it('is false rather than throwing when the court API fails, so the task list still renders', async () => {
       getCourtHearings.mockRejectedValue(new Error('court API down'))
 
-      expect(await service.hasRecentWarrants('user1', 'A1234BC')).toBe(false)
+      expect(await service.hasWarrants('user1', 'A1234BC')).toBe(false)
     })
   })
 
@@ -197,7 +202,10 @@ describe('WarrantsService', () => {
       ])
     })
 
-    it('fetches the file when the document is one of the prisoner’s recent warrants', async () => {
+    it.each([1, 31, 3650])('fetches the prisoner’s warrant ingested %i days ago', async days => {
+      getCourtHearings.mockResolvedValue([
+        makeHearing([{ documentType: 'SENTENCING_WARRANT', documentId: 'doc-1', ingestionAt: daysAgo(days) }]),
+      ])
       const file = { body: Buffer.from('pdf'), contentType: 'application/pdf' }
       getDocumentFile.mockResolvedValue(file)
 

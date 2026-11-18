@@ -40,7 +40,7 @@ export default function csraRouter(
 
   router.get('/:assessmentId', csraBreadcrumbs('taskList'), csraTaskListController(services))
 
-  // Court warrants (MAPA-349 proof of concept). Both routes 404 unless the feature flag is on.
+  // Both court warrants routes 404 unless the feature flag is on.
   router.get('/:assessmentId/warrants', csraWarrantsController(services))
   // The PDF proxy renders no page, so it gets no back link or breadcrumb trail.
   router.get('/:assessmentId/warrants/:documentId/file', csraWarrantFileController(services))

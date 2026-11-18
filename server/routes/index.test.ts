@@ -90,7 +90,7 @@ afterEach(() => {
 })
 
 describe.each(['/prisoner/A1234BC/warrants', '/prisoner/A1234BC/csra/assessment-123/warrants'])(
-  'GET %s pagination',
+  'GET %s',
   warrantsPath => {
     const warrantsService = new WarrantsService(null, null) as jest.Mocked<WarrantsService>
     const warrants: Warrant[] = Array.from({ length: 45 }, (_, i) => ({
@@ -121,7 +121,7 @@ describe.each(['/prisoner/A1234BC/warrants', '/prisoner/A1234BC/csra/assessment-
           activeAgenciesService,
           warrantsService,
         },
-        userSupplier: () => ({ ...user, userRoles: [Role.CSRA__ADMIN, Role.CSRA__ASSESSMENT_EDIT] }),
+        userSupplier: () => ({ ...user, userRoles: [Role.CSRA__ASSESSMENT_EDIT] }),
       })
     })
 
@@ -129,8 +129,33 @@ describe.each(['/prisoner/A1234BC/warrants', '/prisoner/A1234BC/csra/assessment-
       config.warrants.enabled = originallyEnabled
     })
 
+    it('serves the warrant PDF without the admin role', async () => {
+      const body = Buffer.from('%PDF-1.4 test warrant')
+      warrantsService.getWarrantFile.mockResolvedValue({ body, contentType: 'application/pdf' })
+
+      const response = await request(app).get(`${warrantsPath}/doc-1/file`).expect(200)
+
+      expect(response.headers['content-disposition']).toBe('inline')
+      expect(response.body).toEqual(body)
+      expect(warrantsService.getWarrantFile).toHaveBeenCalledWith(user.username, 'A1234BC', 'doc-1')
+    })
+
+    it.each(['', '/doc-1/file'])('still rejects out-of-caseload access to %s', async suffix => {
+      prisonerSearchService.getPrisoner.mockResolvedValue({
+        prisonerNumber: 'A1234BC',
+        firstName: 'JOHN',
+        lastName: 'SMITH',
+        prisonId: 'MDI',
+      })
+
+      await request(app).get(`${warrantsPath}${suffix}`).expect(404)
+
+      expect(warrantsService.getWarrants).not.toHaveBeenCalled()
+      expect(warrantsService.getWarrantFile).not.toHaveBeenCalled()
+    })
+
     it.each([0, 1, 20, 21])('shows pagination only above twenty results (%i warrants)', async count => {
-      warrantsService.getRecentWarrants.mockResolvedValue(warrants.slice(0, count))
+      warrantsService.getWarrants.mockResolvedValue(warrants.slice(0, count))
 
       const response = await request(app).get(warrantsPath).expect(200)
       const html = response.text.replace(/\s+/g, ' ')
@@ -148,7 +173,7 @@ describe.each(['/prisoner/A1234BC/warrants', '/prisoner/A1234BC/csra/assessment-
     })
 
     it('places controls around the list and preserves sorting when navigating', async () => {
-      warrantsService.getRecentWarrants.mockResolvedValue(warrants)
+      warrantsService.getWarrants.mockResolvedValue(warrants)
 
       const response = await request(app).get(`${warrantsPath}?sort=earliest&page=2`).expect(200)
       const html = response.text.replace(/\s+/g, ' ')
@@ -176,7 +201,7 @@ describe.each(['/prisoner/A1234BC/warrants', '/prisoner/A1234BC/csra/assessment-
       expect(previousHref).toBe('?sort=earliest&page=2')
       const previous = await request(app).get(`${warrantsPath}${previousHref}`).expect(200)
       expect(previous.text).toBe(response.text)
-      expect(warrantsService.getRecentWarrants).toHaveBeenLastCalledWith('user1', 'A1234BC', 'earliest')
+      expect(warrantsService.getWarrants).toHaveBeenLastCalledWith('user1', 'A1234BC', 'earliest')
     })
   },
 )
