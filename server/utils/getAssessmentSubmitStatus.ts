@@ -27,12 +27,18 @@ export function getRemainingTasks(assessmentAnswers: CsraAssessmentStageAnswers)
 
   if (!assessmentAnswers.officerSpokeToPrisoner) {
     remainingTasks.push('speak to the prisoner about sharing a cell')
-  } else if (
-    assessmentAnswers.likelyToHarmCellmate === null ||
-    assessmentAnswers.likelyToHarmCellmate === undefined ||
-    (assessmentAnswers.likelyToHarmCellmate && !assessmentAnswers.likelyToHarmCellmateDetail)
-  ) {
-    remainingTasks.push('record if there is reason to believe the prisoner may harm someone they share a cell with')
+  } else {
+    if (
+      assessmentAnswers.likelyToHarmCellmate === null ||
+      assessmentAnswers.likelyToHarmCellmate === undefined ||
+      (assessmentAnswers.likelyToHarmCellmate && !assessmentAnswers.likelyToHarmCellmateDetail)
+    ) {
+      remainingTasks.push('record if there is reason to believe the prisoner may harm someone they share a cell with')
+    }
+
+    if (assessmentAnswers.significantlyVulnerable === null || assessmentAnswers.significantlyVulnerable === undefined) {
+      remainingTasks.push('record if the prisoner is significantly vulnerable to assault by others')
+    }
   }
 
   if (assessmentAnswers.causeForConcernSharing !== false && !assessmentAnswers.causeForConcernSharingDetail) {
