@@ -2,7 +2,7 @@ import { type RequestHandler } from 'express'
 
 import { NotFound } from 'http-errors'
 import type { Services } from '../services'
-import getAnswersFromAssessment from './getAnswersFromAssessment'
+import getAnswersFromAssessment, { getAnswersFromAssessmentStage } from './getAnswersFromAssessment'
 import flowConfig from '../lib/transactionFlow/config'
 import { Page } from '../services/auditService'
 import { AssessmentSubmitType, getAssessmentSubmitStatus } from '../utils/getAssessmentSubmitStatus'
@@ -54,6 +54,9 @@ export default function csraCheckAnswersController({
       prisoner,
       assessment,
       assessmentAnswers,
+      provisionalAnswers: assessment.interimResult
+        ? getAnswersFromAssessmentStage(assessment, 'PROVISIONAL')
+        : undefined,
       offenceEvidenceMap: getOffenceEvidenceMap(assessmentAnswers),
       submitType: submitStatus.submitType,
       remainingTasks: submitStatus.remainingTasks,

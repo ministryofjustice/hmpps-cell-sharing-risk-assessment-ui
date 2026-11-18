@@ -4,6 +4,7 @@
   {% set prisoner = params.prisoner %}
   {% set assessment = params.assessment %}
   {% set assessmentAnswers = params.assessmentAnswers %}
+  {% set provisionalAnswers = params.provisionalAnswers %}
   {% set offenceEvidenceMap = params.offenceEvidenceMap %}
   {% set flowConfig = params.flowConfig %}
   {% set showChangeLinks = params.showChangeLinks !== false %}
@@ -29,7 +30,7 @@
                 visuallyHiddenText: "DPS"
               }
             ]
-          } if showChangeLinks
+          } if showChangeLinks and not provisionalAnswers.dpsChecked
         },
         {
           key: {
@@ -46,7 +47,7 @@
                 visuallyHiddenText: "PER"
               }
             ]
-          } if showChangeLinks
+          } if showChangeLinks and not provisionalAnswers.perChecked
         },
         {
           key: {
@@ -63,7 +64,7 @@
                 visuallyHiddenText: "Warrant"
               }
             ]
-          } if showChangeLinks
+          } if showChangeLinks and not provisionalAnswers.warrantChecked
         },
         {
           key: {
@@ -80,7 +81,7 @@
                 visuallyHiddenText: "PNC"
               }
             ]
-          } if showChangeLinks
+          } if showChangeLinks and not provisionalAnswers.pncChecked
         }
       ]
     }) }}

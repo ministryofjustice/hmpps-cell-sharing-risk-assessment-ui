@@ -1230,6 +1230,75 @@ describe('csraRouter', () => {
     expect(response.text).toContain('value="perChecked"')
   })
 
+  it.each([undefined, 'HIGH_GENERAL'] as const)(
+    'shows the provisional review summary only after a provisional rating: %s',
+    async interimResult => {
+      csraService.getCsraAssessment.mockResolvedValue(
+        assessment({
+          interimResult,
+          stages: interimResult
+            ? [stageAnswers(), completeStageAnswers({ stage: 'FINAL', provisionalReviewed: true })]
+            : [completeStageAnswers()],
+        }),
+      )
+
+      const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+        .get(`${assessmentUrl}/check-answers?referrer=due-for-review&referrer=history`)
+        .expect(200)
+      const heading = '<h2 class="govuk-heading-m">Provisional assessment</h2>'
+      const question = 'Have you reviewed the provisional assessment?'
+
+      if (interimResult) {
+        expect(response.text).toContain(heading)
+        expect(response.text.indexOf(heading)).toBeLessThan(response.text.indexOf('Evidence sources'))
+        const row = response.text
+          .match(/<div class="govuk-summary-list__row">[\s\S]*?<\/div>/g)
+          ?.find(item => item.includes(question))
+        expect(row).toMatch(/govuk-summary-list__value">\s*Yes\s*<\/dd>/)
+        expect(row).toContain(`href="${assessmentUrl}/review-provisional?referrer=due-for-review&amp;referrer=history"`)
+        expect(row).toContain('Change')
+      } else {
+        expect(response.text).not.toContain(heading)
+        expect(response.text).not.toContain(question)
+      }
+    },
+  )
+
+  it.each([
+    { dpsChecked: true, perChecked: false, warrantChecked: null, pncChecked: true },
+    { dpsChecked: false, perChecked: true, warrantChecked: true, pncChecked: null },
+    { dpsChecked: true, perChecked: true, warrantChecked: true, pncChecked: true },
+  ])('only offers evidence changes for sources not checked provisionally: %j', async provisionalSources => {
+    csraService.getCsraAssessment.mockResolvedValue(
+      assessment({
+        interimResult: 'HIGH_GENERAL',
+        stages: [stageAnswers(provisionalSources), completeStageAnswers({ stage: 'FINAL', provisionalReviewed: true })],
+      }),
+    )
+
+    const response = await request(buildApp([Role.CSRA__ASSESSMENT_EDIT]))
+      .get(`${assessmentUrl}/check-answers`)
+      .expect(200)
+    const rows = response.text.match(/<div class="govuk-summary-list__row[^"]*">[\s\S]*?<\/div>/g) ?? []
+
+    for (const [source, answerKey] of [
+      ['DPS', 'dpsChecked'],
+      ['PER', 'perChecked'],
+      ['Warrant', 'warrantChecked'],
+      ['PNC', 'pncChecked'],
+    ] as const) {
+      const row = rows.find(item => new RegExp(`govuk-summary-list__key">\\s*${source}\\s*</dt>`).test(item))
+      expect(row).toMatch(/govuk-summary-list__value">\s*Checked\s*<\/dd>/)
+      if (provisionalSources[answerKey]) {
+        expect(row).not.toContain('Change')
+      } else {
+        expect(row).toContain(`href="${assessmentUrl}/section/evidenceAndOffences/0"`)
+        expect(row).toContain('Change')
+      }
+    }
+    expect(response.text).toContain(`href="${assessmentUrl}/section/healthcare/0"`)
+  })
+
   it('uses zero-based step ids for check answers change links and displays unanswered values explicitly', async () => {
     csraService.getCsraAssessment.mockResolvedValue(
       assessment({
