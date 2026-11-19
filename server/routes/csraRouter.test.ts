@@ -133,6 +133,20 @@ describe('csraRouter', () => {
     flashProvider.mockReturnValue([])
   })
 
+  it.each(['LEI', 'MDI'])('links to BaSM incoming moves for the active caseload %s', async activeCaseload => {
+    const app = buildApp([Role.CSRA__ASSESSMENT_EDIT])
+    app.locals.feComponents = {
+      sharedData: { activeCaseLoad: { caseLoadId: activeCaseload } },
+    }
+
+    const response = await request(app).get(assessmentUrl).expect(200)
+    const link = response.text.match(/<a [^>]*>View Book a secure move \(opens in a new tab\)<\/a>/)?.[0]
+
+    expect(link).toContain(`href="${config.serviceUrls.bookASecureMove}/csra?agency=${activeCaseload}"`)
+    expect(link).toContain('target="_blank"')
+    expect(link).toContain('rel="noopener noreferrer"')
+  })
+
   describe.each(['/check-answers', '/review-provisional'])('remaining tasks on %s', path => {
     const speakTask = 'speak to the prisoner about sharing a cell'
     const harmTask = 'record if there is reason to believe the prisoner may harm someone they share a cell with'

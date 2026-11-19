@@ -423,6 +423,44 @@ test.describe('Prisoner CSRA', () => {
     await expect(page.getByText('Check answers and confirm rating')).toBeVisible()
   })
 
+  for (const { caseloads, activeCaseload } of [
+    { caseloads: ['MDI'], activeCaseload: 'MDI' },
+    { caseloads: ['MDI', 'LEI'], activeCaseload: 'LEI' },
+  ]) {
+    test(`opens BaSM for active caseload ${activeCaseload} with ${caseloads.length} caseloads without leaving the assessment`, async ({
+      page,
+      context,
+    }) => {
+      await csraApi.stubGetInfo(caseloads)
+      await login(page, {
+        roles: ['ROLE_CSRA__ASSESSMENT_EDIT'],
+        activeCaseLoad: { caseLoadId: activeCaseload, description: activeCaseload },
+      })
+      await prisonerSearchApi.stubGetPrisoner(prisoner)
+      await prisonApi.stubGetPrisonerImage(prisoner.prisonerNumber)
+      await manageUsersApi.stubGetUserCaseloads(caseloads)
+      await csraApi.stubGetAssessment(prisoner.prisonerNumber, 'assessment-123')
+      await page.goto('/prisoner/A1234BC/csra/assessment-123')
+
+      const basmLink = page.getByRole('link', { name: 'View Book a secure move (opens in a new tab)' })
+      await expect(basmLink).toHaveAttribute('href', new RegExp(`/csra\\?agency=${activeCaseload}$`))
+      const basmUrl = await basmLink.evaluate((link: HTMLAnchorElement) => link.href)
+      const assessmentUrl = page.url()
+      // Intercept the new tab at the service boundary; BaSM owns authentication and the redirect.
+      await context.route('**/csra?agency=*', route =>
+        route.fulfill({ status: 200, contentType: 'text/html', body: '<h1>Book a secure move</h1>' }),
+      )
+
+      const popupPromise = page.waitForEvent('popup')
+      await basmLink.click()
+      const popup = await popupPromise
+
+      await expect(popup).toHaveURL(basmUrl)
+      await expect(page).toHaveURL(assessmentUrl)
+      await expect(page.getByRole('heading', { name: 'CSRA for John Smith' })).toBeVisible()
+    })
+  }
+
   test('can reach the check answers page for a provisional rating', async ({ page }) => {
     await csraApi.stubGetInfo(['MDI'])
     await login(page, {
