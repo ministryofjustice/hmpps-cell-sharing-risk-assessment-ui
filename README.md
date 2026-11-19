@@ -121,6 +121,12 @@ To start the main services excluding the example typescript template app:
 
 `docker compose up`
 
+The assessment task list's "View Book a secure move" evidence link opens
+`BASM_URL/csra?agency=<active DPS caseload ID>` in a new tab, leaving CSRA open.
+BaSM resolves the establishment and redirects to today's Incoming Moves. BaSM
+also owns authentication and displays its access-denied page for users without
+access; CSRA does not infer BaSM permissions from CSRA roles.
+
 Create an environment file by copying `.env.example` -> `.env`
 Environment variables set in here will be available when running `start:dev`
 
