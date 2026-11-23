@@ -10,6 +10,7 @@ const makeWarrant = (overrides = {}) => ({
   documentType: 'SENTENCING_WARRANT',
   courtName: 'Leeds Crown Court',
   hearingType: 'Sentence',
+  hearingDate: '2026-08-10T09:00:00',
   ingestionAt: '2026-08-11T09:00:00',
   fileSize: 58634,
   ...overrides,

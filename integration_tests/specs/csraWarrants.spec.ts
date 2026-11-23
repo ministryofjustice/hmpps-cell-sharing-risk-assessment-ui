@@ -93,7 +93,7 @@ test.describe('CSRA court warrants', () => {
     await resetStubs()
   })
 
-  test('lists recent and older warrants with their court, hearing type, date added and size', async ({ page }) => {
+  test('lists recent and older warrants with their court, hearing type, hearing date and size', async ({ page }) => {
     await loginAtMoorland(page, EDIT_ROLES)
     await stubCommonPageData()
     await courtDataApi.stubGetCourtHearings('A1234BC', hearings())
@@ -126,18 +126,44 @@ test.describe('CSRA court warrants', () => {
     await expect(firstWarrant.getByTestId('warrant-source')).toHaveText('Common platform')
   })
 
-  test('sorts newest first by default and oldest first on request', async ({ page }) => {
+  test('sorts by hearing date with date added as a tie-breaker in both directions', async ({ page }) => {
     await loginAtMoorland(page, EDIT_ROLES)
     await stubCommonPageData()
-    await courtDataApi.stubGetCourtHearings('A1234BC', hearings())
+    await courtDataApi.stubGetCourtHearings('A1234BC', [
+      {
+        ...hearings()[1],
+        hearingDate: '2026-08-01T09:00:00',
+        documents: [{ documentType: 'REMAND_WARRANT', documentId: REMAND_DOC, ingestionAt: '2026-08-15T09:00:00' }],
+      },
+      {
+        ...hearings()[0],
+        hearingDate: '2026-08-10T09:00:00',
+        documents: [
+          { documentType: 'SENTENCING_WARRANT', documentId: SENTENCING_DOC, ingestionAt: '2026-08-11T09:00:00' },
+          { documentType: 'REMAND_WARRANT', documentId: warrantDocumentId(1), ingestionAt: '2026-08-12T09:00:00' },
+        ],
+      },
+    ])
     await documentApi.stubGetDocumentsMetadata([])
 
     await page.goto(WARRANTS_URL)
     const warrantsPage = await CsraWarrantsPage.verifyOnPage(page)
-    expect(await warrantsPage.warrantTitles()).toEqual(['Sentencing warrant', 'Remand warrant'])
+    const warrantLinks = warrantsPage.warrants.getByTestId('warrant-link')
+    const expectWarrantIds = async (ids: string[]) => {
+      expect(await warrantLinks.evaluateAll(links => links.map(link => link.getAttribute('href')))).toEqual(
+        ids.map(id => `${WARRANTS_URL}/${id}/file`),
+      )
+    }
+    await expectWarrantIds([warrantDocumentId(1), SENTENCING_DOC, REMAND_DOC])
+    await expect(warrantsPage.warrants.first().locator('dt', { hasText: 'Hearing date' })).toBeVisible()
+    await expect(warrantsPage.warrants.getByTestId('warrant-hearing-date')).toHaveText([
+      '10 August 2026',
+      '10 August 2026',
+      '1 August 2026',
+    ])
 
     await page.goto(`${WARRANTS_URL}?sort=earliest`)
-    expect(await warrantsPage.warrantTitles()).toEqual(['Remand warrant', 'Sentencing warrant'])
+    await expectWarrantIds([REMAND_DOC, SENTENCING_DOC, warrantDocumentId(1)])
   })
 
   for (const count of [20, 21]) {

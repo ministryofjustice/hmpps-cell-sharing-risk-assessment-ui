@@ -131,6 +131,8 @@ access; CSRA does not infer BaSM permissions from CSRA roles.
 
 When no warrants are available, direct access to an assessment's warrants URL redirects
 to its task list. The standalone warrants URL redirects to the prisoner's CSRA page.
+Warrants display and sort by hearing date, with date added as a tie-breaker. Both dates
+sort newest first by default, or oldest first when Earliest is selected.
 
 Create an environment file by copying `.env.example` -> `.env`
 Environment variables set in here will be available when running `start:dev`

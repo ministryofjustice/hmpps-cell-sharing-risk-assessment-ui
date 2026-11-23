@@ -98,6 +98,7 @@ describe.each(['/prisoner/A1234BC/warrants', '/prisoner/A1234BC/csra/assessment-
       documentType: 'REMAND_WARRANT',
       courtName: 'Leeds Crown Court',
       hearingType: 'Remand',
+      hearingDate: '2026-11-15T12:00:00',
       ingestionAt: '2026-11-16T12:00:00',
     }))
     const originallyEnabled = config.warrants.enabled
@@ -154,7 +155,27 @@ describe.each(['/prisoner/A1234BC/warrants', '/prisoner/A1234BC/csra/assessment-
       expect(warrantsService.getWarrantFile).not.toHaveBeenCalled()
     })
 
-    it.each([0, 1, 20, 21])('shows pagination only above twenty results (%i warrants)', async count => {
+    it('displays the hearing date rather than the date added', async () => {
+      warrantsService.getWarrants.mockResolvedValue(warrants.slice(0, 1))
+
+      const response = await request(app).get(warrantsPath).expect(200)
+
+      expect(response.text).toContain('>Hearing date</dt>')
+      expect(response.text).toContain('data-qa="warrant-hearing-date">15 November 2026</dd>')
+      expect(response.text).not.toContain('Date added')
+      expect(response.text).not.toContain('16 November 2026')
+    })
+
+    it('redirects to the parent page when there are no warrants', async () => {
+      warrantsService.getWarrants.mockResolvedValue([])
+
+      await request(app)
+        .get(warrantsPath)
+        .expect(302)
+        .expect('Location', warrantsPath.replace(/\/warrants$/, ''))
+    })
+
+    it.each([1, 20, 21])('shows pagination only above twenty results (%i warrants)', async count => {
       warrantsService.getWarrants.mockResolvedValue(warrants.slice(0, count))
 
       const response = await request(app).get(warrantsPath).expect(200)
@@ -162,14 +183,9 @@ describe.each(['/prisoner/A1234BC/warrants', '/prisoner/A1234BC/csra/assessment-
 
       expect(html.match(/data-qa="warrant"/g) ?? []).toHaveLength(Math.min(count, 20))
       expect(html.match(/class="govuk-pagination"/g) ?? []).toHaveLength(count > 20 ? 2 : 0)
-      if (count) {
-        expect(html).toContain(
-          `Showing <strong>1</strong> to <strong>${Math.min(count, 20)}</strong> of <strong>${count}</strong> warrant${count === 1 ? '' : 's'}`,
-        )
-      } else {
-        expect(html).toContain('Warrant not available in DPS.')
-        expect(html).not.toContain('data-qa="warrants-count"')
-      }
+      expect(html).toContain(
+        `Showing <strong>1</strong> to <strong>${Math.min(count, 20)}</strong> of <strong>${count}</strong> warrant${count === 1 ? '' : 's'}`,
+      )
     })
 
     it('places controls around the list and preserves sorting when navigating', async () => {
