@@ -93,18 +93,30 @@ describe('WarrantsService', () => {
       expect(warrants.map(warrant => warrant.documentId)).toEqual(['recent', 'older', 'oldest'])
     })
 
-    it('sorts newest first by default, and oldest first when asked for earliest', async () => {
+    it('sorts by hearing date then date added, newest first by default and oldest first for earliest', async () => {
       getCourtHearings.mockResolvedValue([
-        makeHearing([
-          { documentType: 'SENTENCING_WARRANT', documentId: 'older', ingestionAt: daysAgo(365) },
-          { documentType: 'REMAND_WARRANT', documentId: 'newer', ingestionAt: daysAgo(1) },
-        ]),
+        makeHearing(
+          [{ documentType: 'REMAND_WARRANT', documentId: 'older-hearing', ingestionAt: '2026-08-15T09:00:00' }],
+          { hearingDate: '2026-08-01T09:00:00' },
+        ),
+        makeHearing(
+          [
+            { documentType: 'SENTENCING_WARRANT', documentId: 'added-earlier', ingestionAt: '2026-08-11T09:00:00' },
+            { documentType: 'REMAND_WARRANT', documentId: 'added-later', ingestionAt: '2026-08-12T09:00:00' },
+          ],
+          { hearingDate: '2026-08-10T09:00:00' },
+        ),
       ])
 
-      expect((await service.getWarrants('user1', 'A1234BC')).map(w => w.documentId)).toEqual(['newer', 'older'])
+      expect((await service.getWarrants('user1', 'A1234BC')).map(w => w.documentId)).toEqual([
+        'added-later',
+        'added-earlier',
+        'older-hearing',
+      ])
       expect((await service.getWarrants('user1', 'A1234BC', 'earliest')).map(w => w.documentId)).toEqual([
-        'older',
-        'newer',
+        'older-hearing',
+        'added-earlier',
+        'added-later',
       ])
     })
 

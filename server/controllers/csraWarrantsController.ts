@@ -41,6 +41,16 @@ export default function csraWarrantsController({
 
     const sort = parseSort(req.query.sort)
     const warrants = await warrantsService.getWarrants(username, prisoner.prisonerNumber, sort)
+    // Standalone access has no assessment to return to, so use the prisoner's CSRA page.
+    const basePath = assessmentId
+      ? `/prisoner/${prisoner.prisonerNumber}/csra/${assessmentId}`
+      : `/prisoner/${prisoner.prisonerNumber}`
+
+    if (warrants.length === 0) {
+      res.redirect(basePath)
+      return
+    }
+
     const totalPages = Math.ceil(warrants.length / WARRANTS_PAGE_SIZE)
     const requestedPage = parsePageNumber(req.query.page)
     const page = Math.min(requestedPage, Math.max(1, totalPages))
@@ -55,16 +65,6 @@ export default function csraWarrantsController({
       subjectType: 'PRISONER_ID',
       correlationId: req.id,
     })
-
-    /**
-     * Every link on the page hangs off this: the sort links, the PDF links, the back link and the
-     * return link. Reached from a task list it stays within that assessment; reached standalone
-     * (see prisonerRouter) it sits directly under the prisoner, which is what lets the page work
-     * before any assessment exists.
-     */
-    const basePath = assessmentId
-      ? `/prisoner/${prisoner.prisonerNumber}/csra/${assessmentId}`
-      : `/prisoner/${prisoner.prisonerNumber}`
 
     res.render('pages/csraWarrants', {
       prisoner,

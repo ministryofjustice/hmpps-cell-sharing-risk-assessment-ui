@@ -16,7 +16,8 @@ export interface Warrant {
   documentType: CourtDocumentType
   courtName: string
   hearingType: string
-  /** When the document was ingested — the design's "Date added". */
+  hearingDate: string
+  /** When the document was ingested, used to break hearing-date ties. */
   ingestionAt: string
   /** Size in bytes, or undefined when document-api could not be reached. */
   fileSize?: number
@@ -29,7 +30,7 @@ export default class WarrantsService {
   ) {}
 
   /**
-   * All of a prisoner's warrants, newest first by default.
+   * All of a prisoner's warrants, sorted by hearing date then date added, newest first by default.
    *
    * Everything except the fetch happens here: the court API takes no query parameters and returns
    * hearings in no particular order, so the warrant-only filter and the sort are
@@ -64,12 +65,14 @@ export default class WarrantsService {
           documentType: document.documentType,
           courtName: hearing.courtName,
           hearingType: hearing.hearingType,
+          hearingDate: hearing.hearingDate,
           ingestionAt: document.ingestionAt,
         })),
     )
 
     return warrants.sort((a, b) => {
-      const difference = Date.parse(a.ingestionAt) - Date.parse(b.ingestionAt)
+      const difference =
+        Date.parse(a.hearingDate) - Date.parse(b.hearingDate) || Date.parse(a.ingestionAt) - Date.parse(b.ingestionAt)
       return sort === 'earliest' ? difference : -difference
     })
   }
