@@ -51,6 +51,25 @@
     }) }}
   </div>
 
+  {% if assessmentAnswers.provisionalReviewed %}
+    <div class="csra-check-answers-section">
+      <h2 class="govuk-heading-m">Provisional assessment</h2>
+
+      {{ govukSummaryList({
+        rows: [
+          {
+            key: {
+              text: "Have you reviewed the provisional assessment?"
+            },
+            value: {
+              text: "Yes"
+            }
+          }
+        ]
+      }) }}
+    </div>
+  {% endif %}
+
   {% if assessmentAnswers %}
     {{ csraAnswersSummary({
       prisoner: prisoner,
