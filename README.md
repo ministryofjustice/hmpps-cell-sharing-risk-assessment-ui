@@ -129,6 +129,9 @@ BaSM resolves the establishment and redirects to today's Incoming Moves. BaSM
 also owns authentication and displays its access-denied page for users without
 access; CSRA does not infer BaSM permissions from CSRA roles.
 
+When no warrants are available, direct access to an assessment's warrants URL redirects
+to its task list. The standalone warrants URL redirects to the prisoner's CSRA page.
+
 Create an environment file by copying `.env.example` -> `.env`
 Environment variables set in here will be available when running `start:dev`
 

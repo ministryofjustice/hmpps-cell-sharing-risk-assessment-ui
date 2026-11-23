@@ -224,20 +224,32 @@ test.describe('CSRA court warrants', () => {
     await expect(warrantsPage.warrants.first().getByTestId('warrant-size')).toHaveCount(0)
   })
 
-  test('tells the officer when the prisoner could not be matched on the court system', async ({ page }) => {
-    await loginAtMoorland(page, EDIT_ROLES)
-    await stubCommonPageData()
-    await courtDataApi.stubGetCourtHearings('A1234BC', [])
+  for (const hasHearings of [false, true]) {
+    test(`redirects direct warrants access to the task list when there are no warrants (${hasHearings ? 'non-warrant documents' : 'no hearings'})`, async ({
+      page,
+    }) => {
+      await loginAtMoorland(page, EDIT_ROLES)
+      await stubCommonPageData()
+      await courtDataApi.stubGetCourtHearings(
+        'A1234BC',
+        hasHearings
+          ? [
+              {
+                ...hearings()[0],
+                documents: [
+                  { documentType: 'PRISON_COURT_REGISTER', documentId: REGISTER_DOC, ingestionAt: daysAgo(2) },
+                ],
+              },
+            ]
+          : [],
+      )
 
-    await page.goto(WARRANTS_URL)
+      await page.goto(WARRANTS_URL)
 
-    const warrantsPage = await CsraWarrantsPage.verifyOnPage(page)
-    await expect(warrantsPage.warrants).toHaveCount(0)
-    await expect(warrantsPage.pagination).toHaveCount(0)
-    await expect(warrantsPage.emptyMessage).toContainText(
-      'Warrant not available in DPS. Check if a paper copy is available.',
-    )
-  })
+      await expect(page).toHaveURL(TASK_LIST_URL)
+      await expect(page.getByRole('link', { name: 'View warrants' })).toHaveCount(0)
+    })
+  }
 
   test('serves an older warrant PDF inline so the browser renders it rather than downloading it', async ({ page }) => {
     await loginAtMoorland(page, EDIT_ROLES)

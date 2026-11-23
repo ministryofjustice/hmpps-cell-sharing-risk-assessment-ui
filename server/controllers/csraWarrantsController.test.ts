@@ -33,6 +33,7 @@ describe('csraWarrantsController', () => {
     ({
       locals: { user: { username: 'user1' }, prisoner: { prisonerNumber: 'A1234BC' } },
       render: jest.fn(),
+      redirect: jest.fn(),
       send: jest.fn(),
       set: jest.fn(),
     }) as any
@@ -79,7 +80,6 @@ describe('csraWarrantsController', () => {
     })
 
     it.each([
-      [0, null, { from: 0, to: 0, count: 0 }],
       [1, null, { from: 1, to: 1, count: 1 }],
       [20, null, { from: 1, to: 20, count: 20 }],
       [21, expect.objectContaining({ next: { href: '?sort=recent&page=2' } }), { from: 1, to: 20, count: 21 }],
@@ -138,13 +138,15 @@ describe('csraWarrantsController', () => {
       expect(warrantsService.getWarrants).toHaveBeenCalledWith('user1', 'A1234BC', 'recent')
     })
 
-    it('renders with no warrants rather than erroring when there are none', async () => {
+    it('redirects to the task list without rendering or auditing a warrants page when there are none', async () => {
       warrantsService.getWarrants.mockResolvedValue([])
       const res = response()
 
       await controller()(request(), res, jest.fn())
 
-      expect(res.render).toHaveBeenCalledWith('pages/csraWarrants', expect.objectContaining({ warrants: [] }))
+      expect(res.redirect).toHaveBeenCalledWith(BASE_PATH)
+      expect(res.render).not.toHaveBeenCalled()
+      expect(auditService.logPageView).not.toHaveBeenCalled()
     })
 
     it('audits the page view', async () => {
@@ -202,6 +204,17 @@ describe('csraWarrantsController', () => {
         await controller()(requestWithoutAssessment(), response(), jest.fn())
 
         expect(warrantsService.getWarrants).toHaveBeenCalledWith('user1', 'A1234BC', 'recent')
+      })
+
+      it('redirects to the prisoner CSRA page when there are no warrants', async () => {
+        warrantsService.getWarrants.mockResolvedValue([])
+        const res = response()
+
+        await controller()(requestWithoutAssessment(), res, jest.fn())
+
+        expect(res.redirect).toHaveBeenCalledWith('/prisoner/A1234BC')
+        expect(res.render).not.toHaveBeenCalled()
+        expect(auditService.logPageView).not.toHaveBeenCalled()
       })
 
       it('still 404s when the feature flag is off', async () => {
