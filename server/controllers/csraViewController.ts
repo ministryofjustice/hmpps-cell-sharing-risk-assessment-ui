@@ -55,9 +55,11 @@ export default function csraViewController({
         finalOffenceEvidenceMap = getOffenceEvidenceMap(finalAssessmentAnswers)
       }
 
-      provisionalAssessmentAnswers = getAnswersFromAssessmentStage(detailedRating, 'PROVISIONAL')
-      if (provisionalAssessmentAnswers) {
-        provisionalOffenceEvidenceMap = getOffenceEvidenceMap(provisionalAssessmentAnswers)
+      if (detailedRating.provisionalRating) {
+        provisionalAssessmentAnswers = getAnswersFromAssessmentStage(detailedRating, 'PROVISIONAL')
+        if (provisionalAssessmentAnswers) {
+          provisionalOffenceEvidenceMap = getOffenceEvidenceMap(provisionalAssessmentAnswers)
+        }
       }
 
       if (detailedRating.provisionalRating === 'HIGH_SPECIFIC') {
