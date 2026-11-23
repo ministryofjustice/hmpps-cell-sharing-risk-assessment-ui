@@ -391,8 +391,30 @@ test.describe('Review provisional assessment', () => {
     expect(requests.map(request => JSON.parse(request.body))).toEqual([savedNo, initialFinal])
   })
 
-  test('saving the review first creates the final stage without completing evidence and offences', async ({ page }) => {
+  test('saving the review first preserves completed provisional evidence and offences', async ({ page }) => {
     const initial = assessment([completeAnswers()])
+    const saved = completeAnswers({ stage: 'FINAL', provisionalReviewed: true })
+    await stubReviewSaves(initial, [saved])
+    await page.reload()
+    const evidenceTask = page.locator('.govuk-task-list__item').filter({ hasText: 'Evidence sources and offences' })
+    await expect(evidenceTask).toContainText('Completed')
+    await page.getByRole('link', { name: REVIEW_LINK, exact: true }).click()
+    await page.getByRole('radio', { name: YES, exact: true }).check()
+    await page.getByRole('button', { name: 'Save and return', exact: true }).click()
+
+    await expect(page).toHaveURL(TASK_LIST_URL)
+    await expect(reviewTask(page)).toContainText('Completed')
+    await expect(evidenceTask).toContainText('Completed')
+    await expect(page.getByRole('link', { name: 'Check answers and confirm rating', exact: true })).toBeVisible()
+    const requests = await savedRequests()
+    expect(requests).toHaveLength(1)
+    expect(JSON.parse(requests[0].body)).toEqual(saved)
+  })
+
+  test('saving the review first does not complete evidence and offences when a source was unchecked', async ({
+    page,
+  }) => {
+    const initial = assessment([completeAnswers({ pncChecked: false })])
     const saved = completeAnswers({
       stage: 'FINAL',
       provisionalReviewed: true,

@@ -523,12 +523,12 @@ describe('csraQuestionController', () => {
     )
   })
 
-  it.each([false, true])('requires every applicable evidence page to be saved when an offence is %s', async offence => {
+  it.each([false, true])('requires every applicable page after checking a new source (offence: %s)', async offence => {
     const provisional = makeStageAnswers({
       pncChecked: true,
       warrantChecked: true,
       dpsChecked: true,
-      perChecked: true,
+      perChecked: false,
       offenceMurderManslaughter: offence,
       offenceAssistingSuicide: false,
       offenceSexualAssault: false,
@@ -573,7 +573,16 @@ describe('csraQuestionController', () => {
         if (!(step instanceof InformationStep)) {
           const formValues = step.getFormValues(provisional)
           expect(res.render).toHaveBeenCalledWith('pages/csraQuestion', expect.objectContaining({ values: formValues }))
-          await controller()(request('POST', formValues, String(stepId), 'evidenceAndOffences'), response(), jest.fn())
+          await controller()(
+            request(
+              'POST',
+              step.getFormValues({ ...provisional, perChecked: true }),
+              String(stepId),
+              'evidenceAndOffences',
+            ),
+            response(),
+            jest.fn(),
+          )
           savedPages += 1
           expect(csraService.updateCsraAssessment).toHaveBeenCalledTimes(savedPages)
         } else {

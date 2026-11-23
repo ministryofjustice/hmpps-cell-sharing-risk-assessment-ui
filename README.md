@@ -103,11 +103,13 @@ pages from their back/forward cache, so a persisted `pageshow` event triggers a 
 to recheck the assessment state on the server. This prevents a cached confirmation form
 remaining usable after final submission; ordinary navigation does not trigger a reload.
 
-When starting the final (day 2) assessment, provisional answers are copied except for
-the evidence sources and offences section. That section remains unanswered in the final
-stage until each applicable question page is saved again. Unsaved questions are
-pre-populated from the provisional assessment, including offence evidence sources and
-details; saved final answers take precedence. Other sections retain their copied answers.
+When starting the final (day 2) assessment, provisional answers are copied. If all evidence
+sources were checked and the evidence sources and offences section was complete, that
+section retains its answers and is already marked complete. Otherwise, it remains
+unanswered in the final stage until each applicable question page is saved again.
+Unsaved questions are pre-populated from the provisional assessment, including offence
+evidence sources and details; saved final answers take precedence. Other sections retain
+their copied answers.
 
 Provisionally rated assessments also include a read-only "Review provisional assessment"
 task for CSRA Assessors. Playback and remaining tasks use the recorded provisional answers,

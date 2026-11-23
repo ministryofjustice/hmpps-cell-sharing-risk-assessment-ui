@@ -438,6 +438,46 @@ describe('csraRouter', () => {
       )
     })
 
+    it('keeps completed provisional evidence complete before and after saving the final-stage review', async () => {
+      const provisionalAnswers = completeStageAnswers({
+        seenByHealthcare: false,
+        offenceEvidenceReviewed: null,
+        version: 4,
+      })
+      const current = assessment({ interimResult: 'HIGH_GENERAL', stages: [provisionalAnswers] })
+      csraService.getCsraAssessment.mockResolvedValue(current)
+      const app = buildApp([Role.CSRA__ASSESSMENT_EDIT])
+      const expectEvidenceComplete = async () => {
+        const taskList = await request(app).get(assessmentUrl).expect(200)
+        const task = taskList.text
+          .match(/<li class="govuk-task-list__item[\s\S]*?<\/li>/g)
+          ?.find(item => item.includes('Evidence sources and offences'))
+        expect(task).toContain('Complete')
+      }
+
+      await expectEvidenceComplete()
+      csraService.updateCsraAssessment.mockImplementationOnce(async (_username, _number, _id, answers) => {
+        const updated = { ...current, stages: [provisionalAnswers, answers] }
+        csraService.getCsraAssessment.mockResolvedValue(updated)
+        return updated
+      })
+      await request(app)
+        .post(reviewUrl)
+        .type('form')
+        .send({ provisionalReviewed: 'YES' })
+        .expect(302)
+        .expect('Location', assessmentUrl)
+
+      expect(csraService.updateCsraAssessment).toHaveBeenCalledWith(
+        'user1',
+        'A1234BC',
+        'assessment-123',
+        { ...provisionalAnswers, stage: 'FINAL', version: 1, provisionalReviewed: true },
+        'FINAL',
+      )
+      await expectEvidenceComplete()
+    })
+
     it.each([{}, { provisionalReviewed: 'invalid' }, { provisionalReviewed: ['YES', 'NO'] }])(
       'rejects missing or invalid answers %j without saving even when an answer was previously saved',
       async body => {

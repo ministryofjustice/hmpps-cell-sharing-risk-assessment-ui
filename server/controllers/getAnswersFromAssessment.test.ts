@@ -97,4 +97,28 @@ describe('getAnswersFromAssessment', () => {
       version: 1,
     })
   })
+
+  it('copies completed evidence and offences into a new final stage without changing the provisional answers', () => {
+    const provisional = makeStageAnswers({
+      version: 4,
+      pncChecked: true,
+      warrantChecked: true,
+      dpsChecked: true,
+      perChecked: true,
+      offenceMurderManslaughter: true,
+      offenceAssistingSuicide: false,
+      offenceSexualAssault: false,
+      offenceRepeatedViolence: false,
+      offencePrejudiceMotivated: false,
+      offenceArson: false,
+      offenceKidnapHostage: false,
+      offenceEvidence: [{ offence: 'MURDER_MANSLAUGHTER', sources: ['PNC'], details: 'Provisional evidence' }],
+      seenByHealthcare: false,
+    })
+    const original = structuredClone(provisional)
+    const final = getAnswersFromAssessment(makeAssessment({ interimResult: 'HIGH_GENERAL', stages: [provisional] }))
+
+    expect(final).toEqual({ ...original, stage: 'FINAL', version: 1 })
+    expect(provisional).toEqual(original)
+  })
 })
