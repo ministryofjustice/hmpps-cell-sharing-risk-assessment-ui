@@ -1,5 +1,6 @@
 import { CsraAssessment, CsraAssessmentStageAnswers, CsraDetailedRating } from '../data/csraApiTypes'
 import flowConfig from '../lib/transactionFlow/config'
+import { getSectionStatus } from '../utils/getTaskListSections'
 
 /** Get the answers from a specific stage of the assessment, or null if that stage is not present. */
 export function getAnswersFromAssessmentStage(
@@ -19,8 +20,12 @@ export default function getAnswersFromAssessment(assessment: CsraAssessment): Cs
       return finalAnswers
     }
 
-    // Evidence and offences must be saved again before the final stage is complete.
     if (provisionalAnswers) {
+      if (getSectionStatus(provisionalAnswers, flowConfig.evidenceAndOffences) === 'COMPLETE') {
+        return { ...provisionalAnswers, stage: 'FINAL', version: 1 }
+      }
+
+      // Incomplete evidence and offences must be saved again before the final stage is complete.
       return flowConfig.evidenceAndOffences.steps.reduce<CsraAssessmentStageAnswers>(
         (answers, step) => step.eraseAnswers(answers),
         { ...provisionalAnswers, stage: 'FINAL', version: 1 },
