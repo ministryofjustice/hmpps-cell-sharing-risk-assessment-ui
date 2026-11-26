@@ -26,6 +26,3 @@ generic-service:
     ENVIRONMENT_NAME: PRE-PRODUCTION
     AUDIT_ENABLED: "false"
     NOMIS_CSRA_MODULES: "OCDNOQUE,OIDCAPPR"
-
-generic-prometheus-alerts:
-  alertSeverity: move-a-prisoner-alerts-nonprod
