@@ -54,8 +54,7 @@ describe('WarrantsService', () => {
       expect(warrants.map(warrant => warrant.documentId)).toEqual(['doc-1', 'doc-2'])
     })
 
-    it('shows a warrant once when the court API returns its hearing more than once', async () => {
-      // The court API repeats a hearing once per document the prisoner has on it.
+    it('never lists the same document id twice', async () => {
       const hearing = makeHearing([
         { documentType: 'REMAND_WARRANT', documentId: 'doc-1', ingestionAt: daysAgo(1) },
         { documentType: 'PRISON_COURT_REGISTER', documentId: 'doc-2', ingestionAt: daysAgo(1) },
@@ -79,6 +78,36 @@ describe('WarrantsService', () => {
       const warrants = await service.getWarrants('user1', 'A1234BC')
 
       expect(warrants.map(warrant => warrant.documentId)).toEqual(['doc-1', 'doc-2'])
+    })
+
+    it('shows a warrant once when the court sent it twice and document-api marks the second as a copy', async () => {
+      const sentAt = daysAgo(1)
+      getCourtHearings.mockResolvedValue([
+        makeHearing([
+          { documentType: 'REMAND_WARRANT', documentId: 'original', ingestionAt: sentAt },
+          { documentType: 'REMAND_WARRANT', documentId: 'copy', ingestionAt: sentAt },
+        ]),
+      ])
+      getDocumentsMetadata.mockResolvedValue([
+        { documentUuid: 'original', fileSize: 54879, duplicateOf: null },
+        { documentUuid: 'copy', fileSize: 54879, duplicateOf: 'original' },
+      ])
+
+      const warrants = await service.getWarrants('user1', 'A1234BC')
+
+      expect(warrants.map(warrant => warrant.documentId)).toEqual(['original'])
+      expect(warrants[0].fileSize).toBe(54879)
+    })
+
+    it('keeps a copy when its original is not on the list, so the warrant is never lost', async () => {
+      getCourtHearings.mockResolvedValue([
+        makeHearing([{ documentType: 'REMAND_WARRANT', documentId: 'copy', ingestionAt: daysAgo(1) }]),
+      ])
+      getDocumentsMetadata.mockResolvedValue([{ documentUuid: 'copy', fileSize: 54879, duplicateOf: 'elsewhere' }])
+
+      const warrants = await service.getWarrants('user1', 'A1234BC')
+
+      expect(warrants.map(warrant => warrant.documentId)).toEqual(['copy'])
     })
 
     it('carries the court name and hearing type down from the parent hearing', async () => {

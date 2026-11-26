@@ -11,6 +11,8 @@ export interface DocumentMetadata {
   /** Size in bytes. This is the design's "PDF 57.26 KB" — the court API does not carry it. */
   fileSize: number
   mimeType: string
+  /** Set when this document is a repeat delivery of another: the id of the original. */
+  duplicateOf?: string | null
 }
 
 export interface DocumentFile {
