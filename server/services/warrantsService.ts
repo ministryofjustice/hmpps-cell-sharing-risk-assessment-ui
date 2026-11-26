@@ -41,11 +41,11 @@ export default class WarrantsService {
    */
   async getWarrants(username: string, prisonerNumber: string, sort: WarrantSort = 'recent'): Promise<Warrant[]> {
     const warrants = await this.listWarrants(username, prisonerNumber, sort)
-    return this.addFileSizes(username, warrants)
+    return this.addDocumentDetails(username, warrants)
   }
 
   /**
-   * The same warrants without their file sizes.
+   * The same warrants without their file sizes, and with any repeat deliveries still in.
    *
    * Sizes are only ever rendered on the page, so the callers that just need to know which warrants
    * exist — the task list's check, and the proxy's ownership check — skip the document-api call.
@@ -70,9 +70,8 @@ export default class WarrantsService {
         })),
     )
 
-    // The court API returns a hearing once for each of the prisoner's documents on it, so a hearing with a
-    // warrant and a court register arrives twice, each copy listing both documents. The same document id is
-    // the same file, so keep one of each.
+    // The same document id is the same file, so never list one twice. Repeat deliveries of a warrant have
+    // different ids and are dropped later, in addDocumentDetails.
     const warrants = [...new Map(allWarrants.map(warrant => [warrant.documentId, warrant])).values()]
 
     return warrants.sort((a, b) => {
@@ -83,12 +82,18 @@ export default class WarrantsService {
   }
 
   /**
-   * Join file sizes on from document-api, in a single batched call.
+   * Join file sizes on from document-api, in a single batched call, and drop repeat deliveries.
+   *
+   * A court sometimes sends the same warrant twice, by two routes, seconds apart. Each copy gets its own
+   * document id, and document-api marks the later one as a copy of the first (duplicateOf). The court
+   * data service leaves those copies out of its own views, so this does the same - but only when the
+   * original is on the list too, so the officer is never left without the warrant.
    *
    * Deliberately best-effort: a warrant the officer can open still has all its useful information
-   * without its size, so a document-api failure drops the sizes rather than the page.
+   * without its size, so a document-api failure drops the sizes rather than the page (and both copies
+   * of a repeat delivery then show).
    */
-  private async addFileSizes(username: string, warrants: Warrant[]): Promise<Warrant[]> {
+  private async addDocumentDetails(username: string, warrants: Warrant[]): Promise<Warrant[]> {
     if (warrants.length === 0) return warrants
 
     try {
@@ -96,8 +101,14 @@ export default class WarrantsService {
         username,
         warrants.map(warrant => warrant.documentId),
       )
-      const sizesByUuid = new Map(metadata.map(document => [document.documentUuid, document.fileSize]))
-      return warrants.map(warrant => ({ ...warrant, fileSize: sizesByUuid.get(warrant.documentId) }))
+      const metadataByUuid = new Map(metadata.map(document => [document.documentUuid, document]))
+      const listedIds = new Set(warrants.map(warrant => warrant.documentId))
+      return warrants
+        .filter(warrant => {
+          const originalId = metadataByUuid.get(warrant.documentId)?.duplicateOf
+          return !originalId || !listedIds.has(originalId)
+        })
+        .map(warrant => ({ ...warrant, fileSize: metadataByUuid.get(warrant.documentId)?.fileSize }))
     } catch (error) {
       logger.error('Could not fetch document metadata; rendering warrants without file sizes', error)
       return warrants
