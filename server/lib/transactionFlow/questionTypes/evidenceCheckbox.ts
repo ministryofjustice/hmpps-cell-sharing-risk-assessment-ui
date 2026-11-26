@@ -3,8 +3,10 @@ import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 import required from '../validations/required'
 import { QuestionContext } from './base'
 
-export default class EvidenceCheckboxQuestion extends CheckboxQuestion {
-  override items: (Omit<CheckboxItem, 'value'> & { value: keyof PickByType<CsraAssessmentStageAnswers, boolean> })[] = [
+export default class EvidenceCheckboxQuestion extends CheckboxQuestion<CsraAssessmentStageAnswers> {
+  override items: (Omit<CheckboxItem<CsraAssessmentStageAnswers>, 'value'> & {
+    value: keyof PickByType<CsraAssessmentStageAnswers, boolean> & string
+  })[] = [
     { text: 'PNC', hint: { text: 'Current and previous convictions' }, value: 'pncChecked' },
     { text: 'Warrant', hint: { text: 'Current charge or offence' }, value: 'warrantChecked' },
     { text: 'DPS', hint: { text: 'Current and historical adjudications' }, value: 'dpsChecked' },
@@ -19,12 +21,9 @@ export default class EvidenceCheckboxQuestion extends CheckboxQuestion {
     validationErrors: Record<string, { text: string }> | undefined,
     values: FormValues | undefined,
     assessmentAnswers: CsraAssessmentStageAnswers,
-    context?: QuestionContext,
-  ): object {
-    const attributes = super.componentAttributes(validationErrors, values, assessmentAnswers) as {
-      fieldset: { legend: { text: string; classes: string } }
-      items: CheckboxItem[]
-    }
+    context?: QuestionContext<CsraAssessmentStageAnswers>,
+  ) {
+    const attributes = super.componentAttributes(validationErrors, values, assessmentAnswers)
 
     if (!context?.provisionalRatingEntered) {
       return attributes
@@ -61,7 +60,7 @@ export default class EvidenceCheckboxQuestion extends CheckboxQuestion {
   override mutateAssessmentAnswers(
     assessmentAnswers: CsraAssessmentStageAnswers,
     formValues: FormValues,
-    context?: QuestionContext,
+    context?: QuestionContext<CsraAssessmentStageAnswers>,
   ): CsraAssessmentStageAnswers {
     let mutatedAssessmentAnswers = { ...assessmentAnswers }
     let newSourcesAdded = false
@@ -117,7 +116,7 @@ export default class EvidenceCheckboxQuestion extends CheckboxQuestion {
     return { [this.id]: values }
   }
 
-  override validations(context?: QuestionContext): ValidationFunction[] {
+  override validations(context?: QuestionContext<CsraAssessmentStageAnswers>): ValidationFunction[] {
     if (
       context?.provisionalRatingEntered &&
       context.assessmentAnswers &&

@@ -32,6 +32,27 @@ describe('CsraApiClient', () => {
     jest.resetAllMocks()
   })
 
+  it('creates, reads and updates a review using the review answers contract', async () => {
+    const answers = {
+      reviewReason: 'NEW_OR_ADDITIONAL_INFORMATION' as const,
+      evidenceSources: [{ source: 'PNC' as const }],
+    }
+    const params = { prisonerNumber: 'A1234BC', reviewId: 'review-123' }
+    const scope = nock(config.apis.csraApi.url)
+      .post('/csra-review/prisoner/A1234BC/review', { prisonId: 'LEI', answers })
+      .reply(201, { reviewId: 'review-123' })
+      .get('/csra-review/prisoner/A1234BC/review/review-123')
+      .reply(200, { reviewId: 'review-123' })
+      .put('/csra-review/prisoner/A1234BC/review/review-123/answers', { prisonId: 'LEI', version: 3, answers })
+      .reply(200, { reviewId: 'review-123' })
+
+    await csraApiClient.startCsraReview('AUSER_GEN', { prisonerNumber: 'A1234BC' }, { prisonId: 'LEI', answers })
+    await csraApiClient.getReviewForEditing('AUSER_GEN', params)
+    await csraApiClient.updateReviewAnswers('AUSER_GEN', params, { prisonId: 'LEI', version: 3, answers })
+    expect(scope.isDone()).toBe(true)
+    expect(mockAuthenticationClient.getToken).toHaveBeenCalledWith('AUSER_GEN')
+  })
+
   describe('getCurrentCsraRating', () => {
     it('should GET the current rating using a system token stamped with the username', async () => {
       const currentRating: CsraDetailedRating = {

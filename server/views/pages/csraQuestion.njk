@@ -21,33 +21,7 @@
 {% block content %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
-      {% if currentStep.bodyHtml and not provisionalRatingEntered %}
-        {{ currentStep.bodyHtml | safe }}
-      {% endif %}
-
-      <form method="post" action>
-        <input type="hidden" name="_csrf" value="{{ csrfToken }}" />
-        {% for key in referrers %}
-          <input type="hidden" name="referrer" value="{{ key }}">
-        {% endfor %}
-
-
-        {% for question in currentStep.questions %}
-          {{ callAsMacro(question.component)(question.componentAttributes(validationErrors, values, assessmentAnswers, questionContext)) }}
-        {% endfor %}
-
-        {% if currentStep.warningText %}
-          {{ govukWarningText({
-            text: currentStep.warningText
-          }) }}
-        {% endif %}
-
-        {{ govukButton({
-          text: saveButtonText,
-          classes: "govuk-!-margin-bottom-0",
-          attributes: { "data-qa": "prison-search-button" }
-        }) }}
-      </form>
+      {% include "../partials/transactionStepForm.njk" %}
 
       <br>
       <br>

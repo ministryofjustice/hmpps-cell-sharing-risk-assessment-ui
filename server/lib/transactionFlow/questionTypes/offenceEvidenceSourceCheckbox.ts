@@ -4,9 +4,9 @@ import { CsraAssessmentStageAnswers, EvidenceSource, OffenceType } from '../../.
 import OtherOffenceInputQuestion from './otherOffenceInput'
 import required from '../validations/required'
 
-export default class OffenceEvidenceSourceCheckboxQuestion extends CheckboxQuestion {
+export default class OffenceEvidenceSourceCheckboxQuestion extends CheckboxQuestion<CsraAssessmentStageAnswers> {
   constructor(
-    question: YesNoQuestion,
+    question: YesNoQuestion<CsraAssessmentStageAnswers>,
     public offenceType: OffenceType,
   ) {
     super(question.question.replace(/^Is there( any)? evidence/, 'Where did you find evidence'), 'evidenceSources', [

@@ -2,7 +2,7 @@ import TextAreaQuestion from './textArea'
 import { CsraAssessmentStageAnswers, OffenceType } from '../../../data/csraApiTypes'
 import required from '../validations/required'
 
-export default class OffenceEvidenceDetailsQuestion extends TextAreaQuestion {
+export default class OffenceEvidenceDetailsQuestion extends TextAreaQuestion<CsraAssessmentStageAnswers> {
   constructor(public offenceType: OffenceType) {
     super('Provide details of the evidence', 'likelyToHarmCellmateDetail')
   }

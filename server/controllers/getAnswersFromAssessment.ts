@@ -1,5 +1,5 @@
 import { CsraAssessment, CsraAssessmentStageAnswers, CsraDetailedRating } from '../data/csraApiTypes'
-import flowConfig from '../lib/transactionFlow/config'
+import flowConfig from '../lib/transactionFlow/assessmentConfig'
 import { getSectionStatus } from '../utils/getTaskListSections'
 
 /** Get the answers from a specific stage of the assessment, or null if that stage is not present. */

@@ -1,5 +1,5 @@
 import { CsraAssessment, CsraAssessmentStageAnswers, CsraOffenceEvidence, OffenceType } from '../data/csraApiTypes'
-import flowConfig from '../lib/transactionFlow/config'
+import flowConfig from '../lib/transactionFlow/assessmentConfig'
 import csraCheckAnswersController from './csraCheckAnswersController'
 
 const ASSESSMENT_ID = 'assessment-123'

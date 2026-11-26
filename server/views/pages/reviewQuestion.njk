@@ -1,0 +1,48 @@
+{% extends "../partials/layout.njk" %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/radios/macro.njk" import govukRadios %}
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+{% from "govuk/components/textarea/macro.njk" import govukTextarea %}
+{% from "govuk/components/input/macro.njk" import govukInput %}
+{% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
+{% from "govuk/components/table/macro.njk" import govukTable %}
+{% from "moj/components/date-picker/macro.njk" import mojDatePicker %}
+{% from "../macros/evidenceSources.njk" import appEvidenceSources %}
+
+{% set pageTitle = applicationName + " - " + title %}
+
+{% block heading %}
+  {% include "../partials/compactPrisonerBanner.njk" %}
+  {% if not reviewQuestionHeadings and kind != 'overview' %}
+    {{ super() }}
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      {% if kind == 'overview' %}
+        <h1 class="govuk-heading-l">Review in progress</h1>
+        <p class="govuk-body">Review reason: {{ reasonText }}{% if reasonLink %} - <a class="govuk-link" href="{{ reasonLink }}">Change<span class="govuk-visually-hidden"> review reason</span></a>{% endif %}</p>
+        <p><a class="govuk-link" href="{{ evidenceLink }}">Change evidence sources</a></p>
+        <ul class="govuk-list">
+          {% for item in questions %}
+            <li><a class="govuk-link" href="{{ item.href }}">{{ item.text }}</a></li>
+          {% endfor %}
+        </ul>
+        {% if continueLink %}
+          {{ govukButton({ text: 'Continue review', href: continueLink }) }}
+        {% elif hasQuestions %}
+          <p class="govuk-body">All review questions have been answered.</p>
+        {% else %}
+          <p class="govuk-body">The review has been saved.</p>
+        {% endif %}
+      {% elif kind == 'pending' %}
+        <p class="govuk-body">The questions for this review are not yet available.{% if not reviewStarted %} No review has been started.{% endif %}</p>
+      {% else %}
+        {% include "../partials/transactionStepForm.njk" %}
+      {% endif %}
+      <p class="govuk-body"><a class="govuk-link" href="{{ cancelLink }}">Cancel</a></p>
+    </div>
+  </div>
+{% endblock %}

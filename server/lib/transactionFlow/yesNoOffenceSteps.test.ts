@@ -2,11 +2,12 @@ import OffenceEvidenceStep from './offenceEvidenceStep'
 import YesNoQuestion from './questionTypes/yesNo'
 import Step from './step'
 import YesNoOffenceSteps from './yesNoOffenceSteps'
+import { CsraAssessmentStageAnswers } from '../../data/csraApiTypes'
 
 describe('YesNoOffenceSteps', () => {
   it('builds one yes/no step followed by one evidence step per offence', () => {
-    const murder = new YesNoQuestion('Murder evidence?', 'offenceMurderManslaughter')
-    const assisting = new YesNoQuestion('Assisting evidence?', 'offenceAssistingSuicide')
+    const murder = new YesNoQuestion<CsraAssessmentStageAnswers>('Murder evidence?', 'offenceMurderManslaughter')
+    const assisting = new YesNoQuestion<CsraAssessmentStageAnswers>('Assisting evidence?', 'offenceAssistingSuicide')
 
     const steps = new YesNoOffenceSteps([
       { question: murder, offenceType: 'MURDER_MANSLAUGHTER' },
@@ -15,7 +16,7 @@ describe('YesNoOffenceSteps', () => {
 
     expect(steps).toHaveLength(3)
     expect(steps[0]).toBeInstanceOf(Step)
-    expect((steps[0] as Step).questions).toEqual([murder, assisting])
+    expect((steps[0] as Step<CsraAssessmentStageAnswers>).questions).toEqual([murder, assisting])
 
     expect(steps[1]).toBeInstanceOf(OffenceEvidenceStep)
     expect((steps[1] as OffenceEvidenceStep).offenceType).toBe('MURDER_MANSLAUGHTER')

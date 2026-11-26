@@ -15,7 +15,10 @@ const makeAssessment = (overrides: Partial<CsraAssessmentStageAnswers> = {}): Cs
 })
 
 describe('OffenceEvidenceStep', () => {
-  const yesNoQuestion = new YesNoQuestion('Is there any evidence of offence?', 'offenceMurderManslaughter')
+  const yesNoQuestion = new YesNoQuestion<CsraAssessmentStageAnswers>(
+    'Is there any evidence of offence?',
+    'offenceMurderManslaughter',
+  )
 
   it('contains source and detail questions', () => {
     const step = new OffenceEvidenceStep(yesNoQuestion, 'MURDER_MANSLAUGHTER')

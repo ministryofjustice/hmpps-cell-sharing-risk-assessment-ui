@@ -2,7 +2,7 @@ import { CsraAssessmentStageAnswers, OffenceType } from '../../../data/csraApiTy
 import Question from './base'
 import required from '../validations/required'
 
-export default class OtherOffenceInputQuestion extends Question {
+export default class OtherOffenceInputQuestion extends Question<CsraAssessmentStageAnswers> {
   constructor(
     question: string,
     id: string,

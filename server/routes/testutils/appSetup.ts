@@ -34,7 +34,12 @@ export const user: HmppsUser = {
 
 export const flashProvider = jest.fn()
 
-function appSetup(services: Services, production: boolean, userSupplier: () => HmppsUser): Express {
+function appSetup(
+  services: Services,
+  production: boolean,
+  userSupplier: () => HmppsUser,
+  activeCaseloadId?: string,
+): Express {
   const app = express()
 
   app.set('view engine', 'njk')
@@ -46,6 +51,9 @@ function appSetup(services: Services, production: boolean, userSupplier: () => H
     req.flash = flashProvider
     res.locals = {
       user: { ...req.user } as HmppsUser,
+      ...(activeCaseloadId
+        ? { feComponents: { sharedData: { activeCaseLoad: { caseLoadId: activeCaseloadId } } } }
+        : {}),
     }
     next()
   })
@@ -84,10 +92,12 @@ export function appWithAllRoutes({
     } as unknown as jest.Mocked<ActiveAgenciesService>,
   },
   userSupplier = () => user,
+  activeCaseloadId,
 }: {
   production?: boolean
   services?: Partial<Services>
   userSupplier?: () => HmppsUser
+  activeCaseloadId?: string
 }): Express {
-  return appSetup(services as Services, production, userSupplier)
+  return appSetup(services as Services, production, userSupplier, activeCaseloadId)
 }

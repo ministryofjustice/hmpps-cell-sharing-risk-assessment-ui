@@ -1,9 +1,10 @@
 import YesNoWithDetailQuestion from './yesNoWithDetail'
 import TextAreaQuestion from './textArea'
+import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 
 describe('YesNoWithDetailQuestion', () => {
   it('uses the default required-selection message when none is configured', () => {
-    const question = new YesNoWithDetailQuestion(
+    const question = new YesNoWithDetailQuestion<CsraAssessmentStageAnswers>(
       'Is there a concern?',
       'likelyToHarmCellmate',
       'likelyToHarmCellmateDetail',
@@ -14,7 +15,7 @@ describe('YesNoWithDetailQuestion', () => {
   })
 
   it('uses a configured required-selection message independently of the detail message', () => {
-    const question = new YesNoWithDetailQuestion(
+    const question = new YesNoWithDetailQuestion<CsraAssessmentStageAnswers>(
       'Are there any other indicators to suggest the prisoner is high risk?',
       'otherHighRiskIndicators',
       'otherHighRiskIndicatorsDetail',
@@ -34,7 +35,7 @@ describe('YesNoWithDetailQuestion', () => {
   })
 
   it('adds a detail text area to the YES option', () => {
-    const question = new YesNoWithDetailQuestion(
+    const question = new YesNoWithDetailQuestion<CsraAssessmentStageAnswers>(
       'Is there a concern?',
       'likelyToHarmCellmate',
       'likelyToHarmCellmateDetail',
@@ -51,17 +52,19 @@ describe('YesNoWithDetailQuestion', () => {
       }),
     )
     expect(question.items[1]).toEqual(expect.objectContaining({ value: 'NO' }))
-    expect((question.items[0].conditional as TextAreaQuestion).id).toBe('likelyToHarmCellmateDetail')
+    expect((question.items[0].conditional as TextAreaQuestion<CsraAssessmentStageAnswers>).id).toBe(
+      'likelyToHarmCellmateDetail',
+    )
   })
 
   it('passes detail validation messages to the text area', () => {
-    const question = new YesNoWithDetailQuestion(
+    const question = new YesNoWithDetailQuestion<CsraAssessmentStageAnswers>(
       'Is there a concern?',
       'likelyToHarmCellmate',
       'likelyToHarmCellmateDetail',
       { detailValidationMessages: { required: 'Enter details of the risk' } },
     )
-    const detailQuestion = question.items[0].conditional as TextAreaQuestion
+    const detailQuestion = question.items[0].conditional as TextAreaQuestion<CsraAssessmentStageAnswers>
     const [validate] = detailQuestion.validations()
 
     expect(validate('')).toBe('Enter details of the risk')

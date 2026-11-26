@@ -1,7 +1,7 @@
 import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 import Question from './base'
 
-class TestQuestion extends Question {
+class TestQuestion extends Question<CsraAssessmentStageAnswers> {
   override componentAttributes(): object {
     return { id: this.id }
   }

@@ -16,7 +16,10 @@ const makeAssessment = (overrides: Partial<CsraAssessmentStageAnswers> = {}): Cs
 })
 
 describe('OffenceEvidenceSourceCheckboxQuestion', () => {
-  const yesNo = new YesNoQuestion('Is there any evidence of offence X?', 'offenceMurderManslaughter')
+  const yesNo = new YesNoQuestion<CsraAssessmentStageAnswers>(
+    'Is there any evidence of offence X?',
+    'offenceMurderManslaughter',
+  )
   const question = new OffenceEvidenceSourceCheckboxQuestion(yesNo, 'MURDER_MANSLAUGHTER')
 
   it('rewords the question text', () => {

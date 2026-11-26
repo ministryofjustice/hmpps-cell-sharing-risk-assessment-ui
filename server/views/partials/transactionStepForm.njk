@@ -1,0 +1,36 @@
+{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
+
+{% if currentStep.bodyHtml and not provisionalRatingEntered %}
+  {{ currentStep.bodyHtml | safe }}
+{% endif %}
+
+<form method="post" action>
+  <input type="hidden" name="_csrf" value="{{ csrfToken }}" />
+  {% if includeVersion and version %}<input type="hidden" name="version" value="{{ version }}">{% endif %}
+  {% for key in referrers %}
+    <input type="hidden" name="referrer" value="{{ key }}">
+  {% endfor %}
+
+  {% for question in currentStep.questions %}
+    {% if reviewQuestionHeadings and question.question %}
+      {% if currentStep.questions | length == 1 %}
+        <h1 class="govuk-heading-l">{{ question.question }}</h1>
+      {% else %}
+        <h2 class="govuk-heading-m">{{ question.question }}</h2>
+      {% endif %}
+    {% endif %}
+    {% if question.insetText %}
+      <p>{{ question.insetText }}</p>
+    {% endif %}
+    {{ callAsMacro(question.component)(question.componentAttributes(validationErrors, values, assessmentAnswers, questionContext)) }}
+  {% endfor %}
+
+  {% if currentStep.warningText %}
+    {{ govukWarningText({ text: currentStep.warningText }) }}
+  {% endif %}
+
+  {{ govukButton({
+    text: saveButtonText,
+    attributes: { "data-qa": "submit-step-button" }
+  }) }}
+</form>

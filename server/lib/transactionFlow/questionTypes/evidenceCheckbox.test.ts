@@ -2,7 +2,7 @@ import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 import Question from './base'
 import EvidenceCheckboxQuestion from './evidenceCheckbox'
 
-class ConditionalQuestion extends Question {
+class ConditionalQuestion extends Question<CsraAssessmentStageAnswers> {
   override componentAttributes(): object {
     return {}
   }
@@ -86,11 +86,8 @@ describe('EvidenceCheckboxQuestion', () => {
     const attributes = question.componentAttributes(undefined, {}, assessmentAnswers, {
       provisionalRatingEntered: true,
       provisionalAnswers: makeAssessment({ pncChecked: true, dpsChecked: true }),
-    }) as {
-      fieldset: { legend: { text: string } }
-      items: CheckboxItem[]
-      checkedSources: Array<Pick<CheckboxItem, 'text' | 'hint'>>
-    }
+    })
+    if (!('checkedSources' in attributes)) throw new Error('Expected checked sources')
 
     expect(attributes.checkedSources).toEqual([
       { text: 'PNC', hint: { text: 'Current and previous convictions' } },
@@ -107,11 +104,8 @@ describe('EvidenceCheckboxQuestion', () => {
     const attributes = question.componentAttributes(undefined, { evidenceSources: ['perChecked'] }, assessmentAnswers, {
       provisionalRatingEntered: true,
       provisionalAnswers: makeAssessment({ pncChecked: true }),
-    }) as {
-      items: CheckboxItem[]
-      values: string[]
-      checkedSources: Array<Pick<CheckboxItem, 'text' | 'hint'>>
-    }
+    })
+    if (!('checkedSources' in attributes)) throw new Error('Expected checked sources')
 
     expect(attributes.checkedSources.map(source => source.text)).toEqual(['PNC'])
     expect(attributes.items.map(item => item.text)).toEqual(['Warrant', 'DPS', 'PER'])

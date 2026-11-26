@@ -1,12 +1,12 @@
-import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
-
-export interface QuestionContext {
+export interface QuestionContext<AnswersObject extends object> {
   provisionalRatingEntered?: boolean
-  assessmentAnswers?: CsraAssessmentStageAnswers
-  provisionalAnswers?: CsraAssessmentStageAnswers
+  assessmentAnswers?: AnswersObject
+  provisionalAnswers?: AnswersObject
+  availableOptions?: Record<string, readonly string[]>
+  headingQuestionIds?: readonly string[]
 }
 
-export default abstract class Question {
+export default abstract class Question<AnswersObject extends object> {
   constructor(
     public readonly question: string | null,
     public readonly id: string,
@@ -16,26 +16,26 @@ export default abstract class Question {
   abstract componentAttributes(
     validationErrors: Record<string, { text: string }> | undefined,
     values: FormValues | undefined,
-    assessmentAnswers: CsraAssessmentStageAnswers,
-    context?: QuestionContext,
+    assessmentAnswers: AnswersObject,
+    context?: QuestionContext<AnswersObject>,
   ): object
 
-  abstract validations(context?: QuestionContext): ValidationFunction[]
+  abstract validations(context?: QuestionContext<AnswersObject>): ValidationFunction[]
 
   /** Converts the passed in API values to values that the component will use */
-  abstract getFormValues(assessmentAnswers: CsraAssessmentStageAnswers): FormValues
+  abstract getFormValues(assessmentAnswers: AnswersObject): FormValues
 
-  isComplete(assessmentAnswers: CsraAssessmentStageAnswers): boolean {
+  isComplete(assessmentAnswers: AnswersObject): boolean {
     return this.isAnswered(assessmentAnswers)
   }
 
-  abstract isAnswered(assessmentAnswers: CsraAssessmentStageAnswers): boolean
+  abstract isAnswered(assessmentAnswers: AnswersObject): boolean
 
   abstract mutateAssessmentAnswers(
-    assessmentAnswers: CsraAssessmentStageAnswers,
+    assessmentAnswers: AnswersObject,
     formValues: FormValues,
-    context?: QuestionContext,
-  ): CsraAssessmentStageAnswers
+    context?: QuestionContext<AnswersObject>,
+  ): AnswersObject
 
-  abstract eraseAnswers(assessmentAnswers: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers
+  abstract eraseAnswers(assessmentAnswers: AnswersObject): AnswersObject
 }

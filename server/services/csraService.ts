@@ -15,6 +15,7 @@ import type {
   CsraAssessmentStage,
   CsraReviewHistory,
   CsraReviewsInProgress,
+  CsraReviewAnswers,
 } from '../data/csraApiTypes'
 
 export default class CsraService {
@@ -134,6 +135,29 @@ export default class CsraService {
 
   startCsraAssessment(username: string, prisonerNumber: string, prisonId: string) {
     return this.csraApiClient.startCsraAssessment(username, { prisonerNumber }, { prisonId })
+  }
+
+  startCsraReview(username: string, prisonerNumber: string, prisonId: string, answers: CsraReviewAnswers) {
+    return this.csraApiClient.startCsraReview(username, { prisonerNumber }, { prisonId, answers })
+  }
+
+  getReviewForEditing(username: string, prisonerNumber: string, reviewId: string) {
+    return this.csraApiClient.getReviewForEditing(username, { prisonerNumber, reviewId })
+  }
+
+  updateReviewAnswers(
+    username: string,
+    prisonerNumber: string,
+    reviewId: string,
+    prisonId: string,
+    version: number,
+    answers: CsraReviewAnswers,
+  ) {
+    return this.csraApiClient.updateReviewAnswers(
+      username,
+      { prisonerNumber, reviewId },
+      { prisonId, version, answers },
+    )
   }
 
   cancelCsraAssessment(
