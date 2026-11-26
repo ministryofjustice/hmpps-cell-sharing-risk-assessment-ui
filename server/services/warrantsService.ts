@@ -57,7 +57,7 @@ export default class WarrantsService {
   ): Promise<Warrant[]> {
     const hearings = await this.courtDataApiClient.getCourtHearings(username, { prisonerNumber })
 
-    const warrants: Warrant[] = (hearings ?? []).flatMap(hearing =>
+    const allWarrants: Warrant[] = (hearings ?? []).flatMap(hearing =>
       hearing.documents
         .filter(document => WARRANT_DOCUMENT_TYPES.includes(document.documentType))
         .map(document => ({
@@ -69,6 +69,11 @@ export default class WarrantsService {
           ingestionAt: document.ingestionAt,
         })),
     )
+
+    // The court API returns a hearing once for each of the prisoner's documents on it, so a hearing with a
+    // warrant and a court register arrives twice, each copy listing both documents. The same document id is
+    // the same file, so keep one of each.
+    const warrants = [...new Map(allWarrants.map(warrant => [warrant.documentId, warrant])).values()]
 
     return warrants.sort((a, b) => {
       const difference =

@@ -54,6 +54,33 @@ describe('WarrantsService', () => {
       expect(warrants.map(warrant => warrant.documentId)).toEqual(['doc-1', 'doc-2'])
     })
 
+    it('shows a warrant once when the court API returns its hearing more than once', async () => {
+      // The court API repeats a hearing once per document the prisoner has on it.
+      const hearing = makeHearing([
+        { documentType: 'REMAND_WARRANT', documentId: 'doc-1', ingestionAt: daysAgo(1) },
+        { documentType: 'PRISON_COURT_REGISTER', documentId: 'doc-2', ingestionAt: daysAgo(1) },
+      ])
+      getCourtHearings.mockResolvedValue([hearing, hearing])
+
+      const warrants = await service.getWarrants('user1', 'A1234BC')
+
+      expect(warrants.map(warrant => warrant.documentId)).toEqual(['doc-1'])
+      expect(getDocumentsMetadata).toHaveBeenCalledWith('user1', ['doc-1'])
+    })
+
+    it('keeps two warrants from the same hearing that have different document ids', async () => {
+      getCourtHearings.mockResolvedValue([
+        makeHearing([
+          { documentType: 'REMAND_WARRANT', documentId: 'doc-1', ingestionAt: daysAgo(1) },
+          { documentType: 'REMAND_WARRANT', documentId: 'doc-2', ingestionAt: daysAgo(2) },
+        ]),
+      ])
+
+      const warrants = await service.getWarrants('user1', 'A1234BC')
+
+      expect(warrants.map(warrant => warrant.documentId)).toEqual(['doc-1', 'doc-2'])
+    })
+
     it('carries the court name and hearing type down from the parent hearing', async () => {
       getCourtHearings.mockResolvedValue([
         makeHearing([{ documentType: 'REMAND_WARRANT', documentId: 'doc-1', ingestionAt: daysAgo(1) }], {
