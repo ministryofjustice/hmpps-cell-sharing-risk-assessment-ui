@@ -2,19 +2,19 @@ declare type FormValues = Record<string, string | string[] | number | boolean>
 
 declare type ValidationFunction = (value: string | string[] | number | undefined) => string
 
-declare type Section = {
+declare type Section<AnswersObject extends import('./baseAnswersObject').default> = {
   title: string
-  steps: import('./step').default[]
+  steps: import('./step').default<AnswersObject>[]
   // An additional completion requirement; the applicable steps must still be answered.
-  isCompleteForSection?: (assessmentAnswers: import('../../data/csraApiTypes').CsraAssessmentStageAnswers) => boolean
+  isCompleteForSection?: (assessmentAnswers: AnswersObject) => boolean
 }
 
-declare type CheckboxItem = {
+declare type CheckboxItem<AnswersObject extends object> = {
   text: string
   hint?: { text: string } | { html: string }
   value: string
-  conditional?: import('./questionTypes/base').default
-  removeIf?: (assessmentAnswers: import('../../data/csraApiTypes').CsraAssessmentStageAnswers) => boolean
+  conditional?: import('./questionTypes/base').default<AnswersObject>
+  removeIf?: (assessmentAnswers: AnswersObject) => boolean
 }
 
 declare type PickByType<T, Value> = {

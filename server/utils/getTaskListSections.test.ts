@@ -1,6 +1,6 @@
 import { CsraAssessment, CsraAssessmentStageAnswers } from '../data/csraApiTypes'
 import getTaskListSections, { getSectionStatus, TaskListSectionStatus } from './getTaskListSections'
-import flowConfig from '../lib/transactionFlow/config'
+import flowConfig from '../lib/transactionFlow/assessmentConfig'
 import Step from '../lib/transactionFlow/step'
 import YesNoQuestion from '../lib/transactionFlow/questionTypes/yesNo'
 import { Prisoner } from '../data/prisonerSearchApiTypes'
@@ -73,9 +73,12 @@ describe('getSectionStatus', () => {
   })
 
   it('automatically checks a newly configured question without changing the completion rule', () => {
-    const extendedSection: Section = {
+    const extendedSection: Section<CsraAssessmentStageAnswers> = {
       ...section,
-      steps: [...section.steps, new Step({ questions: [new YesNoQuestion('New question', 'seenByHealthcare')] })],
+      steps: [
+        ...section.steps,
+        new Step({ questions: [new YesNoQuestion<CsraAssessmentStageAnswers>('New question', 'seenByHealthcare')] }),
+      ],
     }
     const answers = makeStageAnswers({ offenceEvidenceReviewed: true })
     expect(getSectionStatus(answers, extendedSection)).toBe('IN_PROGRESS')

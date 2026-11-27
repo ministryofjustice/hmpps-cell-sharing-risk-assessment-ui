@@ -1,4 +1,4 @@
-import flowConfig from '../lib/transactionFlow/config'
+import flowConfig from '../lib/transactionFlow/assessmentConfig'
 import { CsraAssessment, CsraAssessmentStageAnswers } from '../data/csraApiTypes'
 import { Prisoner } from '../data/prisonerSearchApiTypes'
 import { appendReferrers, type ReferrerKey } from './breadcrumbOrigins'
@@ -30,7 +30,7 @@ export interface TaskListSections {
 
 export function getSectionStatus(
   assessmentAnswers: CsraAssessmentStageAnswers,
-  section: Section,
+  section: Section<CsraAssessmentStageAnswers>,
 ): TaskListSectionStatus {
   if (!section) {
     return 'LOCKED'

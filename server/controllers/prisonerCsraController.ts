@@ -14,6 +14,7 @@ export default class PrisonerCsraController {
     const { prisonerNumber } = req.params
     const { username } = res.locals.user
     const { prisoner } = res.locals
+    delete req.session.reviewReasons?.[prisonerNumber]
 
     await auditService.logPageView(Page.PRISONER_CSRA, {
       who: username,

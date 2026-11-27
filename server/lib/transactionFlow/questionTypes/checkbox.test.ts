@@ -4,7 +4,7 @@ import FeComponentsService from '../../../services/feComponentsService'
 import Question from './base'
 import CheckboxQuestion from './checkbox'
 
-class ConditionalQuestion extends Question {
+class ConditionalQuestion extends Question<CsraAssessmentStageAnswers> {
   override componentAttributes(): object {
     return { id: this.id }
   }
@@ -30,8 +30,8 @@ class ConditionalQuestion extends Question {
   }
 }
 
-class TestCheckboxQuestion extends CheckboxQuestion {
-  constructor(items: CheckboxItem[]) {
+class TestCheckboxQuestion extends CheckboxQuestion<CsraAssessmentStageAnswers> {
+  constructor(items: CheckboxItem<CsraAssessmentStageAnswers>[]) {
     super('Choose items', 'evidenceSources', items)
   }
 

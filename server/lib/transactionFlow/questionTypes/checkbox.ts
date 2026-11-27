@@ -1,12 +1,11 @@
 import Question, { QuestionContext } from './base'
-import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
 import FeComponentsService from '../../../services/feComponentsService'
 
-export default abstract class CheckboxQuestion extends Question {
+export default abstract class CheckboxQuestion<AnswersObject extends object> extends Question<AnswersObject> {
   constructor(
     question: string,
     id: string,
-    public items: CheckboxItem[],
+    public items: CheckboxItem<AnswersObject>[],
     component = 'govukCheckboxes',
   ) {
     super(question, id, component)
@@ -15,9 +14,9 @@ export default abstract class CheckboxQuestion extends Question {
   override componentAttributes(
     validationErrors: Record<string, { text: string }> | undefined,
     values: FormValues | undefined,
-    assessmentAnswers: CsraAssessmentStageAnswers,
-    context?: QuestionContext,
-  ): object {
+    assessmentAnswers: AnswersObject,
+    context?: QuestionContext<AnswersObject>,
+  ) {
     return {
       multiple: true,
       id: this.id,
@@ -25,7 +24,9 @@ export default abstract class CheckboxQuestion extends Question {
       fieldset: {
         legend: {
           text: this.question,
-          classes: 'govuk-fieldset__legend--m',
+          classes: context?.headingQuestionIds?.includes(this.id)
+            ? 'govuk-visually-hidden'
+            : 'govuk-fieldset__legend--m',
         },
       },
       items: this.items

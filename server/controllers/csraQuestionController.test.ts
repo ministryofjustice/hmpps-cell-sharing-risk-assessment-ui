@@ -1,7 +1,7 @@
 import { CsraAssessment, CsraAssessmentStageAnswers } from '../data/csraApiTypes'
 import csraQuestionController from './csraQuestionController'
 import getAnswersFromAssessment from './getAnswersFromAssessment'
-import flowConfig from '../lib/transactionFlow/config'
+import flowConfig from '../lib/transactionFlow/assessmentConfig'
 import InformationStep from '../lib/transactionFlow/informationStep'
 import getTaskListSections from '../utils/getTaskListSections'
 import Step from '../lib/transactionFlow/step'
@@ -608,7 +608,7 @@ describe('csraQuestionController', () => {
         step.questions.some(question => question.id === 'offenceKidnapHostage'),
       )
       const newStep = new Step({
-        questions: [new YesNoQuestion('New evidence question', 'seenByHealthcare')],
+        questions: [new YesNoQuestion<CsraAssessmentStageAnswers>('New evidence question', 'seenByHealthcare')],
       }).onlyWhen(() => applicable)
       const replacement = jest.replaceProperty(flowConfig, 'evidenceAndOffences', {
         ...section,

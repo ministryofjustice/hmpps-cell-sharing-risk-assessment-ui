@@ -1,10 +1,12 @@
 import YesNoQuestion from './questionTypes/yesNo'
-import { OffenceType } from '../../data/csraApiTypes'
+import { CsraAssessmentStageAnswers, OffenceType } from '../../data/csraApiTypes'
 import Step from './step'
 import OffenceEvidenceStep from './offenceEvidenceStep'
 
 export default class YesNoOffenceSteps {
-  constructor(public readonly questions: { question: YesNoQuestion; offenceType: OffenceType }[]) {}
+  constructor(
+    public readonly questions: { question: YesNoQuestion<CsraAssessmentStageAnswers>; offenceType: OffenceType }[],
+  ) {}
 
   getSteps() {
     return [

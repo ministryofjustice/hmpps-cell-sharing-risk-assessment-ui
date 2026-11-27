@@ -2,12 +2,14 @@ import { HmppsUser } from '../../interfaces/hmppsUser'
 import { Prisoner } from '../../data/prisonerSearchApiTypes'
 import { Breadcrumb } from '../../middleware/addBreadcrumb'
 import { ReferrerKey } from '../../utils/breadcrumbOrigins'
+import { CsraReviewReason } from '../../data/csraApiTypes'
 
 export declare module 'express-session' {
   // Declare that the session will potentially contain these additional fields
   interface SessionData {
     returnTo: string
     systemToken: string
+    reviewReasons?: Record<string, CsraReviewReason>
   }
 }
 

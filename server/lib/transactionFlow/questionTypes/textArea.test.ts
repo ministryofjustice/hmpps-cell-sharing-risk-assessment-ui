@@ -13,7 +13,7 @@ const makeAssessment = (overrides: Partial<CsraAssessmentStageAnswers> = {}): Cs
 })
 
 describe('TextAreaQuestion', () => {
-  const question = new TextAreaQuestion('Provide details', 'likelyToHarmCellmateDetail')
+  const question = new TextAreaQuestion<CsraAssessmentStageAnswers>('Provide details', 'likelyToHarmCellmateDetail')
 
   it('builds textarea component attributes', () => {
     const result = question.componentAttributes(
@@ -34,9 +34,13 @@ describe('TextAreaQuestion', () => {
   })
 
   it('uses a configured required validation message', () => {
-    const configuredQuestion = new TextAreaQuestion('Provide details', 'likelyToHarmCellmateDetail', {
-      validationMessages: { required: 'Enter details of the risk' },
-    })
+    const configuredQuestion = new TextAreaQuestion<CsraAssessmentStageAnswers>(
+      'Provide details',
+      'likelyToHarmCellmateDetail',
+      {
+        validationMessages: { required: 'Enter details of the risk' },
+      },
+    )
     const [validate] = configuredQuestion.validations()
 
     expect(validate('')).toBe('Enter details of the risk')

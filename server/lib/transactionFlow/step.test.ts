@@ -3,7 +3,7 @@ import Question from './questionTypes/base'
 import YesNoWithDetailQuestion from './questionTypes/yesNoWithDetail'
 import Step from './step'
 
-class TestQuestion extends Question {
+class TestQuestion extends Question<CsraAssessmentStageAnswers> {
   constructor(
     id: string,
     private readonly complete: boolean,
@@ -95,8 +95,16 @@ describe('Step', () => {
   it('clears every question and its details without clearing the prerequisite or unrelated answers', () => {
     const step = new Step({
       questions: [
-        new YesNoWithDetailQuestion('Likely to harm?', 'likelyToHarmCellmate', 'likelyToHarmCellmateDetail'),
-        new YesNoWithDetailQuestion('Vulnerable?', 'significantlyVulnerable', 'significantlyVulnerableDetail'),
+        new YesNoWithDetailQuestion<CsraAssessmentStageAnswers>(
+          'Likely to harm?',
+          'likelyToHarmCellmate',
+          'likelyToHarmCellmateDetail',
+        ),
+        new YesNoWithDetailQuestion<CsraAssessmentStageAnswers>(
+          'Vulnerable?',
+          'significantlyVulnerable',
+          'significantlyVulnerableDetail',
+        ),
       ],
     }).dependsOn('officerSpokeToPrisoner', true)
     const assessment = makeAssessment({

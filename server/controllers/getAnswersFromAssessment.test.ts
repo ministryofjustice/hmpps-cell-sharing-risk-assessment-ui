@@ -1,6 +1,6 @@
 import { CsraAssessment, CsraAssessmentStageAnswers } from '../data/csraApiTypes'
 import getAnswersFromAssessment from './getAnswersFromAssessment'
-import flowConfig from '../lib/transactionFlow/config'
+import flowConfig from '../lib/transactionFlow/assessmentConfig'
 
 const makeStageAnswers = (overrides: Partial<CsraAssessmentStageAnswers> = {}): CsraAssessmentStageAnswers => ({
   stage: 'PROVISIONAL',

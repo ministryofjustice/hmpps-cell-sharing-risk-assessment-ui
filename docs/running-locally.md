@@ -224,13 +224,14 @@ curl -s -X PUT "$API/csra-review/prisoner/A3456DE/review/$REVIEW/final" \
   }' | jq -c '{prisonerNumber, status, rating, nextReviewDate}'
 ```
 
-To put a row on the **Reviews in progress** worklist, start a review and stop there — started but
-not yet rated is exactly what that screen shows:
+To put a resumable row on the **Reviews in progress** worklist, start a review with its first answers.
+The UI selects the reason without creating a review. Its reason-specific follow-on questions are not
+implemented yet, so the UI currently stops at a placeholder after the reason:
 
 ```bash
 curl -s -X POST "$API/csra-review/prisoner/A1234BC/review" \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"prisonId":"MDI"}' | jq -c '{reviewId}'
+  -d '{"prisonId":"MDI","answers":{"reviewReason":"NEW_OR_ADDITIONAL_INFORMATION","evidenceSources":[{"source":"PNC"}]}}' | jq -c '{reviewId}'
 
 curl -s "$API/csra-review/prison/MDI/reviews-in-progress" \
   -H "Authorization: Bearer $TOKEN" | jq '{totalResults, content}'
@@ -239,6 +240,10 @@ curl -s "$API/csra-review/prison/MDI/reviews-in-progress" \
 Leaving that review in progress means a **second run of the seed script reports a conflict for
 A1234BC** — they now have a CSRA in progress, and only one is allowed. The script continues past it
 and seeds everything else.
+
+The UI's ordered review steps are defined in `server/lib/transactionFlow/reviewConfig.ts`. Replace the
+pending reason-specific steps when their questions are specified. The existing evidence step creates
+the review with its first answers, and later `update` steps save to that review.
 
 ### Review reasons and evidence sources
 

@@ -3,7 +3,7 @@ import EvidenceCheckboxQuestion from './questionTypes/evidenceCheckbox'
 import YesNoQuestion from './questionTypes/yesNo'
 import Step from './step'
 import InformationStep from './informationStep'
-import config from './config'
+import config from './assessmentConfig'
 import { CsraAssessmentStageAnswers } from '../../data/csraApiTypes'
 
 const answersForStage = (stage: 'PROVISIONAL' | 'FINAL'): CsraAssessmentStageAnswers => ({
@@ -33,7 +33,7 @@ describe('transaction flow config', () => {
     expect(section.steps).toHaveLength(15)
 
     expect(section.steps[0]).toBeInstanceOf(Step)
-    const evidenceStep = section.steps[0] as Step
+    const evidenceStep = section.steps[0] as Step<CsraAssessmentStageAnswers>
     expect(evidenceStep.title).toBe('Evidence sources')
     expect(evidenceStep.questions).toHaveLength(1)
     expect(evidenceStep.questions[0]).toBeInstanceOf(EvidenceCheckboxQuestion)
@@ -44,7 +44,7 @@ describe('transaction flow config', () => {
     expect(section.steps[1].removeIf(answersForStage('FINAL'))).toBe(false)
 
     expect(section.steps[2]).toBeInstanceOf(Step)
-    const firstYesNoGroup = section.steps[2] as Step
+    const firstYesNoGroup = section.steps[2] as Step<CsraAssessmentStageAnswers>
     expect(firstYesNoGroup.questions).toHaveLength(2)
     expect(firstYesNoGroup.questions[0]).toBeInstanceOf(YesNoQuestion)
     expect(firstYesNoGroup.questions[1]).toBeInstanceOf(YesNoQuestion)
@@ -53,7 +53,7 @@ describe('transaction flow config', () => {
     expect((section.steps[4] as OffenceEvidenceStep).offenceType).toBe('ASSISTING_SUICIDE')
 
     expect(section.steps[5]).toBeInstanceOf(Step)
-    const secondYesNoGroup = section.steps[5] as Step
+    const secondYesNoGroup = section.steps[5] as Step<CsraAssessmentStageAnswers>
     expect(secondYesNoGroup.questions).toHaveLength(1)
     expect(secondYesNoGroup.questions[0]).toBeInstanceOf(YesNoQuestion)
 

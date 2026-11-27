@@ -21,6 +21,9 @@ import type {
   CsraAssessmentStageAnswers,
   CsraAssessmentStageRequest,
   CsraAssessmentFinalStageRequest,
+  CsraReviewStarted,
+  CsraReview,
+  CsraReviewAnswers,
 } from './csraApiTypes'
 
 export default class CsraApiClient extends BaseApiClient {
@@ -171,6 +174,32 @@ export default class CsraApiClient extends BaseApiClient {
   startCsraAssessment = this.apiCall<{ assessmentId: string }, { prisonerNumber: string }, { prisonId: string }>({
     path: '/csra-review/prisoner/:prisonerNumber/assessment',
     requestType: 'post',
+    options: { asSystem: true },
+  })
+
+  startCsraReview = this.apiCall<
+    CsraReviewStarted,
+    { prisonerNumber: string },
+    { prisonId: string; answers: CsraReviewAnswers }
+  >({
+    path: '/csra-review/prisoner/:prisonerNumber/review',
+    requestType: 'post',
+    options: { asSystem: true },
+  })
+
+  getReviewForEditing = this.apiCall<CsraReview, { prisonerNumber: string; reviewId: string }>({
+    path: '/csra-review/prisoner/:prisonerNumber/review/:reviewId',
+    requestType: 'get',
+    options: { asSystem: true },
+  })
+
+  updateReviewAnswers = this.apiCall<
+    CsraReview,
+    { prisonerNumber: string; reviewId: string },
+    { prisonId: string; version: number; answers: CsraReviewAnswers }
+  >({
+    path: '/csra-review/prisoner/:prisonerNumber/review/:reviewId/answers',
+    requestType: 'put',
     options: { asSystem: true },
   })
 

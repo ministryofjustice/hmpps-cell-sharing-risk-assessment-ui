@@ -1,7 +1,7 @@
 import { type RequestHandler } from 'express'
 import { NotFound } from 'http-errors'
 
-import flowConfig from '../lib/transactionFlow/config'
+import flowConfig from '../lib/transactionFlow/assessmentConfig'
 import type { Services } from '../services'
 import { Page } from '../services/auditService'
 import { getAnswersFromAssessmentStage } from './getAnswersFromAssessment'

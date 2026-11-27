@@ -13,6 +13,7 @@ describe('PrisonerCsraController', () => {
     ({
       params: { prisonerNumber },
       id: 'request-id-123',
+      session: {},
       flash: jest.fn().mockReturnValue([]),
     }) as unknown as Request<{ prisonerNumber: string }>
 

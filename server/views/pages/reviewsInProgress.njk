@@ -4,15 +4,6 @@
 
 {% set pageTitle = applicationName + " - Reviews in progress" %}
 
-{% set reviewButtonsHtml %}
-  {% if canEditReviews %}
-    <div class="csra-reviews-in-progress-table__actions">
-      <a class="govuk-button govuk-button--secondary continue-review-button" href="#">Continue review</a>
-      <a class="govuk-link cancel-review-link" href="#">Cancel review</a>
-    </div>
-  {% endif %}
-{% endset %}
-
 {% block content %}
   <div class="govuk-grid-row govuk-!-margin-top-5">
     <div class="govuk-grid-column-full">
@@ -32,6 +23,14 @@
           {% endset %}
           {% set startedByHtml %}
             {{ review.startedBy | userDisplayName }} on {{ review.startedOn | formatDayMonthYear }}
+          {% endset %}
+          {% set reviewButtonsHtml %}
+            {% if canEditReviews %}
+              <div class="csra-reviews-in-progress-table__actions">
+                <a class="govuk-button govuk-button--secondary continue-review-button" href="{{ appendReferrers('/prisoner/' + review.prisonerNumber + '/review/' + review.reviewId, ['reviews-in-progress']) }}">Continue review</a>
+                <a class="govuk-link cancel-review-link" href="#">Cancel review</a>
+              </div>
+            {% endif %}
           {% endset %}
           {% set row = [
             { html: imageHtml },

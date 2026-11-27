@@ -4,9 +4,9 @@ import { CsraAssessmentStageAnswers, OffenceType } from '../../data/csraApiTypes
 import OffenceEvidenceSourceCheckboxQuestion from './questionTypes/offenceEvidenceSourceCheckbox'
 import OffenceEvidenceDetailsQuestion from './questionTypes/offenceEvidenceDetails'
 
-export default class OffenceEvidenceStep extends Step {
+export default class OffenceEvidenceStep extends Step<CsraAssessmentStageAnswers> {
   constructor(
-    public readonly question: YesNoQuestion,
+    public readonly question: YesNoQuestion<CsraAssessmentStageAnswers>,
     public readonly offenceType: OffenceType,
   ) {
     super({

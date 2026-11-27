@@ -4,6 +4,8 @@
  * CsraVulnerabilityCategory.kt in the API repo). Dates/date-times are ISO-8601 strings over the wire.
  */
 
+import BaseAnswersObject from '../lib/transactionFlow/baseAnswersObject'
+
 /** The outcome of a CSRA review (mirrors jpa.CsraResult). */
 export type CsraResult = 'HIGH' | 'HIGH_GENERAL' | 'HIGH_SPECIFIC' | 'STANDARD'
 
@@ -405,7 +407,81 @@ export interface CsraAssessment {
   stages: CsraAssessmentStageAnswers[]
 }
 
-export interface CsraAssessmentStageAnswers {
+export interface CsraReviewStarted {
+  reviewId: string
+  currentRating: CsraDetailedRating
+}
+
+export type CsraReviewReason =
+  | 'SCHEDULED_LONG_TERM_HIGH_RISK_REVIEW'
+  | 'SHORT_TERM_HIGH_RISK_REVIEW'
+  | 'NEW_OR_ADDITIONAL_INFORMATION'
+  | 'RECENT_CHANGE_IN_BEHAVIOUR_OR_THINKING'
+
+export interface CsraReviewAnswers extends BaseAnswersObject {
+  reviewReason: CsraReviewReason
+  evidenceSources: CsraReviewEvidenceSelection[]
+  offenceMurderManslaughter?: boolean | null
+  offenceMurderManslaughterDetail?: string | null
+  offenceAssistingSuicide?: boolean | null
+  offenceAssistingSuicideDetail?: string | null
+  offenceSexualAssault?: boolean | null
+  offenceSexualAssaultDetail?: string | null
+  offenceRepeatedViolence?: boolean | null
+  offenceRepeatedViolenceDetail?: string | null
+  offencePrejudiceMotivated?: boolean | null
+  offencePrejudiceMotivatedDetail?: string | null
+  offenceArson?: boolean | null
+  offenceArsonDetail?: string | null
+  offenceKidnapHostage?: boolean | null
+  offenceKidnapHostageDetail?: string | null
+  likelyToHarmCellmate?: boolean | null
+  likelyToHarmCellmateDetail?: string | null
+  significantlyVulnerable?: boolean | null
+  significantlyVulnerableDetail?: string | null
+  healthcareIncreasedRisk?: boolean | null
+  healthcareIncreasedRiskDetail?: string | null
+  otherHighRiskIndicators?: boolean | null
+  otherHighRiskIndicatorsDetail?: string | null
+}
+
+export type CsraReviewEvidenceSource =
+  | 'ALLOCATION_BOARD'
+  | 'ASSET_PLUS'
+  | 'DPS'
+  | 'HEALTHCARE_ASSESSMENT'
+  | 'INCENTIVES_REVIEW'
+  | 'MAPPA_REVIEW'
+  | 'INTELLIGENCE_MANAGEMENT_SERVICE'
+  | 'OASYS'
+  | 'PLACEMENT_REVIEW_FORM'
+  | 'PNC'
+  | 'RECATEGORISATION_REVIEW'
+  | 'ROTL_BOARD'
+  | 'SAFETY_AND_SECURITY_FORM'
+  | 'SAFETY_DIAGNOSTIC_TOOL'
+  | 'SECURITY_FILE'
+  | 'SENTENCE_PLAN'
+  | 'TRANSFER_CONFIRMATION_FORM'
+  | 'VIPER'
+  | 'OTHER'
+
+export interface CsraReviewEvidenceSelection {
+  source: CsraReviewEvidenceSource
+  details?: string | null
+}
+
+export interface CsraReview {
+  reviewId: string
+  prisonerNumber: string
+  prisonId: string | null
+  status: CsraReviewStatus
+  interimResult: CsraResult | null
+  finalResult: CsraResult | null
+  stages: { stage: 'INTERIM' | 'FINAL'; version: number; answers: CsraReviewAnswers }[]
+}
+
+export interface CsraAssessmentStageAnswers extends BaseAnswersObject {
   stage: CsraAssessmentStage
   prisonId: string
   lastSavedBy?: string | null

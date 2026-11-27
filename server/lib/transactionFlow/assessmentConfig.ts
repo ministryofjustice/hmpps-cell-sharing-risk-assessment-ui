@@ -5,10 +5,11 @@ import YesNoOffenceSteps from './yesNoOffenceSteps'
 import YesNoWithDetailQuestion from './questionTypes/yesNoWithDetail'
 import TextAreaQuestion from './questionTypes/textArea'
 import InformationStep from './informationStep'
+import { CsraAssessmentStageAnswers } from '../../data/csraApiTypes'
 
 const questions = {
   evidenceSources: new EvidenceCheckboxQuestion(),
-  offenceMurderManslaughter: new YesNoQuestion(
+  offenceMurderManslaughter: new YesNoQuestion<CsraAssessmentStageAnswers>(
     'Is there any evidence of murder, manslaughter or a life-threatening assault on another prisoner while in custody?',
     'offenceMurderManslaughter',
     {
@@ -17,14 +18,14 @@ const questions = {
       },
     },
   ),
-  offenceAssistingSuicide: new YesNoQuestion(
+  offenceAssistingSuicide: new YesNoQuestion<CsraAssessmentStageAnswers>(
     'Is there any evidence of assisting a suicide while in custody?',
     'offenceAssistingSuicide',
     {
       validationMessages: { required: 'Select yes if there is evidence of assisting a suicide' },
     },
   ),
-  offenceSexualAssault: new YesNoQuestion(
+  offenceSexualAssault: new YesNoQuestion<CsraAssessmentStageAnswers>(
     'Is there evidence of sexual assault of a same sex adult victim?',
     'offenceSexualAssault',
     {
@@ -34,12 +35,12 @@ const questions = {
       },
     },
   ),
-  offenceRepeatedViolence: new YesNoQuestion(
+  offenceRepeatedViolence: new YesNoQuestion<CsraAssessmentStageAnswers>(
     'Is there evidence of repeated violence in custody?',
     'offenceRepeatedViolence',
     { validationMessages: { required: 'Select yes if there is evidence of repeated violence in custody' } },
   ),
-  offencePrejudiceMotivated: new YesNoQuestion(
+  offencePrejudiceMotivated: new YesNoQuestion<CsraAssessmentStageAnswers>(
     'Is there evidence of offending or behaviour motivated by prejudice?',
     'offencePrejudiceMotivated',
     {
@@ -49,11 +50,15 @@ const questions = {
       },
     },
   ),
-  offenceArson: new YesNoQuestion('Is there evidence of arson or fire setting?', 'offenceArson', {
-    hint: 'Either while in custody or in the community.',
-    validationMessages: { required: 'Select yes if there is evidence of arson or fire setting' },
-  }),
-  offenceKidnapHostage: new YesNoQuestion(
+  offenceArson: new YesNoQuestion<CsraAssessmentStageAnswers>(
+    'Is there evidence of arson or fire setting?',
+    'offenceArson',
+    {
+      hint: 'Either while in custody or in the community.',
+      validationMessages: { required: 'Select yes if there is evidence of arson or fire setting' },
+    },
+  ),
+  offenceKidnapHostage: new YesNoQuestion<CsraAssessmentStageAnswers>(
     'Is there evidence of kidnap, hostage taking and false imprisonment?',
     'offenceKidnapHostage',
     {
@@ -63,7 +68,7 @@ const questions = {
       },
     },
   ),
-  officerSpokeToPrisoner: new YesNoQuestion(
+  officerSpokeToPrisoner: new YesNoQuestion<CsraAssessmentStageAnswers>(
     'Has an officer spoken with the prisoner about sharing a cell?',
     'officerSpokeToPrisoner',
     {
@@ -73,7 +78,7 @@ const questions = {
       },
     },
   ),
-  likelyToHarmCellmate: new YesNoWithDetailQuestion(
+  likelyToHarmCellmate: new YesNoWithDetailQuestion<CsraAssessmentStageAnswers>(
     'Based on the conversation, is there reason to believe the prisoner is likely to cause harm to someone they share a cell with?',
     'likelyToHarmCellmate',
     'likelyToHarmCellmateDetail',
@@ -85,7 +90,7 @@ const questions = {
       detailValidationMessages: { required: 'Enter details of the risk' },
     },
   ),
-  significantlyVulnerable: new YesNoWithDetailQuestion(
+  significantlyVulnerable: new YesNoWithDetailQuestion<CsraAssessmentStageAnswers>(
     'Is the prisoner significantly vulnerable to assault by others?',
     'significantlyVulnerable',
     'significantlyVulnerableDetail',
@@ -96,7 +101,7 @@ const questions = {
       detailValidationMessages: { required: 'Enter details of the risk' },
     },
   ),
-  causeForConcernSharing: new YesNoWithDetailQuestion(
+  causeForConcernSharing: new YesNoWithDetailQuestion<CsraAssessmentStageAnswers>(
     'Based on observed behaviour, is there any cause for concern about this prisoner sharing a cell?',
     'causeForConcernSharing',
     'causeForConcernSharingDetail',
@@ -109,7 +114,7 @@ const questions = {
       detailLabel: 'Provide details of the concern',
     },
   ),
-  otherHighRiskIndicators: new YesNoWithDetailQuestion(
+  otherHighRiskIndicators: new YesNoWithDetailQuestion<CsraAssessmentStageAnswers>(
     'Are there any other factors to suggest the prisoner is high risk?',
     'otherHighRiskIndicators',
     'otherHighRiskIndicatorsDetail',
@@ -118,10 +123,14 @@ const questions = {
       detailValidationMessages: { required: 'Enter details of the risk' },
     },
   ),
-  seenByHealthcare: new YesNoQuestion('Has the prisoner been seen by healthcare?', 'seenByHealthcare', {
-    validationMessages: { required: 'Select yes if the prisoner has been seen by healthcare' },
-  }),
-  healthcareIncreasedRisk: new YesNoQuestion(
+  seenByHealthcare: new YesNoQuestion<CsraAssessmentStageAnswers>(
+    'Has the prisoner been seen by healthcare?',
+    'seenByHealthcare',
+    {
+      validationMessages: { required: 'Select yes if the prisoner has been seen by healthcare' },
+    },
+  ),
+  healthcareIncreasedRisk: new YesNoQuestion<CsraAssessmentStageAnswers>(
     'Did healthcare identify any signs of increased risk?',
     'healthcareIncreasedRisk',
     {
@@ -134,7 +143,7 @@ const questions = {
       {
         text: 'Yes, the prisoner is an increased risk',
         value: 'YES',
-        conditional: new TextAreaQuestion(
+        conditional: new TextAreaQuestion<CsraAssessmentStageAnswers>(
           'Provide a brief summary of why healthcare consider the prisoner an increased risk',
           'healthcareIncreasedRiskDetail',
           { classes: 'govuk-!-margin-bottom-0', validationMessages: { required: 'Enter details of the risk' } },
@@ -144,7 +153,7 @@ const questions = {
   ),
 }
 
-const evidenceAndOffences: Section = {
+const evidenceAndOffences: Section<CsraAssessmentStageAnswers> = {
   title: 'Offences',
   steps: [
     new Step({
@@ -179,7 +188,7 @@ const evidenceAndOffences: Section = {
   isCompleteForSection: assessmentAnswers => assessmentAnswers.offenceEvidenceReviewed !== false,
 }
 
-const conversationAndVulnerability: Section = {
+const conversationAndVulnerability: Section<CsraAssessmentStageAnswers> = {
   title: 'Prisoner conversation and vulnerability',
   steps: [
     new Step({
@@ -194,17 +203,17 @@ const conversationAndVulnerability: Section = {
   ],
 }
 
-const observation: Section = {
+const observation: Section<CsraAssessmentStageAnswers> = {
   title: 'Officer observation',
   steps: [new Step({ questions: [questions.causeForConcernSharing] })],
 }
 
-const otherRisks: Section = {
+const otherRisks: Section<CsraAssessmentStageAnswers> = {
   title: 'Other risk factors',
   steps: [new Step({ questions: [questions.otherHighRiskIndicators] })],
 }
 
-const healthcare: Section = {
+const healthcare: Section<CsraAssessmentStageAnswers> = {
   title: 'Healthcare assessment',
   steps: [
     new Step({
@@ -223,4 +232,4 @@ export default {
   observation,
   otherRisks,
   healthcare,
-} as Record<string, Section>
+} as Record<string, Section<CsraAssessmentStageAnswers>>

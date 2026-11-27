@@ -178,7 +178,7 @@
                 Start a review when the prisoner’s risk requires reassessment.
               {% endif %}
             </p>
-            <a class="govuk-button govuk-!-margin-bottom-0" href="{{ appendReferrers('/prisoner/' + prisoner.prisonerNumber + '/csra/' + csra.inProgress.reviewId, referrers) }}" data-qa="start-assessment">
+            <a class="govuk-button govuk-!-margin-bottom-0" href="{{ appendReferrers('/prisoner/' + prisoner.prisonerNumber + '/review/' + csra.inProgress.reviewId, referrers) }}" data-qa="start-assessment">
               Continue review
             </a>
           {% else %}
@@ -186,7 +186,7 @@
               Start a review when the prisoner’s risk requires reassessment.
             </p>
             {% set buttonClass = "govuk-button--secondary" if currentRating else "" %}
-            <a class="govuk-button {{ buttonClass }} govuk-!-margin-bottom-0" href="{{ appendReferrers('/prisoner/' + prisoner.prisonerNumber + '/csra/start', referrers) }}" data-qa="start-assessment">
+            <a class="govuk-button {{ buttonClass }} govuk-!-margin-bottom-0" href="{{ appendReferrers('/prisoner/' + prisoner.prisonerNumber + '/review/reason', referrers) }}" data-qa="start-assessment">
               Start review
             </a>
           {% endif %}

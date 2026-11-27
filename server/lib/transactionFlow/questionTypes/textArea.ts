@@ -1,5 +1,5 @@
-import Question from './base'
-import { CsraAssessmentStageAnswers } from '../../../data/csraApiTypes'
+import Question, { QuestionContext } from './base'
+import BaseAnswersObject from '../baseAnswersObject'
 import required from '../validations/required'
 
 export type TextAreaValidationMessages = {
@@ -11,10 +11,10 @@ type TextAreaQuestionOptions = {
   validationMessages?: TextAreaValidationMessages
 }
 
-export default class TextAreaQuestion extends Question {
+export default class TextAreaQuestion<AnswersObject extends BaseAnswersObject> extends Question<AnswersObject> {
   constructor(
     question: string,
-    public override id: keyof PickByType<CsraAssessmentStageAnswers, string>,
+    public override id: keyof PickByType<AnswersObject, string> & string,
     private readonly options: TextAreaQuestionOptions = {},
   ) {
     super(question, id, 'govukTextarea')
@@ -23,14 +23,15 @@ export default class TextAreaQuestion extends Question {
   override componentAttributes(
     validationErrors: Record<string, { text: string }> | undefined,
     values: Record<string, unknown> | undefined,
-    _assessmentAnswers: CsraAssessmentStageAnswers,
+    _assessmentAnswers: AnswersObject,
+    context?: QuestionContext<AnswersObject>,
   ): object {
     return {
       id: this.id,
       name: this.id,
       label: {
         text: this.question,
-        classes: 'govuk-fieldset__legend--s',
+        classes: context?.headingQuestionIds?.includes(this.id) ? 'govuk-visually-hidden' : 'govuk-fieldset__legend--s',
       },
       value: values[this.id],
       errorMessage: validationErrors ? validationErrors[this.id] : undefined,
@@ -42,22 +43,19 @@ export default class TextAreaQuestion extends Question {
     return [required(this.options.validationMessages?.required ?? 'There is a problem')]
   }
 
-  override getFormValues(assessmentAnswers: CsraAssessmentStageAnswers): FormValues {
+  override getFormValues(assessmentAnswers: AnswersObject): FormValues {
     return { [this.id]: assessmentAnswers[this.id] }
   }
 
-  override isAnswered(assessmentAnswers: CsraAssessmentStageAnswers): boolean {
+  override isAnswered(assessmentAnswers: AnswersObject): boolean {
     return !!assessmentAnswers[this.id]
   }
 
-  override mutateAssessmentAnswers(
-    assessmentAnswers: CsraAssessmentStageAnswers,
-    formValues: FormValues,
-  ): CsraAssessmentStageAnswers {
+  override mutateAssessmentAnswers(assessmentAnswers: AnswersObject, formValues: FormValues): AnswersObject {
     return { ...assessmentAnswers, [this.id]: formValues[this.id] }
   }
 
-  override eraseAnswers(assessmentAnswers: CsraAssessmentStageAnswers): CsraAssessmentStageAnswers {
+  override eraseAnswers(assessmentAnswers: AnswersObject): AnswersObject {
     return { ...assessmentAnswers, [this.id]: null }
   }
 }
